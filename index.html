@@ -12,17 +12,18 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 #lock.gone{display:none}
 .lt{font-size:38px;font-weight:900;letter-spacing:8px;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
 .ls{font-size:10px;color:var(--dim);letter-spacing:4px;text-transform:uppercase;margin-bottom:44px}
-.lb{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:34px 38px;width:360px;display:flex;flex-direction:column;gap:14px}
+.lb{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:34px 38px;width:380px;display:flex;flex-direction:column;gap:14px}
 .ll{font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
-.pw-wrap{position:relative;width:100%}
-.li{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;letter-spacing:8px;padding:13px 44px 13px 16px;width:100%;outline:none}
+.pw-wrap{position:relative;width:100%;display:flex;align-items:center}
+.li{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:18px;letter-spacing:6px;padding:14px 52px 14px 16px;width:100%;outline:none;flex:1}
 .li:focus{border-color:var(--accent)}
-.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;padding:4px;line-height:1}
-.pw-toggle:hover{color:var(--accent)}
+.li.shown{letter-spacing:2px;font-size:16px}
+.eye-btn{position:absolute;right:0;top:0;bottom:0;width:48px;background:rgba(255,255,255,0.05);border:none;border-left:1px solid var(--border);border-radius:0 8px 8px 0;color:var(--accent);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
+.eye-btn:hover{background:rgba(232,197,71,0.15)}
 .lbtn{background:var(--accent);border:none;border-radius:8px;color:#000;font-size:14px;font-weight:800;letter-spacing:3px;padding:14px;cursor:pointer;text-transform:uppercase;width:100%}
 .lbtn:hover{opacity:.85}
-.lerr{font-size:11px;color:var(--red);min-height:14px;text-align:center}
-.lhint{font-size:10px;color:var(--dim);margin-top:10px;text-align:center}
+.lerr{font-size:11px;color:var(--red);min-height:32px;text-align:center;line-height:1.6;word-break:break-all}
+.lhint{font-size:10px;color:var(--dim);margin-top:4px;text-align:center}
 #app{display:none}
 #app.on{display:flex;flex-direction:column;min-height:100vh}
 .hdr{background:var(--s1);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;flex-shrink:0}
@@ -159,13 +160,13 @@ svg.ch{display:block}
   <div class="lb">
     <div class="ll">Password</div>
     <div class="pw-wrap">
-      <input class="li" type="password" id="pw-in" placeholder="••••••••">
-      <button class="pw-toggle" id="pw-eye" onclick="togglePw()" title="Show/hide password">&#128065;</button>
+      <input class="li" type="password" id="pw-in" placeholder="diamond1" autocomplete="off">
+      <button class="eye-btn" id="eye-btn" type="button" onclick="togglePw()">&#128065;</button>
     </div>
-    <button class="lbtn" onclick="checkPw()">Enter</button>
+    <button class="lbtn" type="button" onclick="checkPw()">Enter</button>
     <div class="lerr" id="pw-err"></div>
+    <div class="lhint">Default password: diamond1</div>
   </div>
-  <div class="lhint">Default: diamond1 — click the eye icon to reveal what you typed</div>
 </div>
 
 <div id="app">
@@ -253,46 +254,35 @@ svg.ch{display:block}
       <div class="pgt">Platform Year Stats</div>
       <div class="pgs">Batting · Advanced · Statcast · WAR</div>
       <div class="tw">
-        <div class="th">
-          <div class="tt">PY Batting &amp; Advanced</div>
-          <div class="tc">
-            <input class="si2" placeholder="Search..." oninput="fTbl('t-bat',this.value)">
+        <div class="th"><div class="tt">PY Batting &amp; Advanced</div>
+          <div class="tc"><input class="si2" placeholder="Search..." oninput="fTbl('t-bat',this.value)">
             <select class="sel" id="stat-yr" onchange="renderStats()"><option value="">All PY Years</option></select>
           </div>
         </div>
         <div class="ts"><table id="t-bat">
           <thead><tr>
-            <th onclick="srt('t-bat',0)">Player</th><th onclick="srt('t-bat',1)">PY</th>
-            <th onclick="srt('t-bat',2)">Pos</th><th onclick="srt('t-bat',3)">G</th>
-            <th onclick="srt('t-bat',4)">PA</th><th onclick="srt('t-bat',5)">HR</th>
-            <th onclick="srt('t-bat',6)">RBI</th><th onclick="srt('t-bat',7)">SB</th>
-            <th onclick="srt('t-bat',8)">AVG</th><th onclick="srt('t-bat',9)">OBP</th>
-            <th onclick="srt('t-bat',10)">SLG</th><th onclick="srt('t-bat',11)">OPS</th>
-            <th onclick="srt('t-bat',12)">OPS+</th><th onclick="srt('t-bat',13)">wRC+</th>
-            <th onclick="srt('t-bat',14)">BB%</th><th onclick="srt('t-bat',15)">K%</th>
-            <th onclick="srt('t-bat',16)">ISO</th><th onclick="srt('t-bat',17)">wOBA</th>
-          </tr></thead>
-          <tbody id="b-bat"></tbody>
+            <th onclick="srt('t-bat',0)">Player</th><th onclick="srt('t-bat',1)">PY</th><th onclick="srt('t-bat',2)">Pos</th>
+            <th onclick="srt('t-bat',3)">G</th><th onclick="srt('t-bat',4)">PA</th><th onclick="srt('t-bat',5)">HR</th>
+            <th onclick="srt('t-bat',6)">RBI</th><th onclick="srt('t-bat',7)">SB</th><th onclick="srt('t-bat',8)">AVG</th>
+            <th onclick="srt('t-bat',9)">OBP</th><th onclick="srt('t-bat',10)">SLG</th><th onclick="srt('t-bat',11)">OPS</th>
+            <th onclick="srt('t-bat',12)">OPS+</th><th onclick="srt('t-bat',13)">wRC+</th><th onclick="srt('t-bat',14)">BB%</th>
+            <th onclick="srt('t-bat',15)">K%</th><th onclick="srt('t-bat',16)">ISO</th><th onclick="srt('t-bat',17)">wOBA</th>
+          </tr></thead><tbody id="b-bat"></tbody>
         </table></div>
       </div>
       <div class="tw">
-        <div class="th">
-          <div class="tt">PY Statcast &amp; WAR</div>
+        <div class="th"><div class="tt">PY Statcast &amp; WAR</div>
           <div class="tc"><input class="si2" placeholder="Search..." oninput="fTbl('t-sc',this.value)"></div>
         </div>
         <div class="ts"><table id="t-sc">
           <thead><tr>
             <th onclick="srt('t-sc',0)">Player</th><th onclick="srt('t-sc',1)">PY</th>
-            <th onclick="srt('t-sc',2)">xAVG</th><th onclick="srt('t-sc',3)">xSLG</th>
-            <th onclick="srt('t-sc',4)">xwOBA</th><th onclick="srt('t-sc',5)">Brl%</th>
-            <th onclick="srt('t-sc',6)">HH%</th><th onclick="srt('t-sc',7)">LA</th>
-            <th onclick="srt('t-sc',8)">MaxEV</th><th onclick="srt('t-sc',9)">AvgEV</th>
-            <th onclick="srt('t-sc',10)">SwSp%</th><th onclick="srt('t-sc',11)">DRS</th>
-            <th onclick="srt('t-sc',12)">OAA</th><th onclick="srt('t-sc',13)">rWAR</th>
-            <th onclick="srt('t-sc',14)">fWAR</th><th onclick="srt('t-sc',15)">aWAR</th>
-            <th onclick="srt('t-sc',16)">aWAR/650</th>
-          </tr></thead>
-          <tbody id="b-sc"></tbody>
+            <th onclick="srt('t-sc',2)">xAVG</th><th onclick="srt('t-sc',3)">xSLG</th><th onclick="srt('t-sc',4)">xwOBA</th>
+            <th onclick="srt('t-sc',5)">Brl%</th><th onclick="srt('t-sc',6)">HH%</th><th onclick="srt('t-sc',7)">LA</th>
+            <th onclick="srt('t-sc',8)">MaxEV</th><th onclick="srt('t-sc',9)">AvgEV</th><th onclick="srt('t-sc',10)">SwSp%</th>
+            <th onclick="srt('t-sc',11)">DRS</th><th onclick="srt('t-sc',12)">OAA</th><th onclick="srt('t-sc',13)">rWAR</th>
+            <th onclick="srt('t-sc',14)">fWAR</th><th onclick="srt('t-sc',15)">aWAR</th><th onclick="srt('t-sc',16)">aWAR/650</th>
+          </tr></thead><tbody id="b-sc"></tbody>
         </table></div>
       </div>
       <div class="cr">
@@ -305,8 +295,7 @@ svg.ch{display:block}
       <div class="pgt">PY vs PY-1 vs PY-2</div>
       <div class="pgs">Three-year statistical trajectory for each player</div>
       <div class="tw">
-        <div class="th">
-          <div class="tt">Three-Year Trend</div>
+        <div class="th"><div class="tt">Three-Year Trend</div>
           <div class="tc"><input class="si2" placeholder="Search..." oninput="fTbl('t-trend',this.value)"></div>
         </div>
         <div class="ts"><table id="t-trend">
@@ -318,8 +307,7 @@ svg.ch{display:block}
             <th onclick="srt('t-trend',8)">PY OPS</th><th onclick="srt('t-trend',9)">PY-2 wRC+</th>
             <th onclick="srt('t-trend',10)">PY-1 wRC+</th><th onclick="srt('t-trend',11)">PY wRC+</th>
             <th onclick="srt('t-trend',12)">AAV</th>
-          </tr></thead>
-          <tbody id="b-trend"></tbody>
+          </tr></thead><tbody id="b-trend"></tbody>
         </table></div>
       </div>
       <div class="cr">
@@ -336,8 +324,7 @@ svg.ch{display:block}
         <div class="cb"><div class="cbt">$/aWAR Efficiency</div><div class="cbs">Green = above value · Red = overpaid</div><div class="ca" id="c-dw"></div></div>
       </div>
       <div class="tw">
-        <div class="th">
-          <div class="tt">Value Rankings</div>
+        <div class="th"><div class="tt">Value Rankings</div>
           <div class="tc"><input class="si2" placeholder="Search..." oninput="fTbl('t-val',this.value)"></div>
         </div>
         <div class="ts"><table id="t-val">
@@ -347,8 +334,7 @@ svg.ch{display:block}
             <th onclick="srt('t-val',5)">aWAR</th><th onclick="srt('t-val',6)">aWAR/650</th>
             <th onclick="srt('t-val',7)">$/aWAR</th><th onclick="srt('t-val',8)">Market Val</th>
             <th onclick="srt('t-val',9)">Surplus $</th><th onclick="srt('t-val',10)">Verdict</th>
-          </tr></thead>
-          <tbody id="b-val"></tbody>
+          </tr></thead><tbody id="b-val"></tbody>
         </table></div>
       </div>
     </div>
@@ -357,8 +343,7 @@ svg.ch{display:block}
       <div class="pgt">Comparables</div>
       <div class="pgs">Find similar contracts and statistical profiles</div>
       <div class="tw" style="margin-bottom:16px">
-        <div class="th">
-          <div class="tt">Select Target Player</div>
+        <div class="th"><div class="tt">Select Target Player</div>
           <div class="tc">
             <select class="sel" id="comp-sel" onchange="showComps()" style="width:220px"><option value="">Choose player...</option></select>
             <select class="sel" id="comp-pos" onchange="showComps()"><option value="">All Positions</option></select>
@@ -375,7 +360,7 @@ svg.ch{display:block}
       <div class="pgs">Google Sheet master · FanGraphs · Baseball Savant supplemental</div>
       <div class="fc">
         <div class="fct">Google Sheet (Master Source)</div>
-        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script JSONP. Core columns load instantly, all columns load in background. Edit your sheet and click <strong style="color:var(--accent)">Refresh Sheet</strong> to reload.</p>
+        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script JSONP. Core columns load instantly, all columns load in background.</p>
         <div class="br"><button class="btn" onclick="refreshAll()">Reload from Google Sheet</button></div>
         <div id="gs-load-status" style="font-size:11px;color:var(--dim);margin-top:10px"></div>
       </div>
@@ -497,10 +482,10 @@ svg.ch{display:block}
           <div class="br"><button class="btn" onclick="saveMktSettings()">Save Settings</button></div>
         </div>
         <div class="fc">
-          <div class="fct" style="color:var(--red)">Password</div>
+          <div class="fct" style="color:var(--red)">Change Password</div>
           <div style="margin-bottom:10px"><label class="fl">Current Password</label><input class="fi" type="password" id="s-cur"></div>
           <div style="margin-bottom:10px"><label class="fl">New Password</label><input class="fi" type="password" id="s-new"></div>
-          <div style="margin-bottom:10px"><label class="fl">Confirm</label><input class="fi" type="password" id="s-cfm"></div>
+          <div style="margin-bottom:10px"><label class="fl">Confirm New Password</label><input class="fi" type="password" id="s-cfm"></div>
           <div class="br"><button class="btn" onclick="chgPw()">Update Password</button></div>
           <div id="pw-msg" style="font-size:11px;margin-top:8px;min-height:14px;color:var(--red)"></div>
         </div>
@@ -520,10 +505,18 @@ svg.ch{display:block}
 <div id="toast"></div>
 
 <script>
+// ═══ SCRIPT STARTS — password is checked FIRST before anything else ═══
+
 var SCRIPT_URL='https://script.google.com/macros/s/AKfycbzZIVWNJOD0zhRkAlgMomrFSCH4qzswHJBGMOiL0U_EmY_ytaRZ7Eycn5jyby7l6URX/exec';
 var CFG={marketRate:8.0,season:'2025'};
 var DB={players:[],manual:[],fg:[],savant:[],merged:[],allCols:[],fullData:{}};
-var SK='dlgs_v5',PK='dlpw_v5',CK='dlcfg_v5',FK='dlfilters_v5';
+
+// Single consistent storage keys — never change these
+var SK='dl_data';
+var PK='dl_pw';
+var CK='dl_cfg';
+var FK='dl_filters';
+
 var LOADING=false;
 var DEFAULT_FILTERS=[
   {col:'FY',label:'FY',value:''},
@@ -533,67 +526,92 @@ var DEFAULT_FILTERS=[
 ];
 var activeFilters=DEFAULT_FILTERS.map(function(f){return Object.assign({},f);});
 
+// Load saved settings
 (function(){
   try{var c=localStorage.getItem(CK);if(c)CFG=Object.assign(CFG,JSON.parse(c));}catch(e){}
   try{var d=localStorage.getItem(SK);if(d){var p=JSON.parse(d);DB.manual=p.manual||[];DB.fg=p.fg||[];DB.savant=p.savant||[];}}catch(e){}
   try{var f=localStorage.getItem(FK);if(f)activeFilters=JSON.parse(f);}catch(e){}
 })();
+
 function saveDB(){try{localStorage.setItem(SK,JSON.stringify({manual:DB.manual,fg:DB.fg,savant:DB.savant}));}catch(e){}}
 function saveCFG(){try{localStorage.setItem(CK,JSON.stringify(CFG));}catch(e){}}
 function saveFilters(){try{localStorage.setItem(FK,JSON.stringify(activeFilters));}catch(e){}}
-function getPw(){return localStorage.getItem(PK)||'diamond1';}
 
-// ═══ PASSWORD ═══
+// Password: stored under PK, default is always 'diamond1'
+function getPw(){
+  try{
+    var stored=localStorage.getItem(PK);
+    if(stored&&stored.length>=1) return stored;
+  }catch(e){}
+  return 'diamond1';
+}
+
+// ═══ EYE TOGGLE ═══
 function togglePw(){
   var inp=document.getElementById('pw-in');
-  var eye=document.getElementById('pw-eye');
+  var btn=document.getElementById('eye-btn');
+  if(!inp||!btn) return;
   if(inp.type==='password'){
     inp.type='text';
-    inp.style.letterSpacing='normal';
-    inp.style.fontSize='16px';
-    eye.innerHTML='&#128064;';
+    inp.className='li shown';
+    btn.innerHTML='&#128064;'; // closed eye = currently showing
+    btn.title='Hide password';
   } else {
     inp.type='password';
-    inp.style.letterSpacing='8px';
-    inp.style.fontSize='20px';
-    eye.innerHTML='&#128065;';
+    inp.className='li';
+    btn.innerHTML='&#128065;'; // open eye = click to show
+    btn.title='Show password';
   }
+  inp.focus();
 }
 
+// ═══ PASSWORD CHECK ═══
 function checkPw(){
   var inp=document.getElementById('pw-in');
-  var val=inp.value;
-  var stored=getPw();
-  if(val===stored){
+  var errEl=document.getElementById('pw-err');
+  if(!inp){alert('Error: password field not found');return;}
+  var typed=inp.value;
+  var correct=getPw();
+  if(typed===correct){
+    // SUCCESS
     document.getElementById('lock').classList.add('gone');
     document.getElementById('app').classList.add('on');
-    document.getElementById('s-mr').value=CFG.marketRate;
-    document.getElementById('s-yr').value=CFG.season;
+    try{document.getElementById('s-mr').value=CFG.marketRate;}catch(e){}
+    try{document.getElementById('s-yr').value=CFG.season;}catch(e){}
     refreshAll();
   } else {
-    var errEl=document.getElementById('pw-err');
-    errEl.textContent='Incorrect. You typed: "'+val+'" — expected: "'+stored+'"';
-    setTimeout(function(){errEl.textContent='';},4000);
+    // FAIL — show exactly what was typed vs what is stored
+    errEl.innerHTML='Wrong password.<br>You typed: <strong style="color:var(--accent)">'+typed+'</strong><br>Expected: <strong style="color:var(--green)">'+correct+'</strong>';
     inp.value='';
-    // Make sure field is back to password type for retry
-    if(inp.type==='text'){togglePw();}
+    // Switch back to password mode if currently showing
+    if(inp.type==='text') togglePw();
+    setTimeout(function(){errEl.innerHTML='';},6000);
   }
 }
 
-document.addEventListener('DOMContentLoaded',function(){
+// Attach Enter key listener immediately
+(function(){
   var inp=document.getElementById('pw-in');
-  if(inp) inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPw();});
-});
+  if(inp){
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();checkPw();}
+    });
+  }
+})();
 
 function chgPw(){
-  var cur=document.getElementById('s-cur').value,nw=document.getElementById('s-new').value,cf=document.getElementById('s-cfm').value,msg=document.getElementById('pw-msg');
-  if(cur!==getPw()){msg.textContent='Current password incorrect.';return;}
-  if(nw.length<4){msg.textContent='Min 4 characters.';return;}
-  if(nw!==cf){msg.textContent='Passwords do not match.';return;}
+  var cur=document.getElementById('s-cur').value;
+  var nw=document.getElementById('s-new').value;
+  var cf=document.getElementById('s-cfm').value;
+  var msg=document.getElementById('pw-msg');
+  if(cur!==getPw()){msg.textContent='Current password incorrect. Current is: '+getPw();return;}
+  if(nw.length<1){msg.textContent='Password cannot be empty.';return;}
+  if(nw!==cf){msg.textContent='New passwords do not match.';return;}
   localStorage.setItem(PK,nw);
-  msg.style.color='var(--green)';msg.textContent='Password updated to: '+nw;
+  msg.style.color='var(--green)';
+  msg.textContent='Password updated to: '+nw;
   ['s-cur','s-new','s-cfm'].forEach(function(id){document.getElementById(id).value='';});
-  setTimeout(function(){msg.textContent='';msg.style.color='var(--red)';},4000);
+  setTimeout(function(){msg.textContent='';msg.style.color='var(--red)';},5000);
 }
 
 // ═══ TABS ═══
@@ -606,9 +624,9 @@ function go(id){
     if(panel)panel.classList.add('on');
     if(btn)btn.classList.add('on');
     if(id==='comps'){try{fillCompSelects();}catch(e){}try{renderCompScatter();}catch(e){}}
-    else if(id==='value')try{renderValue();}catch(e){}
-    else if(id==='trend')try{renderTrend();}catch(e){}
-    else if(id==='stats')try{renderStats();}catch(e){}
+    else if(id==='value')try{renderValue();}catch(e){console.error(e);}
+    else if(id==='trend')try{renderTrend();}catch(e){console.error(e);}
+    else if(id==='stats')try{renderStats();}catch(e){console.error(e);}
     else if(id==='settings')try{renderDBInfo();}catch(e){}
     else if(id==='sources')try{renderSuppSummary();}catch(e){}
     else if(id==='edit')try{renderManualTable();}catch(e){}
@@ -622,8 +640,8 @@ function refreshAll(){
     processSheetData(data);
     renderAll();
     setGSStatus('on','Sheet (core)');
-    document.getElementById('bg-badge').textContent='Loading all columns...';
-    document.getElementById('bg-badge').className='bg-badge';
+    var badge=document.getElementById('bg-badge');
+    badge.textContent='Loading all columns...';badge.className='bg-badge';
     setTimeout(function(){
       loadPass('full',function(fullData){
         DB.fullData=fullData;
@@ -631,20 +649,19 @@ function refreshAll(){
         mergeFullData();
         renderAll();
         setGSStatus('on','Google Sheet');
-        document.getElementById('bg-badge').textContent='All columns ready';
-        document.getElementById('bg-badge').className='bg-badge done';
+        badge.textContent='All columns ready';badge.className='bg-badge done';
         document.getElementById('sb-time').textContent=new Date().toLocaleTimeString();
         document.getElementById('gs-load-status').textContent='Full load complete at '+new Date().toLocaleTimeString();
         toast('All data loaded');
-        setTimeout(function(){document.getElementById('bg-badge').textContent='';},5000);
+        setTimeout(function(){badge.textContent='';},5000);
       },function(err){
-        document.getElementById('bg-badge').textContent='Full load failed — core data still active';
+        badge.textContent='Full load failed — core data still active';
         console.error('Full load error:',err);
       });
     },1000);
   },function(err){
-    setGSStatus('off','Error');
-    document.getElementById('gs-load-status').textContent='Load error: '+err;
+    setGSStatus('off','Error: '+err);
+    document.getElementById('gs-load-status').textContent='Error: '+err;
     mergeAll();renderAll();
     toast('Load failed — using manual data');
     LOADING=false;
@@ -656,8 +673,7 @@ function refreshAll(){
 function loadPass(mode,onSuccess,onError){
   LOADING=true;
   var btn=document.getElementById('refresh-btn');
-  btn.disabled=true;
-  btn.textContent=mode==='fast'?'Loading...':'Background loading...';
+  btn.disabled=true;btn.textContent=mode==='fast'?'Loading...':'Background loading...';
   setGSStatus('warn',mode==='fast'?'Loading core...':'Loading all columns...');
   var urlEl=document.getElementById('s-gsurl');
   var base=(urlEl&&urlEl.value.trim())?urlEl.value.trim():SCRIPT_URL;
@@ -666,14 +682,12 @@ function loadPass(mode,onSuccess,onError){
   var done=false;
   var timeout=mode==='fast'?20000:90000;
   var timer=setTimeout(function(){
-    if(done)return;done=true;cleanup();
-    LOADING=false;
+    if(done)return;done=true;cleanup();LOADING=false;
     if(mode==='fast'){btn.disabled=false;btn.textContent='Refresh Sheet';}
     if(onError)onError('Timeout after '+(timeout/1000)+'s');
   },timeout);
   window[cbName]=function(data){
-    if(done)return;done=true;clearTimeout(timer);cleanup();
-    LOADING=false;
+    if(done)return;done=true;clearTimeout(timer);cleanup();LOADING=false;
     if(mode==='fast'){btn.disabled=false;btn.textContent='Refresh Sheet';}
     if(onSuccess)onSuccess(data);
   };
@@ -682,8 +696,7 @@ function loadPass(mode,onSuccess,onError){
     try{delete window[cbName];}catch(e){window[cbName]=undefined;}
   }
   script.onerror=function(){
-    if(done)return;done=true;clearTimeout(timer);cleanup();
-    LOADING=false;
+    if(done)return;done=true;clearTimeout(timer);cleanup();LOADING=false;
     if(mode==='fast'){btn.disabled=false;btn.textContent='Refresh Sheet';}
     if(onError)onError('Script load error');
   };
@@ -711,7 +724,7 @@ function processSheetData(data){
   });
   DB.players=allPlayers;
   mergeAll();
-  document.getElementById('gs-load-status').textContent='Core: '+allPlayers.length+' players at '+new Date().toLocaleTimeString();
+  document.getElementById('gs-load-status').textContent='Core: '+allPlayers.length+' players loaded at '+new Date().toLocaleTimeString();
 }
 
 function extractAllCols(data){
@@ -753,38 +766,31 @@ function buildPlayer(row,headers,vals){
   var vn=function(i){return parseFloat(vals[i])||0;};
   function getSet(idx){
     var pick=function(arr){return arr.length>idx?vn(arr[idx]):null;};
-    var gC=findCols('G'),paC=findCols('PA'),hrC=findCols('HR'),rbiC=findCols('RBI'),
-        sbC=findCols('SB'),bbC=findCols('BB%'),kC=findCols('K%'),avgC=findCols('AVG'),
-        obpC=findCols('OBP'),slgC=findCols('SLG'),isoC=findCols('ISO'),
-        opspC=findCols('OPS+'),wrcC=findCols('wRC+'),wobaC=findCols('wOBA'),
-        xavgC=findCols('xAVG'),xslgC=findCols('xSLG'),xwobaC=findCols('xwOBA'),
-        brlC=findCols('Brl%'),hhC=findCols('HH%'),laC=findCols('LA'),
-        swspC=findCols('SwSp%'),maxevC=findCols('Max EV'),avgevC=findCols('AvgEV'),
-        drsC=findCols('DRS'),oaaC=findCols('OAA'),rwarC=findCols('rWAR'),
+    var gC=findCols('G'),paC=findCols('PA'),hrC=findCols('HR'),rbiC=findCols('RBI'),sbC=findCols('SB'),
+        bbC=findCols('BB%'),kC=findCols('K%'),avgC=findCols('AVG'),obpC=findCols('OBP'),slgC=findCols('SLG'),
+        isoC=findCols('ISO'),opspC=findCols('OPS+'),wrcC=findCols('wRC+'),wobaC=findCols('wOBA'),
+        xavgC=findCols('xAVG'),xslgC=findCols('xSLG'),xwobaC=findCols('xwOBA'),brlC=findCols('Brl%'),
+        hhC=findCols('HH%'),laC=findCols('LA'),swspC=findCols('SwSp%'),maxevC=findCols('Max EV'),
+        avgevC=findCols('AvgEV'),drsC=findCols('DRS'),oaaC=findCols('OAA'),rwarC=findCols('rWAR'),
         fwarC=findCols('fWAR'),awarC=findCols('aWAR'),awar6C=findCols('aWAR/650');
     var o={};
     o.G=pick(gC);o.PA=pick(paC);o.HR=pick(hrC);o.RBI=pick(rbiC);o.SB=pick(sbC);
-    o.BBpct=pick(bbC);o.Kpct=pick(kC);o.AVG=pick(avgC);o.OBP=pick(obpC);
-    o.SLG=pick(slgC);o.ISO=pick(isoC);o.OPSplus=pick(opspC);o.wRCplus=pick(wrcC);
-    o.wOBA=pick(wobaC);o.xAVG=pick(xavgC);o.xSLG=pick(xslgC);o.xwOBA=pick(xwobaC);
-    o.Brl=pick(brlC);o.HH=pick(hhC);o.LA=pick(laC);o.SwSp=pick(swspC);
-    o.MaxEV=pick(maxevC);o.AvgEV=pick(avgevC);o.DRS=pick(drsC);o.OAA=pick(oaaC);
-    o.rWAR=pick(rwarC);o.fWAR=pick(fwarC);o.aWAR=pick(awarC);o.aWAR650=pick(awar6C);
+    o.BBpct=pick(bbC);o.Kpct=pick(kC);o.AVG=pick(avgC);o.OBP=pick(obpC);o.SLG=pick(slgC);
+    o.ISO=pick(isoC);o.OPSplus=pick(opspC);o.wRCplus=pick(wrcC);o.wOBA=pick(wobaC);
+    o.xAVG=pick(xavgC);o.xSLG=pick(xslgC);o.xwOBA=pick(xwobaC);o.Brl=pick(brlC);
+    o.HH=pick(hhC);o.LA=pick(laC);o.SwSp=pick(swspC);o.MaxEV=pick(maxevC);o.AvgEV=pick(avgevC);
+    o.DRS=pick(drsC);o.OAA=pick(oaaC);o.rWAR=pick(rwarC);o.fWAR=pick(fwarC);
+    o.aWAR=pick(awarC);o.aWAR650=pick(awar6C);
     o.OPS=o.OBP&&o.SLG?Math.round((o.OBP+o.SLG)*1000)/1000:null;
     return o;
   }
   function parseMoney(s){s=(s||'').replace(/[$,]/g,'').trim();var v=parseFloat(s)||0;return v>1000000?v/1000000:v;}
   return{
     name:g('Player'),py:gni('PY')||parseInt(g('PY'))||0,
-    sigAge:parseFloat(g('SigAge'))||0,
-    fyAge:parseFloat(g('FY Age'))||0,
-    pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate'),
-    fy:g('FY'),term:gni('Term'),
-    guar:parseMoney(g('GUAR')),
-    guarAav:parseMoney(g('GUAR AAV')),
-    aav:parseMoney(g('AAV')),
-    code:g('Code'),source:'gs',
-    _rawRow:row,
+    sigAge:parseFloat(g('SigAge'))||0,fyAge:parseFloat(g('FY Age'))||0,
+    pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate'),fy:g('FY'),term:gni('Term'),
+    guar:parseMoney(g('GUAR')),guarAav:parseMoney(g('GUAR AAV')),aav:parseMoney(g('AAV')),
+    code:g('Code'),source:'gs',_rawRow:row,
     py0:getSet(0),py1:getSet(1),py2:getSet(2)
   };
 }
@@ -798,26 +804,23 @@ function mergeAll(){
     else{base.push(Object.assign({source:'manual'},m));}
   });
   DB.fg.forEach(function(fg){
-    var nm=fg.Name||fg.name||'',yr=String(fg.Season||fg.season||fg.Year||fg.year||'');
-    if(!nm)return;
+    var nm=fg.Name||fg.name||'',yr=String(fg.Season||fg.season||fg.Year||fg.year||'');if(!nm)return;
     var idx=base.findIndex(function(p){return normName(p.name)===normName(nm)&&String(p.py)===yr;});
     if(idx>=0){var py0=base[idx].py0||{};if(fg.WAR||fg.war)py0.fWAR=parseFloat(fg.WAR||fg.war)||py0.fWAR;if(fg['wRC+'])py0.wRCplus=parseFloat(fg['wRC+'])||py0.wRCplus;base[idx].py0=py0;base[idx].fgMerged=true;}
   });
   DB.savant.forEach(function(sv){
-    var nm=sv.player_name||sv.name||sv.Name||'';var yr=String(sv.game_year||sv.year||sv.Year||sv.season||'');
-    if(!nm)return;
+    var nm=sv.player_name||sv.name||sv.Name||'';var yr=String(sv.game_year||sv.year||sv.Year||sv.season||'');if(!nm)return;
     var idx=base.findIndex(function(p){return normName(p.name)===normName(nm)&&String(p.py)===yr;});
     if(idx>=0){var py0=base[idx].py0||{};if(sv.exit_velocity_avg)py0.AvgEV=parseFloat(sv.exit_velocity_avg)||py0.AvgEV;if(sv.launch_angle_avg)py0.LA=parseFloat(sv.launch_angle_avg)||py0.LA;if(sv.barrel_batted_rate)py0.Brl=parseFloat(sv.barrel_batted_rate)||py0.Brl;if(sv.hard_hit_percent)py0.HH=parseFloat(sv.hard_hit_percent)||py0.HH;base[idx].py0=py0;base[idx].svMerged=true;}
   });
-  DB.merged=base;
-  updateSB();
+  DB.merged=base;updateSB();
 }
 function normName(n){if(!n)return'';return n.toLowerCase().replace(/[^a-z]/g,'');}
 
 // ═══ FILTERS ═══
 function getPlayerVal(p,col){
-  var directMap={'FY':p.fy,'FY Age':p.fyAge,'GUAR':p.guar,'GUAR AAV':p.guarAav,'AAV':p.aav,'Term':p.term,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'Code':p.code,'SigAge':p.sigAge,'SigDate':p.sigDate};
-  if(col in directMap)return String(directMap[col]||'');
+  var dm={'FY':p.fy,'FY Age':p.fyAge,'GUAR':p.guar,'GUAR AAV':p.guarAav,'AAV':p.aav,'Term':p.term,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'Code':p.code,'SigAge':p.sigAge,'SigDate':p.sigDate};
+  if(col in dm)return String(dm[col]||'');
   if(p._rawRow&&col in p._rawRow)return String(p._rawRow[col]||'');
   return '';
 }
@@ -844,23 +847,21 @@ function showAddFilter(){document.getElementById('add-filter-row').style.display
 function hideAddFilter(){document.getElementById('add-filter-row').style.display='none';}
 function populateFilterColPicker(){
   var pick=document.getElementById('filter-col-pick');if(!pick)return;
-  var cur=pick.value;
   pick.innerHTML='<option value="">Choose column...</option>';
   var commonCols=['FY','FY Age','GUAR','GUAR AAV','AAV','Term','PY','pPos','SigTm','Code','SigAge','SigDate','MLSsig','CAR MLS-PY','ArbSys','T+O','PlyrOpt?','Def?','Pot IB','Pot OB','G','PA','HR','RBI','SB','AVG','OBP','SLG','OPS','OPS+','wRC+','wOBA','BB%','K%','ISO','xAVG','xSLG','xwOBA','Brl%','HH%','LA','SwSp%','Max EV','AvgEV','DRS','OAA','rWAR','fWAR','aWAR','aWAR/650'];
   var cols=DB.allCols.length?DB.allCols:commonCols;
   cols.forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;pick.appendChild(o);});
-  if(cur)pick.value=cur;
 }
 function addFilter(){
   var pick=document.getElementById('filter-col-pick');if(!pick||!pick.value){toast('Choose a column first');return;}
   var col=pick.value;
-  if(activeFilters.some(function(f){return f.col===col;})){toast(col+' filter already active');return;}
+  if(activeFilters.some(function(f){return f.col===col;})){toast(col+' already active');return;}
   activeFilters.push({col:col,label:col,value:''});
   saveFilters();hideAddFilter();renderFilterBar();toast('Filter added: '+col);
 }
 function resetFilters(){
   activeFilters=DEFAULT_FILTERS.map(function(f){return Object.assign({},f);});
-  saveFilters();renderFilterBar();renderOverview();toast('Filters reset to defaults');
+  saveFilters();renderFilterBar();renderOverview();toast('Filters reset');
 }
 function applyFilters(players){
   return players.filter(function(p){
@@ -868,7 +869,7 @@ function applyFilters(players){
   });
 }
 
-// ═══ STATUS ═══
+// ═══ STATUS / RENDER ═══
 function setGSStatus(state,label){var el=document.getElementById('gs-status');if(!el)return;el.innerHTML='<span class="dot '+(state==='on'?'':state==='warn'?'warn':'off')+'"></span>'+label;}
 function updateSB(){
   var ps=DB.merged;
@@ -893,25 +894,13 @@ function renderAll(){
   try{renderSuppSummary();}catch(e){}
 }
 function populateYrFilters(){
-  var years=[];
-  DB.merged.forEach(function(p){if(p.py&&years.indexOf(p.py)===-1)years.push(p.py);});
-  years.sort(function(a,b){return b-a;});
-  ['stat-yr','comp-py'].forEach(function(id){
-    var el=document.getElementById(id);if(!el)return;
-    var cur=el.value;while(el.options.length>1)el.remove(1);
-    years.forEach(function(y){var o=document.createElement('option');o.value=y;o.textContent=y;el.appendChild(o);});
-    if(cur)el.value=cur;
-  });
+  var years=[];DB.merged.forEach(function(p){if(p.py&&years.indexOf(p.py)===-1)years.push(p.py);});years.sort(function(a,b){return b-a;});
+  ['stat-yr','comp-py'].forEach(function(id){var el=document.getElementById(id);if(!el)return;var cur=el.value;while(el.options.length>1)el.remove(1);years.forEach(function(y){var o=document.createElement('option');o.value=y;o.textContent=y;el.appendChild(o);});if(cur)el.value=cur;});
   var posEl=document.getElementById('comp-pos');
-  if(posEl){
-    var positions=[];
-    DB.merged.forEach(function(p){if(p.pPos&&positions.indexOf(p.pPos)===-1)positions.push(p.pPos);});
-    positions.sort();while(posEl.options.length>1)posEl.remove(1);
-    positions.forEach(function(pos){var o=document.createElement('option');o.value=pos;o.textContent=pos;posEl.appendChild(o);});
-  }
+  if(posEl){var positions=[];DB.merged.forEach(function(p){if(p.pPos&&positions.indexOf(p.pPos)===-1)positions.push(p.pPos);});positions.sort();while(posEl.options.length>1)posEl.remove(1);positions.forEach(function(pos){var o=document.createElement('option');o.value=pos;o.textContent=pos;posEl.appendChild(o);});}
 }
 
-// ═══ VALUE HELPERS ═══
+// ═══ HELPERS ═══
 function vRate(p){var mr=CFG.marketRate||8;var war=(p.py0&&p.py0.aWAR)||0;if(!war||war<=0)return'below';var dw=p.aav/war;if(dw<mr*0.85)return'above';if(dw>mr*1.15)return'below';return'fair';}
 function bdg(r){return r==='above'?'<span class="bdg bab">Above Value</span>':r==='below'?'<span class="bdg bbl">Below Value</span>':'<span class="bdg bfr">Fair Value</span>';}
 function pTag(pos){var c='tgp';if(['SS','2B','CF'].indexOf(pos)>=0)c='tgb';if(['1B','DH'].indexOf(pos)>=0)c='tgg';return'<span class="tg '+c+'">'+pos+'</span>';}
@@ -922,8 +911,7 @@ function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
 
 // ═══ OVERVIEW ═══
 function renderOverview(){
-  var ps=DB.merged;
-  var filtered=applyFilters(ps);
+  var ps=DB.merged;var filtered=applyFilters(ps);
   var totalGuar=ps.reduce(function(a,p){return a+(p.guar||0);},0);
   var totalAav=ps.reduce(function(a,p){return a+(p.aav||0);},0);
   var wars=ps.map(function(p){return(p.py0&&p.py0.aWAR)||0;}).filter(function(w){return w>0;});
@@ -943,22 +931,9 @@ function renderOverview(){
   var tb=document.getElementById('b-ov');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(p){
-    var idx=DB.merged.indexOf(p);
-    var war=(p.py0&&p.py0.aWAR)||0;
-    var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';
+    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';
     var guarDisp=p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):'0';
-    return'<tr>'
-      +'<td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td>'
-      +'<td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td>'
-      +'<td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td>'
-      +'<td>'+(p.term||'—')+'yr</td>'
-      +'<td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td>'
-      +'<td>$'+(p.guarAav?p.guarAav.toFixed(1):'0')+'M</td>'
-      +'<td>$'+guarDisp+'</td>'
-      +'<td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td>'
-      +'<td>'+dw+'</td><td>'+bdg(vRate(p))+'</td>'
-      +'<td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td>'
-      +'</tr>';
+    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td><td>$'+(p.guarAav?p.guarAav.toFixed(1):'0')+'M</td><td>$'+guarDisp+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
   }).join('');
   var topAAV=[].concat(filtered).sort(function(a,b){return(b.aav||0)-(a.aav||0);}).slice(0,20);
   bSVG('c-aav',topAAV.map(function(p){return{l:p.name.split(',')[0],v:p.aav||0,c:'#e8c547'};}),true);
@@ -971,30 +946,27 @@ function renderOverview(){
 function renderStats(){
   var yrF=document.getElementById('stat-yr')?document.getElementById('stat-yr').value:'';
   var ps=DB.merged.filter(function(p){return!yrF||String(p.py)===String(yrF);});
-  var tb=document.getElementById('b-bat');
-  tb.innerHTML=!ps.length?'<tr><td colspan="18"><div class="emp"><div class="et">No Data</div></div></td></tr>':
+  document.getElementById('b-bat').innerHTML=!ps.length?'<tr><td colspan="18"><div class="emp"><div class="et">No Data</div></div></td></tr>':
     ps.map(function(p){var s=p.py0||{};var ops=s.OPS||(s.OBP&&s.SLG?(s.OBP+s.SLG):null);
       return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(s.G||'—')+'</td><td>'+(s.PA||'—')+'</td><td>'+(s.HR||'—')+'</td><td>'+(s.RBI||'—')+'</td><td>'+(s.SB||'—')+'</td><td class="'+gc(s.AVG,.240,.300)+'">'+fa(s.AVG)+'</td><td class="'+gc(s.OBP,.310,.380)+'">'+fa(s.OBP)+'</td><td class="'+gc(s.SLG,.400,.520)+'">'+fa(s.SLG)+'</td><td class="'+gc(ops,.700,.900)+'">'+fa(ops)+'</td><td class="'+gc(s.OPSplus,100,140)+'">'+(s.OPSplus||'—')+'</td><td class="'+gc(s.wRCplus,100,140)+'">'+(s.wRCplus||'—')+'</td><td>'+fmPct(s.BBpct)+'</td><td>'+fmPct(s.Kpct)+'</td><td>'+fa(s.ISO)+'</td><td>'+fa(s.wOBA)+'</td></tr>';
     }).join('');
-  var tb2=document.getElementById('b-sc');
-  tb2.innerHTML=!ps.length?'<tr><td colspan="17"></td></tr>':
+  document.getElementById('b-sc').innerHTML=!ps.length?'<tr><td colspan="17"></td></tr>':
     ps.map(function(p){var s=p.py0||{};
       return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+fa(s.xAVG)+'</td><td>'+fa(s.xSLG)+'</td><td>'+fa(s.xwOBA)+'</td><td class="'+gc(s.Brl,5,15)+'">'+fmPct(s.Brl)+'</td><td class="'+gc(s.HH,35,50)+'">'+fmPct(s.HH)+'</td><td>'+fm(s.LA,1)+'</td><td class="'+gc(s.MaxEV,105,115)+'">'+fm(s.MaxEV,1)+'</td><td class="'+gc(s.AvgEV,87,92)+'">'+fm(s.AvgEV,1)+'</td><td>'+fmPct(s.SwSp)+'</td><td>'+fm(s.DRS,0)+'</td><td>'+fm(s.OAA,1)+'</td><td class="'+gc(s.rWAR,2,5)+'">'+fm(s.rWAR,1)+'</td><td class="'+gc(s.fWAR,2,5)+'">'+fm(s.fWAR,1)+'</td><td class="'+gc(s.aWAR,2,5)+'">'+fm(s.aWAR,1)+'</td><td class="'+gc(s.aWAR650,2,5)+'">'+fm(s.aWAR650,1)+'</td></tr>';
     }).join('');
-  var warData=[].concat(ps).filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,20);
-  bSVG('c-war',warData.map(function(p){return{l:p.name.split(',')[0],v:p.py0.aWAR||0,c:'#e8c547'};}));
-  var wrcData=[].concat(ps).filter(function(p){return p.py0&&p.py0.wRCplus;}).sort(function(a,b){return(b.py0.wRCplus||0)-(a.py0.wRCplus||0);}).slice(0,20);
-  bSVG('c-wrc',wrcData.map(function(p){return{l:p.name.split(',')[0],v:p.py0.wRCplus||0,c:'#4fc3f7'};}));
+  var warD=[].concat(ps).filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,20);
+  bSVG('c-war',warD.map(function(p){return{l:p.name.split(',')[0],v:p.py0.aWAR||0,c:'#e8c547'};}));
+  var wrcD=[].concat(ps).filter(function(p){return p.py0&&p.py0.wRCplus;}).sort(function(a,b){return(b.py0.wRCplus||0)-(a.py0.wRCplus||0);}).slice(0,20);
+  bSVG('c-wrc',wrcD.map(function(p){return{l:p.name.split(',')[0],v:p.py0.wRCplus||0,c:'#4fc3f7'};}));
 }
 
 // ═══ TREND ═══
 function renderTrend(){
   var ps=DB.merged.filter(function(p){return p.py0;});
-  var tb=document.getElementById('b-trend');
   function arrow(p2,p1,p0){if(!p2||!p1||!p0)return'—';return p0-p1>0.5?'<span class="gc">&#9650; Rising</span>':p0-p1<-0.5?'<span class="rc">&#9660; Declining</span>':'<span class="ac">&#9654; Stable</span>';}
-  tb.innerHTML=!ps.length?'<tr><td colspan="13"><div class="emp"><div class="et">No Data</div></div></td></tr>':
-    ps.map(function(p){var p0=p.py0||{},p1=p.py1||{},p2=p.py2||{};var ops0=p0.OBP&&p0.SLG?p0.OBP+p0.SLG:null,ops1=p1.OBP&&p1.SLG?p1.OBP+p1.SLG:null,ops2=p2.OBP&&p2.SLG?p2.OBP+p2.SLG:null;
-      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="'+gc(p2.aWAR,2,5)+'">'+fm(p2.aWAR,1)+'</td><td class="'+gc(p1.aWAR,2,5)+'">'+fm(p1.aWAR,1)+'</td><td class="'+gc(p0.aWAR,2,5)+'"><strong>'+fm(p0.aWAR,1)+'</strong></td><td>'+arrow(p2.aWAR,p1.aWAR,p0.aWAR)+'</td><td>'+fa(ops2)+'</td><td>'+fa(ops1)+'</td><td><strong>'+fa(ops0)+'</strong></td><td>'+(p2.wRCplus||'—')+'</td><td>'+(p1.wRCplus||'—')+'</td><td><strong>'+(p0.wRCplus||'—')+'</strong></td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td></tr>';
+  document.getElementById('b-trend').innerHTML=!ps.length?'<tr><td colspan="13"><div class="emp"><div class="et">No Data</div></div></td></tr>':
+    ps.map(function(p){var p0=p.py0||{},p1=p.py1||{},p2=p.py2||{};var o0=p0.OBP&&p0.SLG?p0.OBP+p0.SLG:null,o1=p1.OBP&&p1.SLG?p1.OBP+p1.SLG:null,o2=p2.OBP&&p2.SLG?p2.OBP+p2.SLG:null;
+      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="'+gc(p2.aWAR,2,5)+'">'+fm(p2.aWAR,1)+'</td><td class="'+gc(p1.aWAR,2,5)+'">'+fm(p1.aWAR,1)+'</td><td class="'+gc(p0.aWAR,2,5)+'"><strong>'+fm(p0.aWAR,1)+'</strong></td><td>'+arrow(p2.aWAR,p1.aWAR,p0.aWAR)+'</td><td>'+fa(o2)+'</td><td>'+fa(o1)+'</td><td><strong>'+fa(o0)+'</strong></td><td>'+(p2.wRCplus||'—')+'</td><td>'+(p1.wRCplus||'—')+'</td><td><strong>'+(p0.wRCplus||'—')+'</strong></td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td></tr>';
     }).join('');
   var top=ps.filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,10);
   lgSVG('c-traj',top,'aWAR');lgSVG('c-ops-traj',top,'OPS');
@@ -1005,8 +977,7 @@ function renderValue(){
   var ps=DB.merged;var mr=CFG.marketRate||8;
   scSVG('c-scatter',ps,mr);dwSVG('c-dw',ps,mr);
   var sorted=[].concat(ps).filter(function(p){return p.py0;}).sort(function(a,b){var da=a.py0.aWAR>0?a.aav/a.py0.aWAR:999,db=b.py0.aWAR>0?b.aav/b.py0.aWAR:999;return da-db;});
-  var tb=document.getElementById('b-val');
-  tb.innerHTML=!sorted.length?'<tr><td colspan="11"><div class="emp"><div class="et">No Data</div></div></td></tr>':
+  document.getElementById('b-val').innerHTML=!sorted.length?'<tr><td colspan="11"><div class="emp"><div class="et">No Data</div></div></td></tr>':
     sorted.map(function(p,i){var war=(p.py0&&p.py0.aWAR)||0,war6=(p.py0&&p.py0.aWAR650)||0,dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—',mv=(war*mr).toFixed(1),sur=(war*mr-p.aav).toFixed(1),sc=parseFloat(sur)>=0?'gc':'rc';
       return'<tr><td>'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td><td class="'+gc(war,2,5)+'">'+fm(war,1)+'</td><td>'+fm(war6,1)+'</td><td>'+dw+'</td><td>$'+mv+'M</td><td class="'+sc+'">'+(parseFloat(sur)>=0?'+':'')+'$'+sur+'M</td><td>'+bdg(vRate(p))+'</td></tr>';
     }).join('');
@@ -1069,7 +1040,7 @@ function renderManualTable(){var tb=document.getElementById('b-manual');if(!DB.m
 function loadME(i){var p=DB.manual[i];var mIdx=DB.merged.findIndex(function(m){return normName(m.name)===normName(p.name)&&m.py===p.py;});if(mIdx>=0)openEdit(mIdx);}
 function clearManual(){if(!confirm('Delete all manual entries?'))return;DB.manual=[];saveDB();mergeAll();renderAll();toast('Manual entries cleared.');}
 
-// ═══ CSV UPLOAD ═══
+// ═══ CSV ═══
 function onDrop(e,type){e.preventDefault();var f=e.dataTransfer.files[0];if(f)readUpCSV(f,type);}
 function onCSVUpload(e,type){var f=e.target.files[0];if(f)readUpCSV(f,type);}
 function readUpCSV(file,type){
@@ -1094,9 +1065,9 @@ function renderSuppSummary(){var el=document.getElementById('supp-summary');if(!
 // ═══ SETTINGS ═══
 function saveGSSettings(){var urlEl=document.getElementById('s-gsurl');if(urlEl&&urlEl.value.trim())SCRIPT_URL=urlEl.value.trim();CFG.marketRate=parseFloat(document.getElementById('s-mr').value)||8;CFG.season=document.getElementById('s-yr').value||'2025';saveCFG();refreshAll();toast('Settings saved — reloading...');}
 function saveMktSettings(){CFG.marketRate=parseFloat(document.getElementById('s-mr').value)||8;CFG.season=document.getElementById('s-yr').value||'2025';saveCFG();mergeAll();renderAll();toast('Market settings saved!');}
-function renderDBInfo(){var el=document.getElementById('db-info');if(!el)return;el.innerHTML=['Sheet players: <strong>'+DB.players.length+'</strong>','Manual overrides: <strong>'+DB.manual.length+'</strong>','Merged total: <strong>'+DB.merged.length+'</strong>','All columns available: <strong>'+(DB.allCols.length||'loading...')+'</strong>','FanGraphs rows: <strong>'+DB.fg.length+'</strong>','Savant rows: <strong>'+DB.savant.length+'</strong>','Market $/aWAR: <strong>$'+CFG.marketRate+'M</strong>','Saved password key: <strong>'+PK+'</strong>'].join('<br>');}
+function renderDBInfo(){var el=document.getElementById('db-info');if(!el)return;el.innerHTML=['Sheet players: <strong>'+DB.players.length+'</strong>','Manual overrides: <strong>'+DB.manual.length+'</strong>','Merged total: <strong>'+DB.merged.length+'</strong>','All columns: <strong>'+(DB.allCols.length||'loading...')+'</strong>','FanGraphs rows: <strong>'+DB.fg.length+'</strong>','Savant rows: <strong>'+DB.savant.length+'</strong>','Market $/aWAR: <strong>$'+CFG.marketRate+'M</strong>','Current password: <strong>'+getPw()+'</strong>'].join('<br>');}
 
-// ═══ TABLE UTILS ═══
+// ═══ TABLE ═══
 function fTbl(id,q){var lq=q.toLowerCase(),tbl=document.getElementById(id);if(!tbl)return;tbl.querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(lq)>=0?'':'none';});}
 var sD={};
 function srt(id,col){var tb=document.getElementById(id);if(!tb)return;var body=tb.querySelector('tbody'),rows=Array.from(body.querySelectorAll('tr')).filter(function(r){return r.cells.length>col;});if(!rows.length)return;var k=id+'_'+col;sD[k]=!sD[k];rows.sort(function(a,b){var av=a.cells[col].textContent.replace(/[$MB%+,]/g,'').trim(),bv=b.cells[col].textContent.replace(/[$MB%+,]/g,'').trim(),an=parseFloat(av),bn=parseFloat(bv);if(!isNaN(an)&&!isNaN(bn))return sD[k]?an-bn:bn-an;return sD[k]?av.localeCompare(bv):bv.localeCompare(av);});rows.forEach(function(r){body.appendChild(r);});}
