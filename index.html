@@ -353,7 +353,7 @@ svg.ch{display:block}
       <div class="pgs">Google Sheet master · FanGraphs · Baseball Savant supplemental</div>
       <div class="fc">
         <div class="fct">Google Sheet (Master Source)</div>
-        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script. Edit your sheet directly and click <strong style="color:var(--accent)">Refresh Sheet</strong> to reload.</p>
+        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script JSONP. Edit your sheet directly and click <strong style="color:var(--accent)">Refresh Sheet</strong> to reload.</p>
         <div class="br"><button class="btn" onclick="loadGoogleSheet()">Reload from Google Sheet</button></div>
         <div id="gs-load-status" style="font-size:11px;color:var(--dim);margin-top:10px"></div>
       </div>
@@ -464,7 +464,6 @@ svg.ch{display:block}
           <div style="margin-bottom:12px">
             <label class="fl">Apps Script Web App URL</label>
             <input class="fi" id="s-gsurl" value="https://script.google.com/macros/s/AKfycbzZIVWNJOD0zhRkAlgMomrFSCH4qzswHJBGMOiL0U_EmY_ytaRZ7Eycn5jyby7l6URX/exec">
-            <div style="font-size:10px;color:var(--dim);margin-top:5px">From Extensions > Apps Script > Deploy > Manage Deployments</div>
           </div>
           <div class="br"><button class="btn" onclick="saveGSSettings()">Save &amp; Reload</button></div>
         </div>
@@ -507,7 +506,7 @@ svg.ch{display:block}
 var SCRIPT_URL='https://script.google.com/macros/s/AKfycbzZIVWNJOD0zhRkAlgMomrFSCH4qzswHJBGMOiL0U_EmY_ytaRZ7Eycn5jyby7l6URX/exec';
 var CFG={marketRate:8.0,season:'2025'};
 var DB={players:[],manual:[],fg:[],savant:[],merged:[]};
-var SK='dlgs_v3',PK='dlpw_v3',CK='dlcfg_v3';
+var SK='dlgs_v4',PK='dlpw_v4',CK='dlcfg_v4';
 (function(){
   try{var c=localStorage.getItem(CK);if(c)CFG=Object.assign(CFG,JSON.parse(c));}catch(e){}
   try{var d=localStorage.getItem(SK);if(d){var p=JSON.parse(d);DB.manual=p.manual||[];DB.fg=p.fg||[];DB.savant=p.savant||[];}}catch(e){}
@@ -542,11 +541,27 @@ function loadGoogleSheet(){
   btn.disabled=true;btn.textContent='Loading...';
   setGSStatus('warn','Loading...');
   document.getElementById('gs-load-status').textContent='Fetching from Google Sheet...';
-  var url=document.getElementById('s-gsurl')?document.getElementById('s-gsurl').value:SCRIPT_URL;
-  if(!url||url.trim()==='') url=SCRIPT_URL;
-  fetch(url.trim())
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-    .then(function(data){
+  var urlEl=document.getElementById('s-gsurl');
+  var url=(urlEl&&urlEl.value.trim())?urlEl.value.trim():SCRIPT_URL;
+  var cbName='dlCB_'+Date.now();
+  var script=document.createElement('script');
+  var done=false;
+  var timer=setTimeout(function(){
+    if(done)return;
+    done=true;
+    cleanup();
+    setGSStatus('off','Timeout');
+    document.getElementById('gs-load-status').textContent='Request timed out. Check Apps Script URL.';
+    btn.disabled=false;btn.textContent='Refresh Sheet';
+    mergeAll();renderAll();
+    toast('Sheet load timed out');
+  },20000);
+  window[cbName]=function(data){
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    cleanup();
+    try{
       var allPlayers=[];
       Object.keys(data).forEach(function(sheetName){
         var rows=data[sheetName];
@@ -571,15 +586,31 @@ function loadGoogleSheet(){
       document.getElementById('sb-time').textContent=new Date().toLocaleTimeString();
       document.getElementById('gs-load-status').textContent='Loaded '+allPlayers.length+' players from '+Object.keys(data).length+' tab(s) at '+new Date().toLocaleTimeString();
       toast('Loaded '+allPlayers.length+' players');
-    })
-    .catch(function(err){
-      console.error(err);
-      setGSStatus('off','Error: '+err.message);
-      document.getElementById('gs-load-status').textContent='Error: '+err.message;
+    }catch(err){
+      setGSStatus('off','Parse error');
+      document.getElementById('gs-load-status').textContent='Parse error: '+err.message;
       mergeAll();renderAll();
-      toast('Sheet load failed — using manual data');
-    })
-    .finally(function(){btn.disabled=false;btn.textContent='Refresh Sheet';});
+      toast('Data parse error');
+    }
+    btn.disabled=false;btn.textContent='Refresh Sheet';
+  };
+  function cleanup(){
+    if(script.parentNode)script.parentNode.removeChild(script);
+    try{delete window[cbName];}catch(e){window[cbName]=undefined;}
+  }
+  script.onerror=function(){
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    cleanup();
+    setGSStatus('off','Load error');
+    document.getElementById('gs-load-status').textContent='Script load error. Check Apps Script URL and deployment.';
+    btn.disabled=false;btn.textContent='Refresh Sheet';
+    mergeAll();renderAll();
+    toast('Sheet load failed');
+  };
+  script.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cbName;
+  document.head.appendChild(script);
 }
 
 function buildPlayer(row,headers,vals){
