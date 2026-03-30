@@ -353,12 +353,8 @@ svg.ch{display:block}
       <div class="pgs">Google Sheet master · FanGraphs · Baseball Savant supplemental</div>
       <div class="fc">
         <div class="fct">Google Sheet (Master Source)</div>
-        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Your Google Sheet is the primary data source. Edit your sheet directly and click <strong style="color:var(--accent)">Refresh Sheet</strong> in the top bar to reload.</p>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--dim);font-family:monospace;margin-bottom:14px;word-break:break-all" id="gs-url-display">—</div>
-        <div class="br">
-          <button class="btn" onclick="loadGoogleSheet()">Reload from Google Sheet</button>
-          <button class="btn bts" onclick="go('settings')">Change Sheet ID</button>
-        </div>
+        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script. Edit your sheet directly and click <strong style="color:var(--accent)">Refresh Sheet</strong> to reload.</p>
+        <div class="br"><button class="btn" onclick="loadGoogleSheet()">Reload from Google Sheet</button></div>
         <div id="gs-load-status" style="font-size:11px;color:var(--dim);margin-top:10px"></div>
       </div>
       <div class="fc">
@@ -464,20 +460,13 @@ svg.ch{display:block}
       <div class="pgs">Data sources · market rates · password</div>
       <div class="sg">
         <div class="fc">
-          <div class="fct" style="color:var(--blue)">Google Sheet Config</div>
+          <div class="fct" style="color:var(--blue)">Google Apps Script URL</div>
           <div style="margin-bottom:12px">
-            <label class="fl">Google Sheet ID</label>
-            <input class="fi" id="s-gsid" value="1C4pyEIeGXAjf4YJ8VjREzJ_biMWc3KiK">
-            <div style="font-size:10px;color:var(--dim);margin-top:5px">Found in your sheet URL after /spreadsheets/d/</div>
+            <label class="fl">Apps Script Web App URL</label>
+            <input class="fi" id="s-gsurl" value="https://script.google.com/macros/s/AKfycbzZIVWNJOD0zhRkAlgMomrFSCH4qzswHJBGMOiL0U_EmY_ytaRZ7Eycn5jyby7l6URX/exec">
+            <div style="font-size:10px;color:var(--dim);margin-top:5px">From Extensions > Apps Script > Deploy > Manage Deployments</div>
           </div>
-          <div style="margin-bottom:12px">
-            <label class="fl">Header Row</label>
-            <select class="fs" id="s-hrow">
-              <option value="2" selected>Row 2 (row 1 = section labels)</option>
-              <option value="1">Row 1</option>
-            </select>
-          </div>
-          <div class="br"><button class="btn" onclick="saveGSSettings()">Save &amp; Reload Sheet</button></div>
+          <div class="br"><button class="btn" onclick="saveGSSettings()">Save &amp; Reload</button></div>
         </div>
         <div class="fc">
           <div class="fct" style="color:var(--green)">Market Rate Settings</div>
@@ -515,10 +504,14 @@ svg.ch{display:block}
 <div id="toast"></div>
 
 <script>
-var CFG={gsId:'1C4pyEIeGXAjf4YJ8VjREzJ_biMWc3KiK',hRow:2,marketRate:8.0,season:'2025'};
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbzZIVWNJOD0zhRkAlgMomrFSCH4qzswHJBGMOiL0U_EmY_ytaRZ7Eycn5jyby7l6URX/exec';
+var CFG={marketRate:8.0,season:'2025'};
 var DB={players:[],manual:[],fg:[],savant:[],merged:[]};
-var SK='dlgs_v2',PK='dlpw_v2',CK='dlcfg_v2';
-(function(){try{var c=localStorage.getItem(CK);if(c)CFG=Object.assign(CFG,JSON.parse(c));}catch(e){}try{var d=localStorage.getItem(SK);if(d){var p=JSON.parse(d);DB.manual=p.manual||[];DB.fg=p.fg||[];DB.savant=p.savant||[];}}catch(e){}})();
+var SK='dlgs_v3',PK='dlpw_v3',CK='dlcfg_v3';
+(function(){
+  try{var c=localStorage.getItem(CK);if(c)CFG=Object.assign(CFG,JSON.parse(c));}catch(e){}
+  try{var d=localStorage.getItem(SK);if(d){var p=JSON.parse(d);DB.manual=p.manual||[];DB.fg=p.fg||[];DB.savant=p.savant||[];}}catch(e){}
+})();
 function saveDB(){try{localStorage.setItem(SK,JSON.stringify({manual:DB.manual,fg:DB.fg,savant:DB.savant}));}catch(e){}}
 function saveCFG(){try{localStorage.setItem(CK,JSON.stringify(CFG));}catch(e){}}
 function getPw(){return localStorage.getItem(PK)||'diamond1';}
@@ -528,7 +521,6 @@ function checkPw(){
   if(val===getPw()){
     document.getElementById('lock').classList.add('gone');
     document.getElementById('app').classList.add('on');
-    document.getElementById('s-gsid').value=CFG.gsId;
     document.getElementById('s-mr').value=CFG.marketRate;
     document.getElementById('s-yr').value=CFG.season;
     loadGoogleSheet();
@@ -537,19 +529,93 @@ function checkPw(){
     document.getElementById('pw-in').value='';
   }
 }
-
 document.addEventListener('DOMContentLoaded',function(){
   var inp=document.getElementById('pw-in');
   if(inp) inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPw();});
 });
 
 function chgPw(){var cur=document.getElementById('s-cur').value,nw=document.getElementById('s-new').value,cf=document.getElementById('s-cfm').value,msg=document.getElementById('pw-msg');if(cur!==getPw()){msg.textContent='Current password incorrect.';return;}if(nw.length<4){msg.textContent='Min 4 characters.';return;}if(nw!==cf){msg.textContent='Passwords do not match.';return;}localStorage.setItem(PK,nw);msg.style.color='var(--green)';msg.textContent='Password updated!';document.getElementById('s-cur').value='';document.getElementById('s-new').value='';document.getElementById('s-cfm').value='';setTimeout(function(){msg.textContent='';msg.style.color='var(--red)';},3000);}
-function go(id){document.querySelectorAll('.pnl').forEach(function(p){p.classList.remove('on');});document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});document.getElementById('p-'+id).classList.add('on');document.querySelector('[data-p="'+id+'"]').classList.add('on');if(id==='comps'){fillCompSelects();renderCompScatter();}if(id==='value')renderValue();if(id==='trend')renderTrend();if(id==='stats')renderStats();if(id==='settings')renderDBInfo();if(id==='sources'){renderSuppSummary();document.getElementById('gs-url-display').textContent=gsCSVUrl();}if(id==='edit')renderManualTable();}
-function gsCSVUrl(){return'https://docs.google.com/spreadsheets/d/'+CFG.gsId+'/export?format=csv&id='+CFG.gsId;}
-function loadGoogleSheet(){var btn=document.getElementById('refresh-btn');btn.disabled=true;btn.textContent='Loading...';setGSStatus('warn','Loading...');var url=gsCSVUrl();var proxy='https://corsproxy.io/?'+encodeURIComponent(url);fetch(proxy).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(csv){var players=parseGSCSV(csv);if(!players.length)throw new Error('No rows found');DB.players=players;mergeAll();renderAll();setGSStatus('on','Google Sheet');document.getElementById('sb-src').textContent='Google Sheet';document.getElementById('sb-time').textContent=new Date().toLocaleTimeString();document.getElementById('gs-load-status').textContent='Loaded '+players.length+' players at '+new Date().toLocaleTimeString();toast('Loaded '+players.length+' players');}).catch(function(err){console.error(err);setGSStatus('off','Error - using manual data');document.getElementById('gs-load-status').textContent='Error: '+err.message;mergeAll();renderAll();toast('Sheet load failed - using manual data');}).finally(function(){btn.disabled=false;btn.textContent='Refresh Sheet';});}
-function parseGSCSV(csv){var lines=csv.split(/\r?\n/).filter(function(l){return l.trim();});if(lines.length<3)return[];var headers=parseCSVLine(lines[1]).map(function(h){return h.trim();});var players=[];for(var i=2;i<lines.length;i++){var vals=parseCSVLine(lines[i]);if(!vals[0]||!vals[0].trim()||vals[0].trim()==='Player')continue;var row={};headers.forEach(function(h,j){row[h]=(vals[j]||'').trim();});if(!row['Player'])continue;var p=buildPlayer(row,headers,vals);if(p)players.push(p);}return players;}
-function buildPlayer(row,headers,vals){var g=function(k){return(row[k]||'').trim();};var gni=function(k){return parseInt(g(k))||0;};function findCols(name){var idxs=[];headers.forEach(function(h,i){if(h===name)idxs.push(i);});return idxs;}var vn=function(i){return parseFloat(vals[i])||0;};function getSet(idx){var pick=function(arr){return arr.length>idx?vn(arr[idx]):null;};var gC=findCols('G'),paC=findCols('PA'),hrC=findCols('HR'),rbiC=findCols('RBI'),sbC=findCols('SB'),bbC=findCols('BB%'),kC=findCols('K%'),avgC=findCols('AVG'),obpC=findCols('OBP'),slgC=findCols('SLG'),isoC=findCols('ISO'),opspC=findCols('OPS+'),wrcC=findCols('wRC+'),wobaC=findCols('wOBA'),xavgC=findCols('xAVG'),xslgC=findCols('xSLG'),xwobaC=findCols('xwOBA'),brlC=findCols('Brl%'),hhC=findCols('HH%'),laC=findCols('LA'),swspC=findCols('SwSp%'),maxevC=findCols('Max EV'),avgevC=findCols('AvgEV'),drsC=findCols('DRS'),oaaC=findCols('OAA'),rwarC=findCols('rWAR'),fwarC=findCols('fWAR'),awarC=findCols('aWAR'),awar6C=findCols('aWAR/650');var o={};o.G=pick(gC);o.PA=pick(paC);o.HR=pick(hrC);o.RBI=pick(rbiC);o.SB=pick(sbC);o.BBpct=pick(bbC);o.Kpct=pick(kC);o.AVG=pick(avgC);o.OBP=pick(obpC);o.SLG=pick(slgC);o.ISO=pick(isoC);o.OPSplus=pick(opspC);o.wRCplus=pick(wrcC);o.wOBA=pick(wobaC);o.xAVG=pick(xavgC);o.xSLG=pick(xslgC);o.xwOBA=pick(xwobaC);o.Brl=pick(brlC);o.HH=pick(hhC);o.LA=pick(laC);o.SwSp=pick(swspC);o.MaxEV=pick(maxevC);o.AvgEV=pick(avgevC);o.DRS=pick(drsC);o.OAA=pick(oaaC);o.rWAR=pick(rwarC);o.fWAR=pick(fwarC);o.aWAR=pick(awarC);o.aWAR650=pick(awar6C);o.OPS=o.OBP&&o.SLG?Math.round((o.OBP+o.SLG)*1000)/1000:null;return o;}function parseMoney(s){s=(s||'').replace(/[$,]/g,'').trim();var v=parseFloat(s)||0;return v>1000000?v/1000000:v;}return{name:g('Player'),py:gni('PY')||parseInt(g('PY'))||0,sigAge:parseFloat(g('SigAge'))||0,pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate'),fy:g('FY'),term:gni('Term'),guar:parseMoney(g('GUAR')),aav:parseMoney(g('AAV')),code:g('Code'),source:'gs',py0:getSet(0),py1:getSet(1),py2:getSet(2)};}
-function parseCSVLine(line){var result=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){result.push(cur);cur='';}else cur+=c;}result.push(cur);return result;}
+function go(id){document.querySelectorAll('.pnl').forEach(function(p){p.classList.remove('on');});document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});document.getElementById('p-'+id).classList.add('on');document.querySelector('[data-p="'+id+'"]').classList.add('on');if(id==='comps'){fillCompSelects();renderCompScatter();}if(id==='value')renderValue();if(id==='trend')renderTrend();if(id==='stats')renderStats();if(id==='settings')renderDBInfo();if(id==='sources')renderSuppSummary();if(id==='edit')renderManualTable();}
+
+function loadGoogleSheet(){
+  var btn=document.getElementById('refresh-btn');
+  btn.disabled=true;btn.textContent='Loading...';
+  setGSStatus('warn','Loading...');
+  document.getElementById('gs-load-status').textContent='Fetching from Google Sheet...';
+  var url=document.getElementById('s-gsurl')?document.getElementById('s-gsurl').value:SCRIPT_URL;
+  if(!url||url.trim()==='') url=SCRIPT_URL;
+  fetch(url.trim())
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(data){
+      var allPlayers=[];
+      Object.keys(data).forEach(function(sheetName){
+        var rows=data[sheetName];
+        if(!rows||rows.length<3)return;
+        var headers=rows[1].map(function(h){return String(h||'').trim();});
+        for(var i=2;i<rows.length;i++){
+          var vals=rows[i];
+          var firstName=String(vals[0]||'').trim();
+          if(!firstName||firstName==='Player')continue;
+          var row={};
+          headers.forEach(function(h,j){row[h]=vals[j]!==undefined&&vals[j]!==null?String(vals[j]).trim():'';});
+          if(!row['Player'])continue;
+          var p=buildPlayer(row,headers,vals);
+          if(p){p.sheetTab=sheetName;allPlayers.push(p);}
+        }
+      });
+      if(!allPlayers.length)throw new Error('No player rows found');
+      DB.players=allPlayers;
+      mergeAll();renderAll();
+      setGSStatus('on','Google Sheet');
+      document.getElementById('sb-src').textContent='Google Sheet';
+      document.getElementById('sb-time').textContent=new Date().toLocaleTimeString();
+      document.getElementById('gs-load-status').textContent='Loaded '+allPlayers.length+' players from '+Object.keys(data).length+' tab(s) at '+new Date().toLocaleTimeString();
+      toast('Loaded '+allPlayers.length+' players');
+    })
+    .catch(function(err){
+      console.error(err);
+      setGSStatus('off','Error: '+err.message);
+      document.getElementById('gs-load-status').textContent='Error: '+err.message;
+      mergeAll();renderAll();
+      toast('Sheet load failed — using manual data');
+    })
+    .finally(function(){btn.disabled=false;btn.textContent='Refresh Sheet';});
+}
+
+function buildPlayer(row,headers,vals){
+  var g=function(k){return(row[k]||'').trim();};
+  var gni=function(k){return parseInt(g(k))||0;};
+  function findCols(name){var idxs=[];headers.forEach(function(h,i){if(h===name)idxs.push(i);});return idxs;}
+  var vn=function(i){return parseFloat(vals[i])||0;};
+  function getSet(idx){
+    var pick=function(arr){return arr.length>idx?vn(arr[idx]):null;};
+    var gC=findCols('G'),paC=findCols('PA'),hrC=findCols('HR'),rbiC=findCols('RBI'),
+        sbC=findCols('SB'),bbC=findCols('BB%'),kC=findCols('K%'),avgC=findCols('AVG'),
+        obpC=findCols('OBP'),slgC=findCols('SLG'),isoC=findCols('ISO'),
+        opspC=findCols('OPS+'),wrcC=findCols('wRC+'),wobaC=findCols('wOBA'),
+        xavgC=findCols('xAVG'),xslgC=findCols('xSLG'),xwobaC=findCols('xwOBA'),
+        brlC=findCols('Brl%'),hhC=findCols('HH%'),laC=findCols('LA'),
+        swspC=findCols('SwSp%'),maxevC=findCols('Max EV'),avgevC=findCols('AvgEV'),
+        drsC=findCols('DRS'),oaaC=findCols('OAA'),rwarC=findCols('rWAR'),
+        fwarC=findCols('fWAR'),awarC=findCols('aWAR'),awar6C=findCols('aWAR/650');
+    var o={};
+    o.G=pick(gC);o.PA=pick(paC);o.HR=pick(hrC);o.RBI=pick(rbiC);o.SB=pick(sbC);
+    o.BBpct=pick(bbC);o.Kpct=pick(kC);o.AVG=pick(avgC);o.OBP=pick(obpC);
+    o.SLG=pick(slgC);o.ISO=pick(isoC);o.OPSplus=pick(opspC);o.wRCplus=pick(wrcC);
+    o.wOBA=pick(wobaC);o.xAVG=pick(xavgC);o.xSLG=pick(xslgC);o.xwOBA=pick(xwobaC);
+    o.Brl=pick(brlC);o.HH=pick(hhC);o.LA=pick(laC);o.SwSp=pick(swspC);
+    o.MaxEV=pick(maxevC);o.AvgEV=pick(avgevC);o.DRS=pick(drsC);o.OAA=pick(oaaC);
+    o.rWAR=pick(rwarC);o.fWAR=pick(fwarC);o.aWAR=pick(awarC);o.aWAR650=pick(awar6C);
+    o.OPS=o.OBP&&o.SLG?Math.round((o.OBP+o.SLG)*1000)/1000:null;
+    return o;
+  }
+  function parseMoney(s){s=(s||'').replace(/[$,]/g,'').trim();var v=parseFloat(s)||0;return v>1000000?v/1000000:v;}
+  return{name:g('Player'),py:gni('PY')||parseInt(g('PY'))||0,sigAge:parseFloat(g('SigAge'))||0,
+    pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate'),fy:g('FY'),term:gni('Term'),
+    guar:parseMoney(g('GUAR')),aav:parseMoney(g('AAV')),code:g('Code'),source:'gs',
+    py0:getSet(0),py1:getSet(1),py2:getSet(2)};
+}
+
 function mergeAll(){var base=DB.players.slice();DB.manual.forEach(function(m){var idx=base.findIndex(function(p){return normName(p.name)===normName(m.name)&&p.py===m.py;});if(idx>=0){Object.keys(m).forEach(function(k){if(m[k]!==null&&m[k]!==undefined&&m[k]!=='')base[idx][k]=m[k];});base[idx].source='manual';}else{base.push(Object.assign({source:'manual'},m));}});DB.fg.forEach(function(fg){var nm=fg.Name||fg.name||'',yr=String(fg.Season||fg.season||fg.Year||fg.year||'');if(!nm)return;var idx=base.findIndex(function(p){return normName(p.name)===normName(nm)&&String(p.py)===yr;});if(idx>=0){var py0=base[idx].py0||{};if(fg.WAR||fg.war)py0.fWAR=parseFloat(fg.WAR||fg.war)||py0.fWAR;if(fg['wRC+'])py0.wRCplus=parseFloat(fg['wRC+'])||py0.wRCplus;if(fg.OBP)py0.OBP=parseFloat(fg.OBP)||py0.OBP;if(fg.SLG)py0.SLG=parseFloat(fg.SLG)||py0.SLG;base[idx].py0=py0;base[idx].fgMerged=true;}});DB.savant.forEach(function(sv){var nm=sv.player_name||sv.name||sv.Name||'';var yr=String(sv.game_year||sv.year||sv.Year||sv.season||'');if(!nm)return;var idx=base.findIndex(function(p){return normName(p.name)===normName(nm)&&String(p.py)===yr;});if(idx>=0){var py0=base[idx].py0||{};if(sv.exit_velocity_avg)py0.AvgEV=parseFloat(sv.exit_velocity_avg)||py0.AvgEV;if(sv.launch_angle_avg)py0.LA=parseFloat(sv.launch_angle_avg)||py0.LA;if(sv.barrel_batted_rate)py0.Brl=parseFloat(sv.barrel_batted_rate)||py0.Brl;if(sv.hard_hit_percent)py0.HH=parseFloat(sv.hard_hit_percent)||py0.HH;if(sv.xba)py0.xAVG=parseFloat(sv.xba)||py0.xAVG;if(sv.xslg)py0.xSLG=parseFloat(sv.xslg)||py0.xSLG;if(sv.xwoba)py0.xwOBA=parseFloat(sv.xwoba)||py0.xwOBA;if(sv.max_exit_velocity)py0.MaxEV=parseFloat(sv.max_exit_velocity)||py0.MaxEV;base[idx].py0=py0;base[idx].svMerged=true;}});DB.merged=base;updateSB();}
 function normName(n){if(!n)return'';return n.toLowerCase().replace(/[^a-z]/g,'');}
 function setGSStatus(state,label){var el=document.getElementById('gs-status');el.innerHTML='<span class="dot '+(state==='on'?'':state==='warn'?'warn':'off')+'"></span>'+label;}
@@ -563,7 +629,7 @@ function fm(x,d){if(x===null||x===undefined||isNaN(x)||x==='')return'—';return
 function fa(x){if(!x||isNaN(x))return'—';var s=parseFloat(x).toFixed(3);return s.replace(/^0/,'');}
 function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%';}
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
-function renderOverview(){var ps=DB.merged;var totalGuar=ps.reduce(function(a,p){return a+(p.guar||0);},0);var totalAav=ps.reduce(function(a,p){return a+(p.aav||0);},0);var wars=ps.map(function(p){return(p.py0&&p.py0.aWAR)||0;}).filter(function(w){return w>0;});var avgWar=wars.length?wars.reduce(function(a,b){return a+b;},0)/wars.length:0;var ages=ps.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;var terms=ps.map(function(p){return p.term||0;}).filter(function(t){return t>0;});var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;var above=ps.filter(function(p){return vRate(p)==='above';}).length;var below=ps.filter(function(p){return vRate(p)==='below';}).length;document.getElementById('k-n').textContent=ps.length;document.getElementById('k-guar').textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');document.getElementById('k-aav').textContent='$'+(ps.length?(totalAav/ps.length).toFixed(1):'0')+'M';document.getElementById('k-ab').textContent=above;document.getElementById('k-bl').textContent=below;document.getElementById('k-war').textContent=avgWar.toFixed(1);document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);var tb=document.getElementById('b-ov');var posF='';var posEl=document.querySelector('select[onchange="fPos(this.value)"]');if(posEl)posF=posEl.value;var yrF=document.getElementById('yr-filter')?document.getElementById('yr-filter').value:'';var filtered=ps.filter(function(p){return(!posF||p.pPos===posF)&&(!yrF||String(p.py)===String(yrF));});if(!filtered.length){tb.innerHTML='<tr><td colspan="13"><div class="emp"><div class="ei">&#128203;</div><div class="et">No Players Loaded</div><div class="ex">Your Google Sheet loads automatically. Click Refresh Sheet if needed.</div></div></td></tr>';return;}tb.innerHTML=filtered.map(function(p){var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';return'<tr data-pos="'+(p.pPos||'')+'" data-py="'+(p.py||'')+'">'+'<td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.sigDate||'—')+'</td><td>'+(p.sigAge?p.sigAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td><td>$'+(p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):'0')+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';}).join('');var topAAV=[].concat(filtered).sort(function(a,b){return(b.aav||0)-(a.aav||0);}).slice(0,20);bSVG('c-aav',topAAV.map(function(p){return{l:p.name.split(',')[0],v:p.aav||0,c:'#e8c547'};}),true);var posMap={};filtered.forEach(function(p){var pos=p.pPos||'?';posMap[pos]=(posMap[pos]||0)+(p.guar||0);});var cols=['#e8c547','#4fc3f7','#66bb6a','#ef5350','#ce93d8','#ff9800','#26c6da'];var posSegs=Object.keys(posMap).sort(function(a,b){return posMap[b]-posMap[a];}).slice(0,7).map(function(k,i){return{l:k,v:posMap[k],c:cols[i%cols.length]};});pSVG('c-pos-guar',posSegs);}
+function renderOverview(){var ps=DB.merged;var totalGuar=ps.reduce(function(a,p){return a+(p.guar||0);},0);var totalAav=ps.reduce(function(a,p){return a+(p.aav||0);},0);var wars=ps.map(function(p){return(p.py0&&p.py0.aWAR)||0;}).filter(function(w){return w>0;});var avgWar=wars.length?wars.reduce(function(a,b){return a+b;},0)/wars.length:0;var ages=ps.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;var terms=ps.map(function(p){return p.term||0;}).filter(function(t){return t>0;});var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;var above=ps.filter(function(p){return vRate(p)==='above';}).length;var below=ps.filter(function(p){return vRate(p)==='below';}).length;document.getElementById('k-n').textContent=ps.length;document.getElementById('k-guar').textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');document.getElementById('k-aav').textContent='$'+(ps.length?(totalAav/ps.length).toFixed(1):'0')+'M';document.getElementById('k-ab').textContent=above;document.getElementById('k-bl').textContent=below;document.getElementById('k-war').textContent=avgWar.toFixed(1);document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);var tb=document.getElementById('b-ov');var posF='';var posEl=document.querySelector('select[onchange="fPos(this.value)"]');if(posEl)posF=posEl.value;var yrF=document.getElementById('yr-filter')?document.getElementById('yr-filter').value:'';var filtered=ps.filter(function(p){return(!posF||p.pPos===posF)&&(!yrF||String(p.py)===String(yrF));});if(!filtered.length){tb.innerHTML='<tr><td colspan="13"><div class="emp"><div class="ei">&#128203;</div><div class="et">No Players Loaded</div><div class="ex">Click Refresh Sheet in the top bar to load your data.</div></div></td></tr>';return;}tb.innerHTML=filtered.map(function(p){var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';return'<tr data-pos="'+(p.pPos||'')+'" data-py="'+(p.py||'')+'">'+'<td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.sigDate||'—')+'</td><td>'+(p.sigAge?p.sigAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td><td>$'+(p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):'0')+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';}).join('');var topAAV=[].concat(filtered).sort(function(a,b){return(b.aav||0)-(a.aav||0);}).slice(0,20);bSVG('c-aav',topAAV.map(function(p){return{l:p.name.split(',')[0],v:p.aav||0,c:'#e8c547'};}),true);var posMap={};filtered.forEach(function(p){var pos=p.pPos||'?';posMap[pos]=(posMap[pos]||0)+(p.guar||0);});var cols=['#e8c547','#4fc3f7','#66bb6a','#ef5350','#ce93d8','#ff9800','#26c6da'];var posSegs=Object.keys(posMap).sort(function(a,b){return posMap[b]-posMap[a];}).slice(0,7).map(function(k,i){return{l:k,v:posMap[k],c:cols[i%cols.length]};});pSVG('c-pos-guar',posSegs);}
 function renderStats(){var yrF=document.getElementById('stat-yr')?document.getElementById('stat-yr').value:'';var ps=DB.merged.filter(function(p){return!yrF||String(p.py)===String(yrF);});var tb=document.getElementById('b-bat');tb.innerHTML=!ps.length?'<tr><td colspan="18"><div class="emp"><div class="et">No Data</div></div></td></tr>':ps.map(function(p){var s=p.py0||{};var ops=s.OPS||(s.OBP&&s.SLG?(s.OBP+s.SLG):null);return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(s.G||'—')+'</td><td>'+(s.PA||'—')+'</td><td>'+(s.HR||'—')+'</td><td>'+(s.RBI||'—')+'</td><td>'+(s.SB||'—')+'</td><td class="'+gc(s.AVG,.240,.300)+'">'+fa(s.AVG)+'</td><td class="'+gc(s.OBP,.310,.380)+'">'+fa(s.OBP)+'</td><td class="'+gc(s.SLG,.400,.520)+'">'+fa(s.SLG)+'</td><td class="'+gc(ops,.700,.900)+'">'+fa(ops)+'</td><td class="'+gc(s.OPSplus,100,140)+'">'+(s.OPSplus||'—')+'</td><td class="'+gc(s.wRCplus,100,140)+'">'+(s.wRCplus||'—')+'</td><td>'+fmPct(s.BBpct)+'</td><td>'+fmPct(s.Kpct)+'</td><td>'+fa(s.ISO)+'</td><td>'+fa(s.wOBA)+'</td></tr>';}).join('');var tb2=document.getElementById('b-sc');tb2.innerHTML=!ps.length?'<tr><td colspan="17"></td></tr>':ps.map(function(p){var s=p.py0||{};return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+fa(s.xAVG)+'</td><td>'+fa(s.xSLG)+'</td><td>'+fa(s.xwOBA)+'</td><td class="'+gc(s.Brl,5,15)+'">'+fmPct(s.Brl)+'</td><td class="'+gc(s.HH,35,50)+'">'+fmPct(s.HH)+'</td><td>'+fm(s.LA,1)+'</td><td class="'+gc(s.MaxEV,105,115)+'">'+fm(s.MaxEV,1)+'</td><td class="'+gc(s.AvgEV,87,92)+'">'+fm(s.AvgEV,1)+'</td><td>'+fmPct(s.SwSp)+'</td><td>'+fm(s.DRS,0)+'</td><td>'+fm(s.OAA,1)+'</td><td class="'+gc(s.rWAR,2,5)+'">'+fm(s.rWAR,1)+'</td><td class="'+gc(s.fWAR,2,5)+'">'+fm(s.fWAR,1)+'</td><td class="'+gc(s.aWAR,2,5)+'">'+fm(s.aWAR,1)+'</td><td class="'+gc(s.aWAR650,2,5)+'">'+fm(s.aWAR650,1)+'</td></tr>';}).join('');var warData=[].concat(ps).filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,20);bSVG('c-war',warData.map(function(p){return{l:p.name.split(',')[0],v:p.py0.aWAR||0,c:'#e8c547'};}));var wrcData=[].concat(ps).filter(function(p){return p.py0&&p.py0.wRCplus;}).sort(function(a,b){return(b.py0.wRCplus||0)-(a.py0.wRCplus||0);}).slice(0,20);bSVG('c-wrc',wrcData.map(function(p){return{l:p.name.split(',')[0],v:p.py0.wRCplus||0,c:'#4fc3f7'};}));}
 function renderTrend(){var ps=DB.merged.filter(function(p){return p.py0;});var tb=document.getElementById('b-trend');function arrow(p2,p1,p0){if(!p2||!p1||!p0)return'—';return p0-p1>0.5?'<span class="gc">&#9650; Rising</span>':p0-p1<-0.5?'<span class="rc">&#9660; Declining</span>':'<span class="ac">&#9654; Stable</span>';}tb.innerHTML=!ps.length?'<tr><td colspan="13"><div class="emp"><div class="et">No Data</div></div></td></tr>':ps.map(function(p){var p0=p.py0||{},p1=p.py1||{},p2=p.py2||{};var ops0=p0.OBP&&p0.SLG?p0.OBP+p0.SLG:null,ops1=p1.OBP&&p1.SLG?p1.OBP+p1.SLG:null,ops2=p2.OBP&&p2.SLG?p2.OBP+p2.SLG:null;return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="'+gc(p2.aWAR,2,5)+'">'+fm(p2.aWAR,1)+'</td><td class="'+gc(p1.aWAR,2,5)+'">'+fm(p1.aWAR,1)+'</td><td class="'+gc(p0.aWAR,2,5)+'"><strong>'+fm(p0.aWAR,1)+'</strong></td><td>'+arrow(p2.aWAR,p1.aWAR,p0.aWAR)+'</td><td>'+fa(ops2)+'</td><td>'+fa(ops1)+'</td><td><strong>'+fa(ops0)+'</strong></td><td>'+(p2.wRCplus||'—')+'</td><td>'+(p1.wRCplus||'—')+'</td><td><strong>'+(p0.wRCplus||'—')+'</strong></td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td></tr>';}).join('');var top=ps.filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,10);lgSVG('c-traj',top,'aWAR');lgSVG('c-ops-traj',top,'OPS');}
 function renderValue(){var ps=DB.merged;var mr=CFG.marketRate||8;scSVG('c-scatter',ps,mr);dwSVG('c-dw',ps,mr);var sorted=[].concat(ps).filter(function(p){return p.py0;}).sort(function(a,b){var da=a.py0.aWAR>0?a.aav/a.py0.aWAR:999,db=b.py0.aWAR>0?b.aav/b.py0.aWAR:999;return da-db;});var tb=document.getElementById('b-val');tb.innerHTML=!sorted.length?'<tr><td colspan="11"><div class="emp"><div class="et">No Data</div></div></td></tr>':sorted.map(function(p,i){var war=(p.py0&&p.py0.aWAR)||0,war6=(p.py0&&p.py0.aWAR650)||0,dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—',mv=(war*mr).toFixed(1),sur=(war*mr-p.aav).toFixed(1),sc=parseFloat(sur)>=0?'gc':'rc';return'<tr><td>'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td><td class="'+gc(war,2,5)+'">'+fm(war,1)+'</td><td>'+fm(war6,1)+'</td><td>'+dw+'</td><td>$'+mv+'M</td><td class="'+sc+'">'+(parseFloat(sur)>=0?'+':'')+'$'+sur+'M</td><td>'+bdg(vRate(p))+'</td></tr>';}).join('');}
@@ -583,11 +649,12 @@ function clearManual(){if(!confirm('Delete all manual entries?'))return;DB.manua
 function onDrop(e,type){e.preventDefault();var f=e.dataTransfer.files[0];if(f)readUpCSV(f,type);}
 function onCSVUpload(e,type){var f=e.target.files[0];if(f)readUpCSV(f,type);}
 function readUpCSV(file,type){var statusEl=document.getElementById(type+'-status');statusEl.textContent='Reading...';var reader=new FileReader();reader.onload=function(e){var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim();});if(lines.length<2){statusEl.textContent='Error: file empty.';return;}var hdrs=parseCSVLine(lines[0]).map(function(h){return h.trim();});var rows=[];lines.slice(1).forEach(function(line){if(!line.trim())return;var vals=parseCSVLine(line),row={};hdrs.forEach(function(h,i){row[h]=(vals[i]||'').trim();});rows.push(row);});if(type==='fg')DB.fg=rows;else DB.savant=rows;saveDB();mergeAll();renderAll();statusEl.style.color='var(--green)';statusEl.textContent='Loaded '+rows.length+' rows from '+file.name;toast('Imported '+rows.length+' rows ('+type.toUpperCase()+')');};reader.readAsText(file);}
+function parseCSVLine(line){var result=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){result.push(cur);cur='';}else cur+=c;}result.push(cur);return result;}
 function clearSupplemental(){if(!confirm('Clear all supplemental data?'))return;DB.fg=[];DB.savant=[];saveDB();mergeAll();renderAll();toast('Supplemental data cleared.');}
-function renderSuppSummary(){var el=document.getElementById('supp-summary');if(!el)return;var lines=[];lines.push(DB.fg.length?'<span class="bc">FanGraphs: '+DB.fg.length+' rows</span>':'<span style="color:var(--dim)">FanGraphs: not loaded</span>');lines.push(DB.savant.length?'<span style="color:var(--purple)">Savant: '+DB.savant.length+' rows</span>':'<span style="color:var(--dim)">Savant: not loaded</span>');var merged=DB.merged.filter(function(p){return p.fgMerged||p.svMerged;}).length;lines.push('<span class="gc">Merged matches: '+merged+' players enriched</span>');el.innerHTML=lines.join('<br>');}
-function saveGSSettings(){CFG.gsId=document.getElementById('s-gsid').value.trim();CFG.hRow=parseInt(document.getElementById('s-hrow').value)||2;saveCFG();loadGoogleSheet();toast('Settings saved - reloading...');}
+function renderSuppSummary(){var el=document.getElementById('supp-summary');if(!el)return;var lines=[];lines.push(DB.fg.length?'<span class="bc">FanGraphs: '+DB.fg.length+' rows</span>':'<span style="color:var(--dim)">FanGraphs: not loaded</span>');lines.push(DB.savant.length?'<span style="color:var(--purple)">Savant: '+DB.savant.length+' rows</span>':'<span style="color:var(--dim)">Savant: not loaded</span>');var merged=DB.merged.filter(function(p){return p.fgMerged||p.svMerged;}).length;lines.push('<span class="gc">Merged: '+merged+' players enriched</span>');el.innerHTML=lines.join('<br>');}
+function saveGSSettings(){var urlEl=document.getElementById('s-gsurl');if(urlEl&&urlEl.value.trim())SCRIPT_URL=urlEl.value.trim();CFG.marketRate=parseFloat(document.getElementById('s-mr').value)||8;CFG.season=document.getElementById('s-yr').value||'2025';saveCFG();loadGoogleSheet();toast('Settings saved — reloading...');}
 function saveMktSettings(){CFG.marketRate=parseFloat(document.getElementById('s-mr').value)||8;CFG.season=document.getElementById('s-yr').value||'2025';saveCFG();mergeAll();renderAll();toast('Market settings saved!');}
-function renderDBInfo(){var el=document.getElementById('db-info');if(!el)return;el.innerHTML=['Sheet players: <strong>'+DB.players.length+'</strong>','Manual overrides: <strong>'+DB.manual.length+'</strong>','Merged total: <strong>'+DB.merged.length+'</strong>','FanGraphs rows: <strong>'+DB.fg.length+'</strong>','Savant rows: <strong>'+DB.savant.length+'</strong>','Market $/aWAR: <strong>$'+CFG.marketRate+'M</strong>','Sheet ID: <strong style="font-size:10px;word-break:break-all">'+CFG.gsId+'</strong>'].join('<br>');}
+function renderDBInfo(){var el=document.getElementById('db-info');if(!el)return;el.innerHTML=['Sheet players: <strong>'+DB.players.length+'</strong>','Manual overrides: <strong>'+DB.manual.length+'</strong>','Merged total: <strong>'+DB.merged.length+'</strong>','FanGraphs rows: <strong>'+DB.fg.length+'</strong>','Savant rows: <strong>'+DB.savant.length+'</strong>','Market $/aWAR: <strong>$'+CFG.marketRate+'M</strong>'].join('<br>');}
 function fTbl(id,q){var lq=q.toLowerCase(),tbl=document.getElementById(id);if(!tbl)return;tbl.querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(lq)>=0?'':'none';});}
 function fPos(v){document.getElementById('t-ov').querySelectorAll('tbody tr[data-pos]').forEach(function(r){r.style.display=(!v||r.dataset.pos===v)?'':'none';});}
 function fYear(v){document.getElementById('t-ov').querySelectorAll('tbody tr[data-py]').forEach(function(r){r.style.display=(!v||r.dataset.py===v)?'':'none';});}
