@@ -15,7 +15,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .lb{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:34px 38px;width:380px;display:flex;flex-direction:column;gap:14px}
 .ll{font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
 .pw-wrap{position:relative;width:100%;display:flex;align-items:center}
-.li{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:18px;letter-spacing:6px;padding:14px 52px 14px 16px;width:100%;outline:none;flex:1}
+.li{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:18px;letter-spacing:6px;padding:14px 52px 14px 16px;width:100%;outline:none}
 .li:focus{border-color:var(--accent)}
 .li.shown{letter-spacing:2px;font-size:16px}
 .eye-btn{position:absolute;right:0;top:0;bottom:0;width:48px;background:rgba(255,255,255,0.05);border:none;border-left:1px solid var(--border);border-radius:0 8px 8px 0;color:var(--accent);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
@@ -352,7 +352,7 @@ svg.ch{display:block}
       <div class="pgs">Google Sheet master · FanGraphs · Baseball Savant supplemental</div>
       <div class="fc">
         <div class="fct">Google Sheet (Master Source)</div>
-        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script JSONP. Core columns load instantly, all columns load in background. Edit your sheet and click <strong style="color:var(--accent)">Refresh Sheet</strong> to reload.</p>
+        <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.7">Connected via Google Apps Script JSONP. Core columns load instantly, all columns load in background.</p>
         <div class="br"><button class="btn" onclick="refreshAll()">Reload from Google Sheet</button></div>
         <div id="gs-load-status" style="font-size:11px;color:var(--dim);margin-top:10px"></div>
       </div>
@@ -360,7 +360,7 @@ svg.ch{display:block}
         <div class="fct">FanGraphs — Supplemental Stats</div>
         <div class="dz" onclick="document.getElementById('fg-in').click()" ondragover="event.preventDefault();this.style.borderColor='var(--blue)'" ondragleave="this.style.borderColor=''" ondrop="onDrop(event,'fg')">
           <div class="di">&#128202;</div>
-          <div class="dt"><strong>FanGraphs CSV</strong><br>Drag and drop or click to upload<br>Expected: Name, Season, WAR, wRC+, OBP, SLG</div>
+          <div class="dt"><strong>FanGraphs CSV</strong><br>Drag and drop or click to upload</div>
           <input type="file" id="fg-in" accept=".csv" style="display:none" onchange="onCSVUpload(event,'fg')">
         </div>
         <div id="fg-status" style="font-size:11px;color:var(--dim)"></div>
@@ -369,7 +369,7 @@ svg.ch{display:block}
         <div class="fct">Baseball Savant — Statcast Data</div>
         <div class="dz" onclick="document.getElementById('sv-in').click()" ondragover="event.preventDefault();this.style.borderColor='var(--purple)'" ondragleave="this.style.borderColor=''" ondrop="onDrop(event,'sv')">
           <div class="di">&#127776;</div>
-          <div class="dt"><strong>Savant CSV</strong><br>Drag and drop or click to upload<br>Expected: player_name, game_year, exit_velocity_avg</div>
+          <div class="dt"><strong>Savant CSV</strong><br>Drag and drop or click to upload</div>
           <input type="file" id="sv-in" accept=".csv" style="display:none" onchange="onCSVUpload(event,'sv')">
         </div>
         <div id="sv-status" style="font-size:11px;color:var(--dim)"></div>
@@ -464,7 +464,7 @@ svg.ch{display:block}
           <div style="margin-bottom:12px">
             <label class="fl">Apps Script Web App URL</label>
             <input class="fi" id="s-gsurl" value="https://script.google.com/macros/s/AKfycbzZIVWNJOD0zhRkAlgMomrFSCH4qzswHJBGMOiL0U_EmY_ytaRZ7Eycn5jyby7l6URX/exec">
-            <div style="font-size:10px;color:var(--dim);margin-top:5px">From Extensions &rarr; Apps Script &rarr; Deploy &rarr; Manage Deployments</div>
+            <div style="font-size:10px;color:var(--dim);margin-top:5px">Extensions → Apps Script → Deploy → Manage Deployments</div>
           </div>
           <div class="br"><button class="btn" onclick="saveGSSettings()">Save &amp; Reload</button></div>
         </div>
@@ -526,10 +526,10 @@ function togglePw(){
   if(!inp||!btn)return;
   if(inp.type==='password'){
     inp.type='text';inp.className='li shown';
-    btn.innerHTML='&#128064;';btn.title='Hide password';
+    btn.innerHTML='&#128064;';
   }else{
     inp.type='password';inp.className='li';
-    btn.innerHTML='&#128065;';btn.title='Show password';
+    btn.innerHTML='&#128065;';
   }
   inp.focus();
 }
@@ -614,9 +614,9 @@ function refreshAll(){
     },1000);
   },function(err){
     setGSStatus('off','Error: '+err);
-    document.getElementById('gs-load-status').textContent='Load error: '+err+'. Check your Apps Script URL in Settings.';
+    document.getElementById('gs-load-status').textContent='Load error: '+err;
     mergeAll();renderAll();
-    toast('Sheet load failed — check Settings');
+    toast('Sheet load failed — check Apps Script URL in Settings');
     LOADING=false;
     var btn=document.getElementById('refresh-btn');
     btn.disabled=false;btn.textContent='Refresh Sheet';
@@ -635,7 +635,7 @@ function loadPass(mode,onSuccess,onError){
   var cbName='dlCB_'+mode+'_'+Date.now();
   var script=document.createElement('script');
   var done=false;
-  var timeout=mode==='fast'?20000:90000;
+  var timeout=mode==='fast'?45000:120000;
   var timer=setTimeout(function(){
     if(done)return;done=true;cleanup();LOADING=false;
     if(mode==='fast'){btn.disabled=false;btn.textContent='Refresh Sheet';}
@@ -653,7 +653,7 @@ function loadPass(mode,onSuccess,onError){
   script.onerror=function(){
     if(done)return;done=true;clearTimeout(timer);cleanup();LOADING=false;
     if(mode==='fast'){btn.disabled=false;btn.textContent='Refresh Sheet';}
-    if(onError)onError('Script load error');
+    if(onError)onError('Script load error — check Apps Script deployment');
   };
   var sep=base.indexOf('?')>=0?'&':'?';
   script.src=base+sep+'mode='+mode+'&callback='+cbName;
@@ -680,7 +680,7 @@ function processSheetData(data){
   DB.players=allPlayers;
   mergeAll();
   document.getElementById('sb-src').textContent='Google Sheet';
-  document.getElementById('gs-load-status').textContent='Core: '+allPlayers.length+' players loaded at '+new Date().toLocaleTimeString();
+  document.getElementById('gs-load-status').textContent='Core: '+allPlayers.length+' players at '+new Date().toLocaleTimeString();
 }
 
 function extractAllCols(data){
@@ -1010,7 +1010,7 @@ function renderSuppSummary(){var el=document.getElementById('supp-summary');if(!
 
 function saveGSSettings(){var urlEl=document.getElementById('s-gsurl');if(urlEl&&urlEl.value.trim())SCRIPT_URL=urlEl.value.trim();CFG.marketRate=parseFloat(document.getElementById('s-mr').value)||8;CFG.season=document.getElementById('s-yr').value||'2025';saveCFG();refreshAll();toast('Settings saved — reloading...');}
 function saveMktSettings(){CFG.marketRate=parseFloat(document.getElementById('s-mr').value)||8;CFG.season=document.getElementById('s-yr').value||'2025';saveCFG();mergeAll();renderAll();toast('Market settings saved!');}
-function renderDBInfo(){var el=document.getElementById('db-info');if(!el)return;el.innerHTML=['Sheet players: <strong>'+DB.players.length+'</strong>','Manual overrides: <strong>'+DB.manual.length+'</strong>','Merged total: <strong>'+DB.merged.length+'</strong>','All columns available: <strong>'+(DB.allCols.length||'loading...')+'</strong>','FanGraphs rows: <strong>'+DB.fg.length+'</strong>','Savant rows: <strong>'+DB.savant.length+'</strong>','Market $/aWAR: <strong>$'+CFG.marketRate+'M</strong>'].join('<br>');}
+function renderDBInfo(){var el=document.getElementById('db-info');if(!el)return;el.innerHTML=['Sheet players: <strong>'+DB.players.length+'</strong>','Manual overrides: <strong>'+DB.manual.length+'</strong>','Merged total: <strong>'+DB.merged.length+'</strong>','All columns: <strong>'+(DB.allCols.length||'loading...')+'</strong>','FanGraphs rows: <strong>'+DB.fg.length+'</strong>','Savant rows: <strong>'+DB.savant.length+'</strong>','Market $/aWAR: <strong>$'+CFG.marketRate+'M</strong>'].join('<br>');}
 
 function fTbl(id,q){var lq=q.toLowerCase(),tbl=document.getElementById(id);if(!tbl)return;tbl.querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(lq)>=0?'':'none';});}
 var sD={};
