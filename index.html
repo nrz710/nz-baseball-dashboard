@@ -635,7 +635,7 @@ function loadPass(mode,onSuccess,onError){
   var cbName='dlCB_'+mode+'_'+Date.now();
   var script=document.createElement('script');
   var done=false;
-  var timeout=mode==='fast'?45000:120000;
+  var timeout=mode==='fast'?105000:150000;
   var timer=setTimeout(function(){
     if(done)return;done=true;cleanup();LOADING=false;
     if(mode==='fast'){btn.disabled=false;btn.textContent='Refresh Sheet';}
