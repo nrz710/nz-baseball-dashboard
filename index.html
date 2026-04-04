@@ -136,7 +136,8 @@ svg.ch{display:block}
 .filter-bar{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .filter-chip{display:flex;align-items:center;gap:4px;background:var(--s3);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:11px}
 .filter-chip label{color:var(--dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
-.filter-chip select{background:#ffffff;border:none;color:#000000;font-size:11px;outline:none;cursor:pointer;max-width:130px;border-radius:3px;padding:2px 4px}
+.filter-chip select{background:#ffffff;border:none;color:#000000;font-size:11px;outline:none;cursor:pointer;max-width:140px;border-radius:3px;padding:2px 4px}
+.filter-chip select option{background:#ffffff;color:#000000}
 .filter-chip select option{background:#ffffff;color:#000000}
 .filter-chip .rmf{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
 .filter-chip .rmf:hover{color:var(--red)}
@@ -822,13 +823,28 @@ function renderFilterBar(){
   activeFilters.forEach(function(f,i){
     var vals=getUniqueVals(f.col);
     var chip=document.createElement('div');chip.className='filter-chip';
-    var opts='<option value="">All</option>';
-    vals.forEach(function(v){opts+='<option value="'+v+'"'+(f.value===v?' selected':'')+'>'+(v.length>22?v.slice(0,20)+'..':v)+'</option>';});
-    chip.innerHTML='<label>'+f.label+'</label><select onchange="setFilter('+i+',this.value)">'+opts+'</select><button class="rmf" onclick="removeFilter('+i+')" title="Remove">&#215;</button>';
+    var selectedVals=Array.isArray(f.value)?f.value:(f.value?[f.value]:[]);
+    var opts='';
+    vals.forEach(function(v){
+      var sel=selectedVals.indexOf(v)>=0?' selected':'';
+      opts+='<option value="'+v+'"'+sel+'>'+(v.length>22?v.slice(0,20)+'..':v)+'</option>';
+    });
+    var preview=selectedVals.length===0?'All':selectedVals.length===1?selectedVals[0]:selectedVals.length+' selected';
+    chip.innerHTML='<label>'+f.label+'</label>'
+      +'<select multiple onchange="setFilterMulti('+i+',this)" style="background:#fff;color:#000;font-size:11px;border:none;border-radius:3px;padding:2px 4px;max-width:140px;height:28px;cursor:pointer" title="Hold Ctrl/Cmd to select multiple">'+opts+'</select>'
+      +'<button class="rmf" onclick="removeFilter('+i+')" title="Remove">&#215;</button>';
     container.appendChild(chip);
   });
 }
 function setFilter(idx,val){activeFilters[idx].value=val;saveFilters();renderOverview();}
+function setFilterMulti(idx,selectEl){
+  var selected=[];
+  for(var i=0;i<selectEl.options.length;i++){
+    if(selectEl.options[i].selected)selected.push(selectEl.options[i].value);
+  }
+  activeFilters[idx].value=selected;
+  saveFilters();renderOverview();
+}
 function removeFilter(idx){activeFilters.splice(idx,1);saveFilters();renderFilterBar();renderOverview();}
 function showAddFilter(){document.getElementById('add-filter-row').style.display='flex';}
 function hideAddFilter(){document.getElementById('add-filter-row').style.display='none';}
@@ -852,7 +868,13 @@ function resetFilters(){
 }
 function applyFilters(players){
   return players.filter(function(p){
-    return activeFilters.every(function(f){if(!f.value)return true;return String(getPlayerVal(p,f.col))===String(f.value);});
+    return activeFilters.every(function(f){
+      var fv=f.value;
+      if(!fv||fv.length===0)return true;
+      var pv=String(getPlayerVal(p,f.col));
+      if(Array.isArray(fv))return fv.indexOf(pv)>=0;
+      return pv===String(fv);
+    });
   });
 }
 
