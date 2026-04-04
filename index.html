@@ -134,22 +134,28 @@ svg.ch{display:block}
 .filter-bar{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .filter-chip{display:flex;align-items:center;gap:4px;background:var(--s3);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:11px}
 .filter-chip label{color:var(--dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
-.filter-chip select{background:#ffffff;border:none;color:#000000;font-size:11px;outline:none;cursor:pointer;max-width:140px;border-radius:3px;padding:2px 4px}
-.filter-chip select option{background:#ffffff;color:#000000}
-.filter-chip .rmf{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1}
+.filter-chip .rmf{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 3px;line-height:1;margin-left:2px}
 .filter-chip .rmf:hover{color:var(--red)}
+.chip-label{color:var(--dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;margin-right:2px}
 .add-filter-btn{background:var(--s1);border:1px dashed var(--border);border-radius:5px;color:var(--dim);cursor:pointer;font-size:11px;padding:4px 10px;white-space:nowrap}
 .add-filter-btn:hover{border-color:var(--accent);color:var(--accent)}
 .filter-add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;width:100%}
 .bg-badge{font-size:10px;color:var(--dim);font-style:italic}
 .bg-badge.done{color:var(--green)}
-
-
-.fc-item{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;font-size:12px;color:#000;white-space:nowrap}
-.fc-item:hover{background:#f0f0f0}
-.fc-item input[type=checkbox]{cursor:pointer;accent-color:var(--accent)}
-.fc-clear{padding:6px 10px;font-size:11px;color:#888;cursor:pointer;border-top:1px solid #eee;text-align:center}
-.fc-clear:hover{background:#f9f9f9;color:#000}
+.dd-wrap{position:relative;display:inline-block}
+.dd-btn{background:var(--s2);color:var(--dim);border:1px solid var(--border);border-radius:4px;padding:4px 22px 4px 8px;font-size:11px;cursor:pointer;min-width:72px;text-align:left;position:relative;white-space:nowrap;line-height:1.4;transition:all .15s}
+.dd-btn::after{content:'▾';position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--dim);pointer-events:none;transition:all .15s}
+.dd-btn.active,.dd-btn:hover{background:var(--s3);color:var(--text);border-color:rgba(255,255,255,0.2)}
+.dd-btn.active::after{color:var(--accent)}
+.dd-list{display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--s2);border:1px solid rgba(255,255,255,0.12);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,0.7);z-index:99999;min-width:170px;max-height:260px;overflow-y:auto;padding:4px 0}
+.dd-list.open{display:block}
+.dd-all{display:flex;align-items:center;gap:9px;padding:7px 12px 7px 12px;cursor:pointer;font-size:12px;color:var(--accent);font-weight:700;user-select:none;border-bottom:1px solid rgba(255,255,255,0.07);white-space:nowrap}
+.dd-all:hover{background:rgba(232,197,71,0.08)}
+.dd-all input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;pointer-events:none}
+.dd-item{display:flex;align-items:center;gap:9px;padding:7px 12px;cursor:pointer;font-size:12px;color:var(--mid);user-select:none;white-space:nowrap}
+.dd-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.dd-item.checked{color:var(--text)}
+.dd-item input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -828,25 +834,33 @@ function renderFilterBar(){
   activeFilters.forEach(function(f,i){
     var vals=getUniqueVals(f.col);
     var sel=Array.isArray(f.value)?f.value:(f.value?[f.value]:[]);
-    var label=sel.length===0?'All':sel.length===1?sel[0]:sel.length+' selected';
+    var allSelected=sel.length===0;
+    var label=allSelected?'All':sel.length===1?sel[0]:sel.length+' selected';
     var chip=document.createElement('div');
     chip.className='filter-chip';
-    var itemsHTML='';
+
+    // "Select All" row at top
+    var allChecked=allSelected?' checked':'';
+    var itemsHTML='<div class="dd-all" data-all="1" data-idx="'+i+'"><input type="checkbox"'+allChecked+'><span>Select All</span></div>';
+
     vals.forEach(function(v){
       var checked=sel.indexOf(v)>=0?' checked':'';
+      var isChecked=sel.indexOf(v)>=0;
       var escaped=v.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-      itemsHTML+='<div class="dd-item" data-val="'+escaped+'" data-idx="'+i+'"><input type="checkbox"'+checked+'><span>'+v+'</span></div>';
+      itemsHTML+='<div class="dd-item'+(isChecked?' checked':'')+'" data-val="'+escaped+'" data-idx="'+i+'"><input type="checkbox"'+checked+'><span>'+v+'</span></div>';
     });
-    itemsHTML+='<div class="dd-divider"></div><div class="dd-clear" data-idx="'+i+'">Clear all</div>';
+
+    var btnActive=!allSelected?' active':'';
     chip.innerHTML='<span class="chip-label">'+f.label+'</span>'
       +'<div class="dd-wrap">'
-        +'<button class="dd-btn" data-idx="'+i+'">'+label+'</button>'
+        +'<button class="dd-btn'+btnActive+'" data-idx="'+i+'">'+label+'</button>'
         +'<div class="dd-list" id="ddlist'+i+'">'+itemsHTML+'</div>'
       +'</div>'
       +'<button class="rmf" data-rmidx="'+i+'">&#215;</button>';
     container.appendChild(chip);
   });
-  // Wire up button clicks
+
+  // ── Button: open/close ──
   container.querySelectorAll('.dd-btn').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
@@ -854,10 +868,27 @@ function renderFilterBar(){
       var list=document.getElementById('ddlist'+idx);
       var isOpen=list.classList.contains('open');
       closeAllDD();
-      if(!isOpen)list.classList.add('open');
+      if(!isOpen){
+        list.classList.add('open');
+        this.classList.add('active');
+      }
     });
   });
-  // Wire up item clicks
+
+  // ── Select All row ──
+  container.querySelectorAll('.dd-all').forEach(function(row){
+    row.addEventListener('click',function(e){
+      e.stopPropagation();
+      var idx=parseInt(this.dataset.idx);
+      // Toggle: if anything selected, clear all; if nothing selected, keep cleared (already All)
+      activeFilters[idx].value=[];
+      saveFilters();
+      renderFilterBar();
+      renderOverview();
+    });
+  });
+
+  // ── Individual item ──
   container.querySelectorAll('.dd-item').forEach(function(item){
     item.addEventListener('click',function(e){
       e.stopPropagation();
@@ -867,27 +898,25 @@ function renderFilterBar(){
       if(!Array.isArray(arr)){arr=[];activeFilters[idx].value=arr;}
       var pos=arr.indexOf(val);
       if(pos>=0)arr.splice(pos,1); else arr.push(val);
+      // Update checkbox state immediately
       this.querySelector('input[type=checkbox]').checked=(pos<0);
-      // Update button label without full re-render
+      if(pos<0)this.classList.add('checked'); else this.classList.remove('checked');
+      // Update "Select All" checkbox — checked only when nothing is selected
+      var allCb=document.querySelector('#ddlist'+idx+' .dd-all input[type=checkbox]');
+      if(allCb)allCb.checked=(arr.length===0);
+      // Update button label
       var newLabel=arr.length===0?'All':arr.length===1?arr[0]:arr.length+' selected';
       var btn=container.querySelector('.dd-btn[data-idx="'+idx+'"]');
-      if(btn)btn.textContent=newLabel;
+      if(btn){
+        btn.textContent=newLabel;
+        if(arr.length===0)btn.classList.remove('active'); else btn.classList.add('active');
+      }
       saveFilters();
       renderOverview();
     });
   });
-  // Wire up clear clicks
-  container.querySelectorAll('.dd-clear').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      var idx=parseInt(this.dataset.idx);
-      activeFilters[idx].value=[];
-      saveFilters();
-      renderFilterBar();
-      renderOverview();
-    });
-  });
-  // Wire up remove clicks
+
+  // ── Remove filter ──
   container.querySelectorAll('.rmf').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
@@ -898,6 +927,7 @@ function renderFilterBar(){
       renderOverview();
     });
   });
+
   // Close on outside click
   document.onclick=function(e){
     if(!e.target.closest('.dd-wrap'))closeAllDD();
@@ -906,6 +936,15 @@ function renderFilterBar(){
 
 function closeAllDD(){
   document.querySelectorAll('.dd-list').forEach(function(l){l.classList.remove('open');});
+  document.querySelectorAll('.dd-btn').forEach(function(b){
+    // Only remove active class if no values are selected for this filter
+    var idx=b.dataset.idx;
+    if(idx!==undefined){
+      var f=activeFilters[parseInt(idx)];
+      var hasVal=f&&Array.isArray(f.value)&&f.value.length>0;
+      if(!hasVal)b.classList.remove('active');
+    }
+  });
 }
 function setFilter(idx,val){activeFilters[idx].value=val;saveFilters();renderOverview();}
 function removeFilter(idx){activeFilters.splice(idx,1);saveFilters();renderFilterBar();renderOverview();}
