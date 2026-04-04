@@ -883,15 +883,8 @@ function renderFilterBar(){
       // Toggle: if anything selected, clear all; if nothing selected, keep cleared (already All)
       activeFilters[idx].value=[];
       saveFilters();
-      // Update button label and checkbox without closing dropdown
-      var allCb2=document.querySelector('#ddlist'+idx+' .dd-all input[type=checkbox]');
-      if(allCb2)allCb2.checked=true;
-      var allItems=document.querySelectorAll('.dd-item[data-idx="'+idx+'"]');
-      allItems.forEach(function(it){it.querySelector('input[type=checkbox]').checked=false;it.classList.remove('checked');});
-      var btn2=document.querySelector('.dd-btn[data-idx="'+idx+'"]');
-      if(btn2){btn2.textContent='All';btn2.classList.remove('active');}
-      saveFilters();
-      refreshTableOnly();
+      renderFilterBar();
+      renderOverview();
     });
   });
 
@@ -919,7 +912,7 @@ function renderFilterBar(){
         if(arr.length===0)btn.classList.remove('active'); else btn.classList.add('active');
       }
       saveFilters();
-      refreshTableOnly();
+      renderOverview();
     });
   });
 
@@ -935,11 +928,16 @@ function renderFilterBar(){
     });
   });
 
+  // Close on outside click
+  document.onclick=function(e){
+    if(!e.target.closest('.dd-wrap'))closeAllDD();
+  };
 }
 
 function closeAllDD(){
   document.querySelectorAll('.dd-list').forEach(function(l){l.classList.remove('open');});
   document.querySelectorAll('.dd-btn').forEach(function(b){
+    // Only remove active class if no values are selected for this filter
     var idx=b.dataset.idx;
     if(idx!==undefined){
       var f=activeFilters[parseInt(idx)];
@@ -948,13 +946,6 @@ function closeAllDD(){
     }
   });
 }
-// Single permanent handler — close dropdowns on outside mousedown only
-document.addEventListener('mousedown',function(e){
-  // Only run when app is visible, not on password screen
-  var app=document.getElementById('app');
-  if(!app||!app.classList.contains('on'))return;
-  if(!e.target.closest('.dd-wrap'))closeAllDD();
-});
 function setFilter(idx,val){activeFilters[idx].value=val;saveFilters();renderOverview();}
 function removeFilter(idx){activeFilters.splice(idx,1);saveFilters();renderFilterBar();renderOverview();}
 function showAddFilter(){document.getElementById('add-filter-row').style.display='flex';}
@@ -1032,11 +1023,10 @@ function fa(x){if(!x||isNaN(x))return'—';var s=parseFloat(x).toFixed(3);return
 function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%';}
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
 
-// ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
+  // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
   var ps=DB.merged;
   var filtered=applyFilters(ps);
-  // Update player count KPI
   document.getElementById('k-n').textContent=ps.length+(filtered.length!==ps.length?' ('+filtered.length+' shown)':'');
   var tb=document.getElementById('b-ov');
   if(!tb)return;
@@ -1069,6 +1059,7 @@ function renderOverview(){
   document.getElementById('k-aav').textContent='$'+(ps.length?(totalAav/ps.length).toFixed(1):'0')+'M';
   document.getElementById('k-ab').textContent=above;document.getElementById('k-bl').textContent=below;
   document.getElementById('k-war').textContent=avgWar.toFixed(1);document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);
+  renderFilterBar();
   var tb=document.getElementById('b-ov');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(p){
