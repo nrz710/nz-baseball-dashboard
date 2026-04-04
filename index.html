@@ -928,16 +928,11 @@ function renderFilterBar(){
     });
   });
 
-  // Close on outside click
-  document.onclick=function(e){
-    if(!e.target.closest('.dd-wrap'))closeAllDD();
-  };
 }
 
 function closeAllDD(){
   document.querySelectorAll('.dd-list').forEach(function(l){l.classList.remove('open');});
   document.querySelectorAll('.dd-btn').forEach(function(b){
-    // Only remove active class if no values are selected for this filter
     var idx=b.dataset.idx;
     if(idx!==undefined){
       var f=activeFilters[parseInt(idx)];
@@ -945,6 +940,11 @@ function closeAllDD(){
       if(!hasVal)b.classList.remove('active');
     }
   });
+}
+// Single permanent handler — close dropdowns on outside mousedown only
+document.addEventListener('mousedown',function(e){
+  if(!e.target.closest('.dd-wrap'))closeAllDD();
+});
 }
 function setFilter(idx,val){activeFilters[idx].value=val;saveFilters();renderOverview();}
 function removeFilter(idx){activeFilters.splice(idx,1);saveFilters();renderFilterBar();renderOverview();}
