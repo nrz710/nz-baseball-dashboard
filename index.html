@@ -1023,6 +1023,24 @@ function fa(x){if(!x||isNaN(x))return'—';var s=parseFloat(x).toFixed(3);return
 function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%';}
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
 
+  // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
+function refreshTableOnly(){
+  var ps=DB.merged;
+  var filtered=applyFilters(ps);
+  document.getElementById('k-n').textContent=ps.length+(filtered.length!==ps.length?' ('+filtered.length+' shown)':'');
+  var tb=document.getElementById('b-ov');
+  if(!tb)return;
+  if(!filtered.length){
+    tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';
+    return;
+  }
+  tb.innerHTML=filtered.map(function(p){
+    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';
+    var guarDisp=p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):'0';
+    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td><td>$'+(p.guarAav?p.guarAav.toFixed(1):'0')+'M</td><td>$'+guarDisp+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
+  }).join('');
+}
+
 // ═══ OVERVIEW ═══
 function renderOverview(){
   var ps=DB.merged;var filtered=applyFilters(ps);
