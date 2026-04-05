@@ -872,7 +872,7 @@ function buildPlayer(row,headers,vals){
   return{
     name:g('Player'),py:gni('PY')||parseInt(g('PY'))||0,
     sigAge:parseFloat(g('SigAge'))||0,fyAge:parseFloat(g('FY Age'))||0,
-    pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate'),fy:g('FY'),term:gni('Term'),
+    pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate').split('T')[0],fy:g('FY'),term:gni('Term'),
     guar:parseMoney(g('GUAR')),guarAav:parseMoney(g('GUAR AAV')),aav:parseMoney(g('AAV')),
     code:g('Code'),source:'gs',_rawRow:row,
     py0:getSet(0),py1:getSet(1),py2:getSet(2)
@@ -1118,6 +1118,8 @@ function fm(x,d){if(x===null||x===undefined||isNaN(x)||x==='')return'—';return
 function fa(x){if(!x||isNaN(x))return'—';var s=parseFloat(x).toFixed(3);return s.replace(/^0/,'');}
 function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%';}
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
+function fDate(s){if(!s)return'—';return String(s).split('T')[0];}
+function fDollar(v){if(!v&&v!==0)return'—';var n=parseFloat(v);if(isNaN(n)||n===0)return'—';return'$'+Math.round(n*1000000).toLocaleString('en-US');}
 
 // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
@@ -1132,9 +1134,8 @@ function refreshTableOnly(){
     return;
   }
   tb.innerHTML=filtered.map(function(p){
-    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';
-    var guarDisp=p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):'0';
-    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td><td>$'+(p.guarAav?p.guarAav.toFixed(1):'0')+'M</td><td>$'+guarDisp+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
+    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—';
+    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
   }).join('');
 }
 
@@ -1159,9 +1160,8 @@ function renderOverview(){
   var tb=document.getElementById('b-ov');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(p){
-    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—';
-    var guarDisp=p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):'0';
-    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>$'+(p.aav?p.aav.toFixed(1):'0')+'M</strong></td><td>$'+(p.guarAav?p.guarAav.toFixed(1):'0')+'M</td><td>$'+guarDisp+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
+    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—';
+    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
   }).join('');
   var topAAV=[].concat(filtered).sort(function(a,b){return(b.aav||0)-(a.aav||0);}).slice(0,20);
   bSVG('c-aav',topAAV.map(function(p){return{l:p.name.split(',')[0],v:p.aav||0,c:'#e8c547'};}),true);
@@ -1206,8 +1206,8 @@ function renderValue(){
   scSVG('c-scatter',ps,mr);dwSVG('c-dw',ps,mr);
   var sorted=[].concat(ps).filter(function(p){return p.py0;}).sort(function(a,b){var da=a.py0.aWAR>0?a.aav/a.py0.aWAR:999,db=b.py0.aWAR>0?b.aav/b.py0.aWAR:999;return da-db;});
   document.getElementById('b-val').innerHTML=!sorted.length?'<tr><td colspan="11"><div class="emp"><div class="et">No Data</div></div></td></tr>':
-    sorted.map(function(p,i){var war=(p.py0&&p.py0.aWAR)||0,war6=(p.py0&&p.py0.aWAR650)||0,dw=war>0?'$'+(p.aav/war).toFixed(1)+'M':'—',mv=(war*mr).toFixed(1),sur=(war*mr-p.aav).toFixed(1),sc=parseFloat(sur)>=0?'gc':'rc';
-      return'<tr><td>'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td><td class="'+gc(war,2,5)+'">'+fm(war,1)+'</td><td>'+fm(war6,1)+'</td><td>'+dw+'</td><td>$'+mv+'M</td><td class="'+sc+'">'+(parseFloat(sur)>=0?'+':'')+'$'+sur+'M</td><td>'+bdg(vRate(p))+'</td></tr>';
+    sorted.map(function(p,i){var war=(p.py0&&p.py0.aWAR)||0,war6=(p.py0&&p.py0.aWAR650)||0,dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—',mv=fDollar(war*mr),sur=war*mr-p.aav,sc=sur>=0?'gc':'rc';
+      return'<tr><td>'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="ac">'+fDollar(p.aav)+'</td><td class="'+gc(war,2,5)+'">'+fm(war,1)+'</td><td>'+fm(war6,1)+'</td><td>'+dw+'</td><td>'+mv+'</td><td class="'+sc+'">'+(sur>=0?'+':'')+fDollar(sur)+'</td><td>'+bdg(vRate(p))+'</td></tr>';
     }).join('');
 }
 
@@ -1219,8 +1219,8 @@ function showComps(){
   var tgt=DB.merged[idx];
   var pool=DB.merged.filter(function(p,i){return i!==idx&&(!posF||p.pPos===posF)&&(!pyF||String(p.py)===String(pyF));});
   var scored=pool.map(function(p){var sc=0;if(p.pPos===tgt.pPos)sc+=25;sc+=20-Math.min(20,Math.abs(((p.py0&&p.py0.aWAR)||0)-((tgt.py0&&tgt.py0.aWAR)||0))*4);sc+=20-Math.min(20,Math.abs((p.aav||0)-(tgt.aav||0))*1.5);sc+=15-Math.min(15,Math.abs((p.sigAge||0)-(tgt.sigAge||0))*3);if(p.py===tgt.py)sc+=10;var pw=(p.py0&&p.py0.wRCplus)||0,tw=(tgt.py0&&tgt.py0.wRCplus)||0;if(pw&&tw)sc+=10-Math.min(10,Math.abs(pw-tw)/10);p._sc=sc;return p;}).sort(function(a,b){return b._sc-a._sc;}).slice(0,3);
-  function card(p,isTgt){var s=p.py0||{},ops=s.OBP&&s.SLG?fa(s.OBP+s.SLG):'—';var stats=[['AAV','$'+(p.aav?p.aav.toFixed(1):'0')+'M'],['GUAR AAV','$'+(p.guarAav?p.guarAav.toFixed(1):'0')+'M'],['FY',(p.fy||'—')],['FY Age',(p.fyAge?p.fyAge.toFixed(0):'—')],['OPS',ops],['wRC+',(s.wRCplus||'—')],['aWAR',fm(s.aWAR,1)]];
-    return'<div class="cc" style="border-color:'+(isTgt?'var(--accent)':'var(--border)')+'">'+( isTgt?'<div style="position:absolute;top:8px;right:8px;font-size:9px;letter-spacing:2px;color:var(--accent)">TARGET</div>':'' )+'<div class="cn">'+p.name.split(',')[0]+'</div><div class="cm">'+(p.pPos||'?')+' - '+(p.sigTm||'?')+' - PY '+(p.py||'?')+'</div>'+stats.map(function(s){return'<div class="crow"><span class="ck">'+s[0]+'</span><span class="cv">'+s[1]+'</span></div>';}).join('')+'<div class="csal">$'+(p.aav?p.aav.toFixed(1):'0')+'M<span style="font-size:12px">/yr</span></div></div>';
+  function card(p,isTgt){var s=p.py0||{},ops=s.OBP&&s.SLG?fa(s.OBP+s.SLG):'—';var stats=[['AAV',fDollar(p.aav)],['GUAR AAV',fDollar(p.guarAav)],['FY',(p.fy||'—')],['FY Age',(p.fyAge?p.fyAge.toFixed(0):'—')],['OPS',ops],['wRC+',(s.wRCplus||'—')],['aWAR',fm(s.aWAR,1)]];
+    return'<div class="cc" style="border-color:'+(isTgt?'var(--accent)':'var(--border)')+'">'+( isTgt?'<div style="position:absolute;top:8px;right:8px;font-size:9px;letter-spacing:2px;color:var(--accent)">TARGET</div>':'' )+'<div class="cn">'+p.name.split(',')[0]+'</div><div class="cm">'+(p.pPos||'?')+' - '+(p.sigTm||'?')+' - PY '+(p.py||'?')+'</div>'+stats.map(function(s){return'<div class="crow"><span class="ck">'+s[0]+'</span><span class="cv">'+s[1]+'</span></div>';}).join('')+'<div class="csal">'+fDollar(p.aav)+'<span style="font-size:12px">/yr</span></div></div>';
   }
   if(!scored.length){out.innerHTML='<div class="emp"><div class="et">No Comparables Found</div></div>';return;}
   out.innerHTML='<div style="font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Comparables for <strong style="color:var(--accent)">'+tgt.name+'</strong></div><div class="ccg">'+card(tgt,true)+scored.map(function(p){return card(p,false);}).join('')+'</div>';
@@ -1404,9 +1404,9 @@ function buildViewTable(tableType){
       var contractVals={
         'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
         'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
-        'Term':p.term,'AAV':p.aav?'$'+p.aav.toFixed(1)+'M':'',
-        'GUAR AAV':p.guarAav?'$'+p.guarAav.toFixed(1)+'M':'',
-        'GUAR':p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):''
+        'Term':p.term,'AAV':fDollar(p.aav),
+        'GUAR AAV':fDollar(p.guarAav),
+        'GUAR':fDollar(p.guar)
       };
       contractCols.forEach(function(col){
         var v=contractVals[col]!==undefined?contractVals[col]:(row[col]||'');
