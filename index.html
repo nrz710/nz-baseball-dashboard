@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diamond Dollars</title>
+<title>Diamond Ledger</title>
 <style>
 :root{--bg:#07090f;--s1:#0d111c;--s2:#141a2a;--s3:#1b2236;--border:rgba(255,255,255,0.07);--accent:#e8c547;--blue:#4fc3f7;--red:#ef5350;--green:#66bb6a;--purple:#ce93d8;--text:#dde3f0;--dim:#5a6a8a;--mid:#8a9bb8}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -156,13 +156,53 @@ svg.ch{display:block}
 .dd-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
 .dd-item.checked{color:var(--text)}
 .dd-item input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;pointer-events:none}
+
+.view-bar{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grp-btn{background:var(--s1);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 10px;text-transform:uppercase;white-space:nowrap}
+.grp-btn.on{color:#000}
+.grp-btn.on.g-py{background:#26c6da;border-color:#26c6da;color:#000}
+.grp-btn.on.g-py1{background:#4fc3f7;border-color:#4fc3f7;color:#000}
+.grp-btn.on.g-py2{background:#1a3a5c;border-color:#2a5a8c;color:#a0c4e8}
+.grp-btn.on.g-l2{background:#e88080;border-color:#e88080;color:#000}
+.grp-btn.on.g-l3{background:#ce93d8;border-color:#ce93d8;color:#000}
+.grp-btn.on.g-car{background:#ff9800;border-color:#ff9800;color:#000}
+.big-ts{overflow-x:auto;max-height:600px;overflow-y:auto}
+.big-ts::-webkit-scrollbar{width:4px;height:6px}
+.big-ts::-webkit-scrollbar-thumb{background:var(--s3);border-radius:2px}
+.big-ts table{width:100%;border-collapse:collapse}
+.big-ts thead{position:sticky;top:0;z-index:20}
+.grp-hdr{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:4px 8px;text-align:center;white-space:nowrap}
+.grp-hdr.g-contract{background:rgba(102,187,106,0.2);color:#66bb6a}
+.grp-hdr.g-py{background:rgba(38,198,218,0.2);color:#26c6da}
+.grp-hdr.g-py1{background:rgba(79,195,247,0.2);color:#4fc3f7}
+.grp-hdr.g-py2{background:rgba(26,58,92,0.5);color:#a0c4e8}
+.grp-hdr.g-l2{background:rgba(232,128,128,0.2);color:#e88080}
+.grp-hdr.g-l3{background:rgba(206,147,216,0.2);color:#ce93d8}
+.grp-hdr.g-car{background:rgba(255,152,0,0.2);color:#ff9800}
+.big-ts th{font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;padding:5px 8px;text-align:left;cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--border);background:var(--s2)}
+.big-ts th:hover{color:var(--accent)}
+.big-ts td{font-size:11px;color:var(--text);padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.03);white-space:nowrap}
+.big-ts tr:last-child td{border-bottom:none}
+.big-ts tbody tr:hover{background:rgba(255,255,255,0.03)}
+.big-ts td.g-py{border-left:1px solid rgba(38,198,218,0.15)}
+.big-ts td.g-py1{border-left:1px solid rgba(79,195,247,0.15)}
+.big-ts td.g-py2{border-left:1px solid rgba(26,58,92,0.4)}
+.big-ts td.g-l2{border-left:1px solid rgba(232,128,128,0.15)}
+.big-ts td.g-l3{border-left:1px solid rgba(206,147,216,0.15)}
+.big-ts td.g-car{border-left:1px solid rgba(255,152,0,0.15)}
+.big-ts th.g-py{border-left:1px solid rgba(38,198,218,0.3)}
+.big-ts th.g-py1{border-left:1px solid rgba(79,195,247,0.3)}
+.big-ts th.g-py2{border-left:1px solid rgba(26,58,92,0.6)}
+.big-ts th.g-l2{border-left:1px solid rgba(232,128,128,0.3)}
+.big-ts th.g-l3{border-left:1px solid rgba(206,147,216,0.3)}
+.big-ts th.g-car{border-left:1px solid rgba(255,152,0,0.3)}
 </style>
 </head>
 <body>
 
 <div id="lock">
-  <div class="lt">Diamond Dollars</div>
-  <div class="ls">Baseball Contract Analysis</div>
+  <div class="lt">Diamond Ledger</div>
+  <div class="ls">Baseball Contract Analytics</div>
   <div class="lb">
     <div class="ll">Password</div>
     <div class="pw-wrap">
@@ -177,7 +217,7 @@ svg.ch{display:block}
 
 <div id="app">
   <div class="hdr">
-    <div class="hdr-logo">Diamond Dollars <em>Contract Analysis</em></div>
+    <div class="hdr-logo">Diamond Ledger <em>Contract Analytics</em></div>
     <div class="hdr-r">
       <span id="gs-status"><span class="dot warn"></span>Loading...</span>
       <span id="hdr-ct">0 Players</span>
@@ -199,6 +239,8 @@ svg.ch{display:block}
     <button class="nb" data-p="trend" onclick="go('trend')">PY vs PY-1 vs PY-2</button>
     <button class="nb" data-p="value" onclick="go('value')">Contract Value</button>
     <button class="nb" data-p="comps" onclick="go('comps')">Comparables</button>
+    <button class="nb" data-p="hitters" onclick="go('hitters')">Hitters</button>
+    <button class="nb" data-p="pitchers" onclick="go('pitchers')">Pitchers</button>
     <button class="nb" data-p="sources" onclick="go('sources')">Data Sources</button>
     <button class="nb" data-p="edit" onclick="go('edit')">Add / Edit</button>
     <button class="nb" data-p="settings" onclick="go('settings')">Settings</button>
@@ -507,6 +549,48 @@ svg.ch{display:block}
       </div>
     </div>
 
+
+    <div class="pnl" id="p-hitters">
+      <div class="pgt">Hitters</div>
+      <div class="pgs">All hitter contracts &middot; toggle stat period groups below</div>
+      <div class="view-bar">
+        <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Show Periods:</span>
+        <button class="grp-btn g-py on" onclick="toggleGrp('h','py',this)">PY</button>
+        <button class="grp-btn g-py1" onclick="toggleGrp('h','py1',this)">PY-1</button>
+        <button class="grp-btn g-py2" onclick="toggleGrp('h','py2',this)">PY-2</button>
+        <button class="grp-btn g-l2" onclick="toggleGrp('h','l2',this)">L2</button>
+        <button class="grp-btn g-l3" onclick="toggleGrp('h','l3',this)">L3</button>
+        <button class="grp-btn g-car" onclick="toggleGrp('h','car',this)">Career</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <input class="si2" placeholder="Search hitter..." oninput="fTbl('t-hit',this.value)" style="width:160px">
+          <button class="btn bts bsm" onclick="exportViewCSV('hitters')">Export CSV</button>
+        </div>
+      </div>
+      <div class="tw">
+        <div class="big-ts" id="hit-wrap"><table id="t-hit"><thead id="hit-head"></thead><tbody id="b-hit"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="pnl" id="p-pitchers">
+      <div class="pgt">Pitchers</div>
+      <div class="pgs">All pitcher contracts &middot; toggle stat period groups below</div>
+      <div class="view-bar">
+        <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Show Periods:</span>
+        <button class="grp-btn g-py on" onclick="toggleGrp('p','py',this)">PY</button>
+        <button class="grp-btn g-py1" onclick="toggleGrp('p','py1',this)">PY-1</button>
+        <button class="grp-btn g-py2" onclick="toggleGrp('p','py2',this)">PY-2</button>
+        <button class="grp-btn g-l2" onclick="toggleGrp('p','l2',this)">L2</button>
+        <button class="grp-btn g-l3" onclick="toggleGrp('p','l3',this)">L3</button>
+        <button class="grp-btn g-car" onclick="toggleGrp('p','car',this)">Career</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <input class="si2" placeholder="Search pitcher..." oninput="fTbl('t-pit',this.value)" style="width:160px">
+          <button class="btn bts bsm" onclick="exportViewCSV('pitchers')">Export CSV</button>
+        </div>
+      </div>
+      <div class="tw">
+        <div class="big-ts" id="pit-wrap"><table id="t-pit"><thead id="pit-head"></thead><tbody id="b-pit"></tbody></table></div>
+      </div>
+    </div>
   </main>
 </div>
 <div id="toast"></div>
@@ -605,6 +689,8 @@ function go(id){
     else if(id==='stats')try{renderStats();}catch(e){console.error(e);}
     else if(id==='settings')try{renderDBInfo();}catch(e){}
     else if(id==='sources')try{renderSuppSummary();}catch(e){}
+    else if(id==='hitters')try{renderHitters();}catch(e){console.error(e);}
+    else if(id==='pitchers')try{renderPitchers();}catch(e){console.error(e);}
     else if(id==='edit')try{renderManualTable();}catch(e){}
   }catch(e){console.error('Tab error:',e);}
 }
@@ -883,8 +969,15 @@ function renderFilterBar(){
       // Toggle: if anything selected, clear all; if nothing selected, keep cleared (already All)
       activeFilters[idx].value=[];
       saveFilters();
-      renderFilterBar();
-      renderOverview();
+      // Update button label and checkbox without closing dropdown
+      var allCb2=document.querySelector('#ddlist'+idx+' .dd-all input[type=checkbox]');
+      if(allCb2)allCb2.checked=true;
+      var allItems=document.querySelectorAll('.dd-item[data-idx="'+idx+'"]');
+      allItems.forEach(function(it){it.querySelector('input[type=checkbox]').checked=false;it.classList.remove('checked');});
+      var btn2=document.querySelector('.dd-btn[data-idx="'+idx+'"]');
+      if(btn2){btn2.textContent='All';btn2.classList.remove('active');}
+      saveFilters();
+      refreshTableOnly();
     });
   });
 
@@ -912,7 +1005,7 @@ function renderFilterBar(){
         if(arr.length===0)btn.classList.remove('active'); else btn.classList.add('active');
       }
       saveFilters();
-      renderOverview();
+      refreshTableOnly();
     });
   });
 
@@ -928,16 +1021,11 @@ function renderFilterBar(){
     });
   });
 
-  // Close on outside click
-  document.onclick=function(e){
-    if(!e.target.closest('.dd-wrap'))closeAllDD();
-  };
 }
 
 function closeAllDD(){
   document.querySelectorAll('.dd-list').forEach(function(l){l.classList.remove('open');});
   document.querySelectorAll('.dd-btn').forEach(function(b){
-    // Only remove active class if no values are selected for this filter
     var idx=b.dataset.idx;
     if(idx!==undefined){
       var f=activeFilters[parseInt(idx)];
@@ -946,6 +1034,13 @@ function closeAllDD(){
     }
   });
 }
+// Single permanent handler — close dropdowns on outside mousedown only
+document.addEventListener('mousedown',function(e){
+  // Only run when app is visible, not on password screen
+  var app=document.getElementById('app');
+  if(!app||!app.classList.contains('on'))return;
+  if(!e.target.closest('.dd-wrap'))closeAllDD();
+});
 function setFilter(idx,val){activeFilters[idx].value=val;saveFilters();renderOverview();}
 function removeFilter(idx){activeFilters.splice(idx,1);saveFilters();renderFilterBar();renderOverview();}
 function showAddFilter(){document.getElementById('add-filter-row').style.display='flex';}
@@ -1006,6 +1101,7 @@ function renderAll(){
   try{renderManualTable();}catch(e){}
   try{renderDBInfo();}catch(e){}
   try{renderSuppSummary();}catch(e){}
+  // Hitters/Pitchers only render on demand (too large to always render)
 }
 function populateYrFilters(){
   var years=[];DB.merged.forEach(function(p){if(p.py&&years.indexOf(p.py)===-1)years.push(p.py);});years.sort(function(a,b){return b-a;});
@@ -1023,10 +1119,11 @@ function fa(x){if(!x||isNaN(x))return'—';var s=parseFloat(x).toFixed(3);return
 function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%';}
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
 
-  // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
+// ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
   var ps=DB.merged;
   var filtered=applyFilters(ps);
+  // Update player count KPI
   document.getElementById('k-n').textContent=ps.length+(filtered.length!==ps.length?' ('+filtered.length+' shown)':'');
   var tb=document.getElementById('b-ov');
   if(!tb)return;
@@ -1059,7 +1156,6 @@ function renderOverview(){
   document.getElementById('k-aav').textContent='$'+(ps.length?(totalAav/ps.length).toFixed(1):'0')+'M';
   document.getElementById('k-ab').textContent=above;document.getElementById('k-bl').textContent=below;
   document.getElementById('k-war').textContent=avgWar.toFixed(1);document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);
-  renderFilterBar();
   var tb=document.getElementById('b-ov');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(p){
@@ -1218,6 +1314,186 @@ function exportCSV(){
   var rows=DB.merged.map(function(p){var s=p.py0||{},ops=s.OBP&&s.SLG?+(s.OBP+s.SLG).toFixed(3):'';return[p.name,p.py,p.pPos,p.sigTm,p.fy,p.fyAge,p.sigDate,p.sigAge,p.term,p.aav,p.guarAav,p.guar,s.G,s.PA,s.HR,s.RBI,s.SB,s.AVG,s.OBP,s.SLG,ops,s.OPSplus,s.wRCplus,s.wOBA,s.BBpct,s.Kpct,s.ISO,s.xAVG,s.xSLG,s.xwOBA,s.Brl,s.HH,s.MaxEV,s.AvgEV,s.LA,s.SwSp,s.DRS,s.OAA,s.rWAR,s.fWAR,s.aWAR,s.aWAR650,p.source].join(',');});
   var b=new Blob([hdrs+'\n'+rows.join('\n')],{type:'text/csv'}),a=document.createElement('a');
   a.href=URL.createObjectURL(b);a.download='diamond_ledger_export.csv';a.click();
+}
+
+
+// ═══ HITTER / PITCHER COLUMN DEFINITIONS ═══
+var H_CONTRACT=['Player','PY','pPos','SigTm','SigDate','FY','FY Age','SigAge','Term','AAV','GUAR AAV','GUAR','Code','ArbSys','T+O','PlyrOpt?','Def?','Pot IB','Pot OB','cPY','MLSsig','CAR MLS-PY'];
+var H_STAT_COLS=['G','GS','PA','HR','AB/HR','RBI','SB','SB%','BB%','K%','AVG','OBP','SLG','OPS','ISO','OPS+','wRC+','wOBA','xAVG','xSLG','xwOBA','Brl%','HH%','LA','SwSp%','Max EV','AvgEV','DRS','OAA','rWAR','fWAR','aWAR','aWAR/650'];
+var H_PERIODS=['py','py1','py2','l2','l3','car'];
+var H_PERIOD_LABELS={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'Career'};
+
+var P_CONTRACT=['Player','PY','pPos','SigTm','SigDate','FY','FY Age','SigAge','Term','AAV','GUAR AAV','GUAR','Code','ArbSys','T+O','PlyrOpt?','Def?','Pot IB','Pot OB','cPY','MLSsig','CAR MLS-PY'];
+var P_STAT_COLS=['G','GS','QS%','GR','IP','IP/GS','gmLI','Sv','Hld','Sv%','SwStr%','K%','BB%','HR%','GB%','oSLG','aEV','Brl%','MPH(FF)','%(FF)','MPH(SI)','%(SI)','MPH(FC)','%(FC)','ERA','ERA+','FIP','xFIP','rWAR','fWAR','aWAR'];
+
+// Track which period groups are visible per view
+var hGrps={py:true,py1:false,py2:false,l2:false,l3:false,car:false};
+var pGrps={py:true,py1:false,py2:false,l2:false,l3:false,car:false};
+
+function toggleGrp(view,grp,btn){
+  var grps=view==='h'?hGrps:pGrps;
+  grps[grp]=!grps[grp];
+  btn.classList.toggle('on',grps[grp]);
+  if(view==='h')renderHitters();
+  else renderPitchers();
+}
+
+function getPeriodCol(rawRow,colName,periodIdx){
+  // The sheet has repeated column blocks. We need the Nth occurrence of colName.
+  // rawRow is the flat object keyed by header name — duplicate headers get suffixed by Apps Script
+  // Strategy: look for exact match first (period 0), then look for colName in allCols at Nth position
+  if(!rawRow)return'';
+  if(periodIdx===0)return rawRow[colName]||'';
+  // For subsequent periods, try common suffix patterns
+  // Since duplicate columns in Google Sheets come through as the same key (last wins),
+  // we rely on the _rawRow having period data stored with positional keys if available
+  // Fall back: just return '' for now — this will be enhanced once we see actual data structure
+  return rawRow[colName+'_'+periodIdx]||rawRow[colName]||'';
+}
+
+function buildViewTable(tableType){
+  // tableType: 'hitters' or 'pitchers'
+  var isHit=tableType==='hitters';
+  var grps=isHit?hGrps:pGrps;
+  var contractCols=isHit?H_CONTRACT:P_CONTRACT;
+  var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
+  var periodLabels=H_PERIOD_LABELS;
+  var periods=H_PERIODS;
+  var grpColors={'py':'g-py','py1':'g-py1','py2':'g-py2','l2':'g-l2','l3':'g-l3','car':'g-car'};
+
+  // Filter players by sheet tab
+  var sheetKey=isHit?'Hitters':'Pitchers'; // partial match
+  var players=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
+  });
+
+  // ── Build header rows ──
+  // Row 1: group span headers
+  // Row 2: column name headers
+  var row1='<tr><th colspan="'+contractCols.length+'" class="grp-hdr g-contract">Contract Info</th>';
+  var row2='<tr>';
+  contractCols.forEach(function(col,i){
+    row2+='<th onclick="srtBig(''+(isHit?'t-hit':'t-pit')+'','+i+')">'+col+'</th>';
+  });
+
+  var colIdx=contractCols.length;
+  periods.forEach(function(per){
+    if(!grps[per])return;
+    var cls=grpColors[per];
+    row1+='<th colspan="'+statCols.length+'" class="grp-hdr '+cls+'">'+periodLabels[per]+'</th>';
+    statCols.forEach(function(col,si){
+      var isFirst=si===0;
+      row2+='<th class="'+(isFirst?cls+' ':'')+cls+'" onclick="srtBig(''+(isHit?'t-hit':'t-pit')+'','+colIdx+')" style="'+(isFirst?'border-left-width:2px':'')+'">'+col+'</th>';
+      colIdx++;
+    });
+  });
+  row1+='</tr>';
+  row2+='</tr>';
+
+  // ── Build body rows ──
+  var tbody='';
+  if(!players.length){
+    tbody='<tr><td colspan="'+(contractCols.length+50)+'" style="text-align:center;padding:40px;color:var(--dim)">No '+tableType+' data loaded yet — click Refresh Sheet</td></tr>';
+  }else{
+    tbody=players.map(function(p){
+      var row=p._rawRow||{};
+      var cells='';
+
+      // Contract cells
+      var contractVals={
+        'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+        'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
+        'Term':p.term,'AAV':p.aav?'$'+p.aav.toFixed(1)+'M':'',
+        'GUAR AAV':p.guarAav?'$'+p.guarAav.toFixed(1)+'M':'',
+        'GUAR':p.guar?(p.guar>=1000?(p.guar/1000).toFixed(2)+'B':p.guar.toFixed(0)+'M'):''
+      };
+      contractCols.forEach(function(col){
+        var v=contractVals[col]!==undefined?contractVals[col]:(row[col]||'');
+        cells+='<td>'+(v!==null&&v!==undefined?v:'')+'</td>';
+      });
+
+      // Stat period cells — map period key to py0/py1/py2 objects or rawRow
+      var periodData={
+        'py': p.py0||{},
+        'py1': p.py1||{},
+        'py2': p.py2||{}
+      };
+      // For L2, L3, Career we read from _rawRow using the column names directly
+      // (these are cumulative totals stored in their own column block in the sheet)
+      // The raw row from full load will have these as separate keyed entries
+      periods.forEach(function(per){
+        if(!grps[per])return;
+        var cls=grpColors[per];
+        statCols.forEach(function(col,si){
+          var v='';
+          if(per==='py'||per==='py1'||per==='py2'){
+            var sd=periodData[per]||{};
+            // Map stat col names to our internal property names
+            var colMap={
+              'G':'G','GS':'GS','PA':'PA','HR':'HR','RBI':'RBI','SB':'SB',
+              'BB%':'BBpct','K%':'Kpct','AVG':'AVG','OBP':'OBP','SLG':'SLG',
+              'OPS':'OPS','ISO':'ISO','OPS+':'OPSplus','wRC+':'wRCplus','wOBA':'wOBA',
+              'xAVG':'xAVG','xSLG':'xSLG','xwOBA':'xwOBA','Brl%':'Brl','HH%':'HH',
+              'LA':'LA','SwSp%':'SwSp','Max EV':'MaxEV','AvgEV':'AvgEV',
+              'DRS':'DRS','OAA':'OAA','rWAR':'rWAR','fWAR':'fWAR','aWAR':'aWAR','aWAR/650':'aWAR650',
+              // Pitcher cols
+              'ERA':'ERA','ERA+':'ERApls','FIP':'FIP','xFIP':'xFIP','IP':'IP',
+              'K%':'Kpct','GB%':'GBpct','HR%':'HRpct','oSLG':'oSLG','aEV':'aEV'
+            };
+            var key=colMap[col]||col;
+            var raw=sd[key];
+            v=(raw!==null&&raw!==undefined&&raw!=='')?raw:'';
+            if(v!==''&&!isNaN(parseFloat(v)))v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
+          }else{
+            // L2, L3, Career — read from rawRow
+            // These columns exist in the sheet as duplicate headers
+            // The _rawRow will have them if full load completed
+            v=row[col]||'';
+          }
+          var isFirst=si===0;
+          cells+='<td class="'+(isFirst?cls:'')+(isFirst?' g-first':'')+'" style="'+(isFirst?'border-left:2px solid currentColor;':'')+'">'+v+'</td>';
+        });
+      });
+
+      return'<tr>'+cells+'</tr>';
+    }).join('');
+  }
+
+  return{head:row1+row2,body:tbody};
+}
+
+function renderHitters(){
+  var result=buildViewTable('hitters');
+  document.getElementById('hit-head').innerHTML=result.head;
+  document.getElementById('b-hit').innerHTML=result.body;
+}
+
+function renderPitchers(){
+  var result=buildViewTable('pitchers');
+  document.getElementById('pit-head').innerHTML=result.head;
+  document.getElementById('b-pit').innerHTML=result.body;
+}
+
+function srtBig(id,col){srt(id,col);}
+
+function exportViewCSV(type){
+  var players=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf(type==='hitters'?'hitter':'pitcher')>=0;
+  });
+  if(!players.length){toast('No data to export');return;}
+  var rows=players.map(function(p){
+    var r=p._rawRow||{};
+    return Object.values(r).join(',');
+  });
+  var hdrs=players.length?Object.keys(players[0]._rawRow||{}).join(','):'';
+  var b=new Blob([hdrs+'\n'+rows.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=type+'_export.csv';
+  a.click();
+  toast('Exported '+players.length+' '+type);
 }
 
 // ═══ TOAST ═══
