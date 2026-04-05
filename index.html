@@ -970,7 +970,7 @@ function buildPlayer(row,headers,vals){
     sigAge:parseFloat(g('SigAge'))||0,fyAge:parseFloat(g('FY Age'))||0,
     pPos:g('pPos'),sigTm:g('SigTm'),sigDate:g('SigDate').split('T')[0],fy:g('FY'),term:gni('Term'),
     guar:parseMoney(g('GUAR')),guarAav:parseMoney(g('GUAR AAV')),aav:parseMoney(g('AAV')),
-    code:g('Code'),source:'gs',_rawRow:row,
+    code:(row['Code_0']||row['Code']||'').trim(),source:'gs',_rawRow:row,
     py0:getSet(0),py1:getSet(1),py2:getSet(2)
   };
 }
@@ -1529,7 +1529,9 @@ function buildViewTable(tableType){
       var statContractCols=['MLSsig','CAR MLS-PY'];
       var rjustContractCols=['MLSsig','CAR MLS-PY'];
       contractCols.forEach(function(col){
-        var v=contractVals[col]!==undefined?contractVals[col]:(row[col]||'');
+        // Always read contract-only cols from _0 (first sheet occurrence) to avoid
+        // picking up repeated stat-block values for cols like Code, ArbSys, T+O etc.
+        var v=contractVals[col]!==undefined?contractVals[col]:(row[col+'_0']!==undefined&&row[col+'_0']!==''?row[col+'_0']:row[col]||'');
         if(dollarContractCols.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollarRaw(parseFloat(v));
         if(statContractCols.indexOf(col)>=0&&v!==''&&!isNaN(parseFloat(v)))v=fStat(parseFloat(v));
         var rj=rjustContractCols.indexOf(col)>=0?'text-align:right;':'';
@@ -1671,10 +1673,16 @@ function vfGetVal(p,col,per){
   // Contract cols
   var contractMap={'PY':p.py,'FY':p.fy,'FY Age':p.fyAge,'SigAge':p.sigAge,'Term':p.term,
     'AAV':p.aav,'GUAR AAV':p.guarAav,'GUAR':p.guar,'SigDate':p.sigDate,
-    'Player':p.name,'pPos':p.pPos,'SigTm':p.sigTm,'Code':p.code,'ArbSys':row['ArbSys']||'',
-    'T+O':row['T+O']||'','PlyrOpt?':row['PlyrOpt?']||'','Def?':row['Def?']||'',
-    'Pot IB':parseFloat(row['Pot IB'])||0,'Pot OB':parseFloat(row['Pot OB'])||0,
-    'cPY':row['cPY']||'','MLSsig':parseFloat(row['MLSsig'])||0,'CAR MLS-PY':parseFloat(row['CAR MLS-PY'])||0};
+    'Player':p.name,'pPos':p.pPos,'SigTm':p.sigTm,'Code':p.code,
+    'ArbSys':row['ArbSys_0']||row['ArbSys']||'',
+    'T+O':row['T+O_0']||row['T+O']||'',
+    'PlyrOpt?':row['PlyrOpt?_0']||row['PlyrOpt?']||'',
+    'Def?':row['Def?_0']||row['Def?']||'',
+    'Pot IB':parseFloat(row['Pot IB_0']||row['Pot IB'])||0,
+    'Pot OB':parseFloat(row['Pot OB_0']||row['Pot OB'])||0,
+    'cPY':row['cPY_0']||row['cPY']||'',
+    'MLSsig':parseFloat(row['MLSsig_0']||row['MLSsig'])||0,
+    'CAR MLS-PY':parseFloat(row['CAR MLS-PY_0']||row['CAR MLS-PY'])||0};
   if(col in contractMap)return contractMap[col];
   // Stat cols — look up from rawRow with period suffix
   var perIdx={'py':0,'py1':1,'py2':2,'l2':3,'l3':4,'car':5};
@@ -1686,9 +1694,14 @@ function vfGetVal(p,col,per){
 
 function vfGetCatVal(p,col,per){
   var row=p._rawRow||{};
-  var contractCatMap={'Player':p.name,'pPos':p.pPos,'SigTm':p.sigTm,'Code':row['Code']||'',
-    'ArbSys':row['ArbSys']||'','T+O':row['T+O']||'','PlyrOpt?':row['PlyrOpt?']||'','Def?':row['Def?']||'',
-    'cPY':row['cPY']||'','SigDate':p.sigDate,'FY':String(p.fy||'')};
+  var contractCatMap={'Player':p.name,'pPos':p.pPos,'SigTm':p.sigTm,
+    'Code':row['Code_0']||row['Code']||p.code||'',
+    'ArbSys':row['ArbSys_0']||row['ArbSys']||'',
+    'T+O':row['T+O_0']||row['T+O']||'',
+    'PlyrOpt?':row['PlyrOpt?_0']||row['PlyrOpt?']||'',
+    'Def?':row['Def?_0']||row['Def?']||'',
+    'cPY':row['cPY_0']||row['cPY']||'',
+    'SigDate':p.sigDate,'FY':String(p.fy||'')};
   if(col in contractCatMap)return String(contractCatMap[col]);
   var perIdx={'py':0,'py1':1,'py2':2,'l2':3,'l3':4,'car':5};
   var idx=perIdx[per]!==undefined?perIdx[per]:0;
