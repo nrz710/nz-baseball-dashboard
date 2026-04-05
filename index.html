@@ -1374,7 +1374,7 @@ function buildViewTable(tableType){
   var row1='<tr><th colspan="'+contractCols.length+'" class="grp-hdr g-contract">Contract Info</th>';
   var row2='<tr>';
   contractCols.forEach(function(col,i){
-    row2+='<th onclick="srtBig(''+(isHit?'t-hit':'t-pit')+'','+i+')">'+col+'</th>';
+    row2+='<th onclick="srtBig(this,'+i+')" data-tbl="'+(isHit?'t-hit':'t-pit')+'">'+col+'</th>';
   });
 
   var colIdx=contractCols.length;
@@ -1384,7 +1384,7 @@ function buildViewTable(tableType){
     row1+='<th colspan="'+statCols.length+'" class="grp-hdr '+cls+'">'+periodLabels[per]+'</th>';
     statCols.forEach(function(col,si){
       var isFirst=si===0;
-      row2+='<th class="'+(isFirst?cls+' ':'')+cls+'" onclick="srtBig(''+(isHit?'t-hit':'t-pit')+'','+colIdx+')" style="'+(isFirst?'border-left-width:2px':'')+'">'+col+'</th>';
+      row2+='<th class="'+(isFirst?cls+' ':'')+cls+'" onclick="srtBig(this,'+colIdx+')" data-tbl="'+(isHit?'t-hit':'t-pit')+'" style="'+(isFirst?'border-left-width:2px':'')+'">'+col+'</th>';
       colIdx++;
     });
   });
@@ -1475,7 +1475,7 @@ function renderPitchers(){
   document.getElementById('b-pit').innerHTML=result.body;
 }
 
-function srtBig(id,col){srt(id,col);}
+function srtBig(th,col){var id=th.dataset.tbl;srt(id,col);}
 
 function exportViewCSV(type){
   var players=DB.merged.filter(function(p){
