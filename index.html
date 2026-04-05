@@ -964,7 +964,7 @@ function buildPlayer(row,headers,vals){
     o.OPS=o.OBP&&o.SLG?Math.round((o.OBP+o.SLG)*1000)/1000:null;
     return o;
   }
-  function parseMoney(s){s=(s||'').replace(/[$,]/g,'').trim();var v=parseFloat(s)||0;return v>1000000?v/1000000:v;}
+  function parseMoney(s){s=(s||'').replace(/[$,]/g,'').trim();var v=parseFloat(s)||0;return v>=10000?v/1000000:v;}
   return{
     name:g('Player'),py:gni('PY')||parseInt(g('PY'))||0,
     sigAge:parseFloat(g('SigAge'))||0,fyAge:parseFloat(g('FY Age'))||0,
