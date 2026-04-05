@@ -1455,9 +1455,14 @@ function buildViewTable(tableType){
             }
           }else{
             // L2, L3, Career — read from rawRow
-            // These columns exist in the sheet as duplicate headers
-            // The _rawRow will have them if full load completed
             v=row[col]||'';
+            // Apply same formatting rules as py/py1/py2
+            if(v!==''&&!isNaN(parseFloat(v))){
+              var pctCols2=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
+              var warCols2=['rWAR','fWAR','aWAR','aWAR/650'];
+              if(pctCols2.indexOf(col)>=0)v=fPct(parseFloat(v));
+              else if(warCols2.indexOf(col)>=0)v=fWAR(parseFloat(v));
+            }
           }
           var isFirst=si===0;
           cells+='<td class="'+(isFirst?cls:'')+(isFirst?' g-first':'')+'" style="'+(isFirst?'border-left:2px solid currentColor;':'')+'">'+v+'</td>';
