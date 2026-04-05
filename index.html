@@ -1120,6 +1120,8 @@ function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
 function fDate(s){if(!s)return'—';return String(s).split('T')[0];}
 function fDollar(v){if(!v&&v!==0)return'—';var n=parseFloat(v);if(isNaN(n)||n===0)return'—';return'$'+Math.round(n*1000000).toLocaleString('en-US');}
+function fPct(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';return(parseFloat(v)*100).toFixed(1);}
+function fWAR(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';var n=parseFloat(v);return n.toFixed(1).replace(/^0/,'');}
 
 // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
@@ -1135,7 +1137,7 @@ function refreshTableOnly(){
   }
   tb.innerHTML=filtered.map(function(p){
     var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—';
-    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
+    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+fWAR(war)+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
   }).join('');
 }
 
@@ -1161,7 +1163,7 @@ function renderOverview(){
   if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(p){
     var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—';
-    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+(war?war.toFixed(1):'—')+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
+    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+fWAR(war)+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
   }).join('');
   var topAAV=[].concat(filtered).sort(function(a,b){return(b.aav||0)-(a.aav||0);}).slice(0,20);
   bSVG('c-aav',topAAV.map(function(p){return{l:p.name.split(',')[0],v:p.aav||0,c:'#e8c547'};}),true);
@@ -1176,11 +1178,11 @@ function renderStats(){
   var ps=DB.merged.filter(function(p){return!yrF||String(p.py)===String(yrF);});
   document.getElementById('b-bat').innerHTML=!ps.length?'<tr><td colspan="18"><div class="emp"><div class="et">No Data</div></div></td></tr>':
     ps.map(function(p){var s=p.py0||{};var ops=s.OPS||(s.OBP&&s.SLG?(s.OBP+s.SLG):null);
-      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(s.G||'—')+'</td><td>'+(s.PA||'—')+'</td><td>'+(s.HR||'—')+'</td><td>'+(s.RBI||'—')+'</td><td>'+(s.SB||'—')+'</td><td class="'+gc(s.AVG,.240,.300)+'">'+fa(s.AVG)+'</td><td class="'+gc(s.OBP,.310,.380)+'">'+fa(s.OBP)+'</td><td class="'+gc(s.SLG,.400,.520)+'">'+fa(s.SLG)+'</td><td class="'+gc(ops,.700,.900)+'">'+fa(ops)+'</td><td class="'+gc(s.OPSplus,100,140)+'">'+(s.OPSplus||'—')+'</td><td class="'+gc(s.wRCplus,100,140)+'">'+(s.wRCplus||'—')+'</td><td>'+fmPct(s.BBpct)+'</td><td>'+fmPct(s.Kpct)+'</td><td>'+fa(s.ISO)+'</td><td>'+fa(s.wOBA)+'</td></tr>';
+      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(s.G||'—')+'</td><td>'+(s.PA||'—')+'</td><td>'+(s.HR||'—')+'</td><td>'+(s.RBI||'—')+'</td><td>'+(s.SB||'—')+'</td><td class="'+gc(s.AVG,.240,.300)+'">'+fa(s.AVG)+'</td><td class="'+gc(s.OBP,.310,.380)+'">'+fa(s.OBP)+'</td><td class="'+gc(s.SLG,.400,.520)+'">'+fa(s.SLG)+'</td><td class="'+gc(ops,.700,.900)+'">'+fa(ops)+'</td><td class="'+gc(s.OPSplus,100,140)+'">'+(s.OPSplus||'—')+'</td><td class="'+gc(s.wRCplus,100,140)+'">'+(s.wRCplus||'—')+'</td><td>'+fPct(s.BBpct)+'</td><td>'+fPct(s.Kpct)+'</td><td>'+fa(s.ISO)+'</td><td>'+fa(s.wOBA)+'</td></tr>';
     }).join('');
   document.getElementById('b-sc').innerHTML=!ps.length?'<tr><td colspan="17"></td></tr>':
     ps.map(function(p){var s=p.py0||{};
-      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+fa(s.xAVG)+'</td><td>'+fa(s.xSLG)+'</td><td>'+fa(s.xwOBA)+'</td><td class="'+gc(s.Brl,5,15)+'">'+fmPct(s.Brl)+'</td><td class="'+gc(s.HH,35,50)+'">'+fmPct(s.HH)+'</td><td>'+fm(s.LA,1)+'</td><td class="'+gc(s.MaxEV,105,115)+'">'+fm(s.MaxEV,1)+'</td><td class="'+gc(s.AvgEV,87,92)+'">'+fm(s.AvgEV,1)+'</td><td>'+fmPct(s.SwSp)+'</td><td>'+fm(s.DRS,0)+'</td><td>'+fm(s.OAA,1)+'</td><td class="'+gc(s.rWAR,2,5)+'">'+fm(s.rWAR,1)+'</td><td class="'+gc(s.fWAR,2,5)+'">'+fm(s.fWAR,1)+'</td><td class="'+gc(s.aWAR,2,5)+'">'+fm(s.aWAR,1)+'</td><td class="'+gc(s.aWAR650,2,5)+'">'+fm(s.aWAR650,1)+'</td></tr>';
+      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+fa(s.xAVG)+'</td><td>'+fa(s.xSLG)+'</td><td>'+fa(s.xwOBA)+'</td><td class="'+gc(s.Brl,5,15)+'">'+fmPct(s.Brl)+'</td><td class="'+gc(s.HH,35,50)+'">'+fmPct(s.HH)+'</td><td>'+fm(s.LA,1)+'</td><td class="'+gc(s.MaxEV,105,115)+'">'+fm(s.MaxEV,1)+'</td><td class="'+gc(s.AvgEV,87,92)+'">'+fm(s.AvgEV,1)+'</td><td>'+fPct(s.SwSp)+'</td><td>'+fm(s.DRS,0)+'</td><td>'+fm(s.OAA,1)+'</td><td class="'+gc(s.rWAR,2,5)+'">'+fWAR(s.rWAR)+'</td><td class="'+gc(s.fWAR,2,5)+'">'+fWAR(s.fWAR)+'</td><td class="'+gc(s.aWAR,2,5)+'">'+fWAR(s.aWAR)+'</td><td class="'+gc(s.aWAR650,2,5)+'">'+fWAR(s.aWAR650)+'</td></tr>';
     }).join('');
   var warD=[].concat(ps).filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,20);
   bSVG('c-war',warD.map(function(p){return{l:p.name.split(',')[0],v:p.py0.aWAR||0,c:'#e8c547'};}));
@@ -1194,7 +1196,7 @@ function renderTrend(){
   function arrow(p2,p1,p0){if(!p2||!p1||!p0)return'—';return p0-p1>0.5?'<span class="gc">&#9650; Rising</span>':p0-p1<-0.5?'<span class="rc">&#9660; Declining</span>':'<span class="ac">&#9654; Stable</span>';}
   document.getElementById('b-trend').innerHTML=!ps.length?'<tr><td colspan="13"><div class="emp"><div class="et">No Data</div></div></td></tr>':
     ps.map(function(p){var p0=p.py0||{},p1=p.py1||{},p2=p.py2||{};var o0=p0.OBP&&p0.SLG?p0.OBP+p0.SLG:null,o1=p1.OBP&&p1.SLG?p1.OBP+p1.SLG:null,o2=p2.OBP&&p2.SLG?p2.OBP+p2.SLG:null;
-      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="'+gc(p2.aWAR,2,5)+'">'+fm(p2.aWAR,1)+'</td><td class="'+gc(p1.aWAR,2,5)+'">'+fm(p1.aWAR,1)+'</td><td class="'+gc(p0.aWAR,2,5)+'"><strong>'+fm(p0.aWAR,1)+'</strong></td><td>'+arrow(p2.aWAR,p1.aWAR,p0.aWAR)+'</td><td>'+fa(o2)+'</td><td>'+fa(o1)+'</td><td><strong>'+fa(o0)+'</strong></td><td>'+(p2.wRCplus||'—')+'</td><td>'+(p1.wRCplus||'—')+'</td><td><strong>'+(p0.wRCplus||'—')+'</strong></td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td></tr>';
+      return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="'+gc(p2.aWAR,2,5)+'">'+fWAR(p2.aWAR)+'</td><td class="'+gc(p1.aWAR,2,5)+'">'+fWAR(p1.aWAR)+'</td><td class="'+gc(p0.aWAR,2,5)+'"><strong>'+fWAR(p0.aWAR)+'</strong></td><td>'+arrow(p2.aWAR,p1.aWAR,p0.aWAR)+'</td><td>'+fa(o2)+'</td><td>'+fa(o1)+'</td><td><strong>'+fa(o0)+'</strong></td><td>'+(p2.wRCplus||'—')+'</td><td>'+(p1.wRCplus||'—')+'</td><td><strong>'+(p0.wRCplus||'—')+'</strong></td><td class="ac">$'+(p.aav?p.aav.toFixed(1):'0')+'M</td></tr>';
     }).join('');
   var top=ps.filter(function(p){return p.py0&&p.py0.aWAR;}).sort(function(a,b){return(b.py0.aWAR||0)-(a.py0.aWAR||0);}).slice(0,10);
   lgSVG('c-traj',top,'aWAR');lgSVG('c-ops-traj',top,'OPS');
@@ -1207,7 +1209,7 @@ function renderValue(){
   var sorted=[].concat(ps).filter(function(p){return p.py0;}).sort(function(a,b){var da=a.py0.aWAR>0?a.aav/a.py0.aWAR:999,db=b.py0.aWAR>0?b.aav/b.py0.aWAR:999;return da-db;});
   document.getElementById('b-val').innerHTML=!sorted.length?'<tr><td colspan="11"><div class="emp"><div class="et">No Data</div></div></td></tr>':
     sorted.map(function(p,i){var war=(p.py0&&p.py0.aWAR)||0,war6=(p.py0&&p.py0.aWAR650)||0,dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—',mv=fDollar(war*mr),sur=war*mr-p.aav,sc=sur>=0?'gc':'rc';
-      return'<tr><td>'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="ac">'+fDollar(p.aav)+'</td><td class="'+gc(war,2,5)+'">'+fm(war,1)+'</td><td>'+fm(war6,1)+'</td><td>'+dw+'</td><td>'+mv+'</td><td class="'+sc+'">'+(sur>=0?'+':'')+fDollar(sur)+'</td><td>'+bdg(vRate(p))+'</td></tr>';
+      return'<tr><td>'+(i+1)+'</td><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td class="ac">'+fDollar(p.aav)+'</td><td class="'+gc(war,2,5)+'">'+fWAR(war)+'</td><td>'+fWAR(war6)+'</td><td>'+dw+'</td><td>'+mv+'</td><td class="'+sc+'">'+(sur>=0?'+':'')+fDollar(sur)+'</td><td>'+bdg(vRate(p))+'</td></tr>';
     }).join('');
 }
 
@@ -1219,7 +1221,7 @@ function showComps(){
   var tgt=DB.merged[idx];
   var pool=DB.merged.filter(function(p,i){return i!==idx&&(!posF||p.pPos===posF)&&(!pyF||String(p.py)===String(pyF));});
   var scored=pool.map(function(p){var sc=0;if(p.pPos===tgt.pPos)sc+=25;sc+=20-Math.min(20,Math.abs(((p.py0&&p.py0.aWAR)||0)-((tgt.py0&&tgt.py0.aWAR)||0))*4);sc+=20-Math.min(20,Math.abs((p.aav||0)-(tgt.aav||0))*1.5);sc+=15-Math.min(15,Math.abs((p.sigAge||0)-(tgt.sigAge||0))*3);if(p.py===tgt.py)sc+=10;var pw=(p.py0&&p.py0.wRCplus)||0,tw=(tgt.py0&&tgt.py0.wRCplus)||0;if(pw&&tw)sc+=10-Math.min(10,Math.abs(pw-tw)/10);p._sc=sc;return p;}).sort(function(a,b){return b._sc-a._sc;}).slice(0,3);
-  function card(p,isTgt){var s=p.py0||{},ops=s.OBP&&s.SLG?fa(s.OBP+s.SLG):'—';var stats=[['AAV',fDollar(p.aav)],['GUAR AAV',fDollar(p.guarAav)],['FY',(p.fy||'—')],['FY Age',(p.fyAge?p.fyAge.toFixed(0):'—')],['OPS',ops],['wRC+',(s.wRCplus||'—')],['aWAR',fm(s.aWAR,1)]];
+  function card(p,isTgt){var s=p.py0||{},ops=s.OBP&&s.SLG?fa(s.OBP+s.SLG):'—';var stats=[['AAV',fDollar(p.aav)],['GUAR AAV',fDollar(p.guarAav)],['FY',(p.fy||'—')],['FY Age',(p.fyAge?p.fyAge.toFixed(0):'—')],['OPS',ops],['wRC+',(s.wRCplus||'—')],['aWAR',fWAR(s.aWAR)]];
     return'<div class="cc" style="border-color:'+(isTgt?'var(--accent)':'var(--border)')+'">'+( isTgt?'<div style="position:absolute;top:8px;right:8px;font-size:9px;letter-spacing:2px;color:var(--accent)">TARGET</div>':'' )+'<div class="cn">'+p.name.split(',')[0]+'</div><div class="cm">'+(p.pPos||'?')+' - '+(p.sigTm||'?')+' - PY '+(p.py||'?')+'</div>'+stats.map(function(s){return'<div class="crow"><span class="ck">'+s[0]+'</span><span class="cv">'+s[1]+'</span></div>';}).join('')+'<div class="csal">'+fDollar(p.aav)+'<span style="font-size:12px">/yr</span></div></div>';
   }
   if(!scored.length){out.innerHTML='<div class="emp"><div class="et">No Comparables Found</div></div>';return;}
@@ -1444,7 +1446,13 @@ function buildViewTable(tableType){
             var key=colMap[col]||col;
             var raw=sd[key];
             v=(raw!==null&&raw!==undefined&&raw!=='')?raw:'';
-            if(v!==''&&!isNaN(parseFloat(v)))v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
+            if(v!==''&&!isNaN(parseFloat(v))){
+              var pctCols=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
+              var warCols=['rWAR','fWAR','aWAR','aWAR/650'];
+              if(pctCols.indexOf(col)>=0)v=fPct(parseFloat(v));
+              else if(warCols.indexOf(col)>=0)v=fWAR(parseFloat(v));
+              else v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
+            }
           }else{
             // L2, L3, Career — read from rawRow
             // These columns exist in the sheet as duplicate headers
