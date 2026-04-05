@@ -798,7 +798,15 @@ function processSheetData(data){
       var firstName=String(vals[0]||'').trim();
       if(!firstName||firstName==='Player')continue;
       var row={};
-      headers.forEach(function(h,j){row[h]=vals[j]!==undefined&&vals[j]!==null?String(vals[j]).trim():'';});
+      var headerCount={};
+      headers.forEach(function(h,j){
+        var count=headerCount[h]||0;
+        // Store with position suffix for duplicates (e.g. G_0, G_1, G_2)
+        row[h+'_'+count]=vals[j]!==undefined&&vals[j]!==null?String(vals[j]).trim():'';
+        // Also store the first occurrence without suffix for backward compat
+        if(count===0)row[h]=vals[j]!==undefined&&vals[j]!==null?String(vals[j]).trim():'';
+        headerCount[h]=count+1;
+      });
       if(!row['Player'])continue;
       var p=buildPlayer(row,headers,vals);
       if(p){p.sheetTab=sheetName;allPlayers.push(p);}
@@ -835,7 +843,13 @@ function mergeFullData(){
       var mIdx=DB.merged.findIndex(function(p){return normName(p.name)===normName(nm);});
       if(mIdx>=0){
         var row={};
-        headers.forEach(function(h,j){row[h]=vals[j]!==undefined?String(vals[j]).trim():'';});
+        var hCount2={};
+        headers.forEach(function(h,j){
+          var cnt=hCount2[h]||0;
+          row[h+'_'+cnt]=vals[j]!==undefined?String(vals[j]).trim():'';
+          if(cnt===0)row[h]=vals[j]!==undefined?String(vals[j]).trim():'';
+          hCount2[h]=cnt+1;
+        });
         DB.merged[mIdx]._rawRow=Object.assign(DB.merged[mIdx]._rawRow||{},row);
       }
     }
@@ -1437,22 +1451,12 @@ function buildViewTable(tableType){
         statCols.forEach(function(col,si){
           var v='';
           if(per==='py'||per==='py1'||per==='py2'){
-            var sd=periodData[per]||{};
-            // Map stat col names to our internal property names
-            var colMap={
-              'G':'G','GS':'GS','PA':'PA','HR':'HR','RBI':'RBI','SB':'SB',
-              'BB%':'BBpct','K%':'Kpct','AVG':'AVG','OBP':'OBP','SLG':'SLG',
-              'OPS':'OPS','ISO':'ISO','OPS+':'OPSplus','wRC+':'wRCplus','wOBA':'wOBA',
-              'xAVG':'xAVG','xSLG':'xSLG','xwOBA':'xwOBA','Brl%':'Brl','HH%':'HH',
-              'LA':'LA','SwSp%':'SwSp','Max EV':'MaxEV','AvgEV':'AvgEV',
-              'DRS':'DRS','OAA':'OAA','rWAR':'rWAR','fWAR':'fWAR','aWAR':'aWAR','aWAR/650':'aWAR650',
-              // Pitcher cols
-              'ERA':'ERA','ERA+':'ERApls','FIP':'FIP','xFIP':'xFIP','IP':'IP',
-              'K%':'Kpct','GB%':'GBpct','HR%':'HRpct','oSLG':'oSLG','aEV':'aEV'
-            };
-            var key=colMap[col]||col;
-            var raw=sd[key];
-            v=(raw!==null&&raw!==undefined&&raw!=='')?raw:'';
+            // Read directly from _rawRow using period index (0=PY, 1=PY-1, 2=PY-2)
+            var perIdx={'py':0,'py1':1,'py2':2}[per];
+            var raw=row[col+'_'+perIdx];
+            // Fall back to first occurrence if indexed version missing
+            if(raw===undefined||raw===null)raw=row[col]||'';
+            v=String(raw).trim();
             if(v!==''&&!isNaN(parseFloat(v))){
               var pctCols=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
               var warCols=['rWAR','fWAR','aWAR','aWAR/650'];
