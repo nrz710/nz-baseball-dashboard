@@ -1122,6 +1122,7 @@ function fDate(s){if(!s)return'—';return String(s).split('T')[0];}
 function fDollar(v){if(!v&&v!==0)return'—';var n=parseFloat(v);if(isNaN(n)||n===0)return'—';return'$'+Math.round(n*1000000).toLocaleString('en-US');}
 function fPct(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';return(parseFloat(v)*100).toFixed(1);}
 function fWAR(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';var n=parseFloat(v);return n.toFixed(1).replace(/^0/,'');}
+function fStat(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';return parseFloat(v).toFixed(3).replace(/^0/,'');}
 
 // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
@@ -1410,9 +1411,15 @@ function buildViewTable(tableType){
         'GUAR AAV':fDollar(p.guarAav),
         'GUAR':fDollar(p.guar)
       };
+      var dollarContractCols=['Pot IB','Pot OB'];
+      var statContractCols=['MLSsig','CAR MLS-PY'];
+      var rjustContractCols=['MLSsig','CAR MLS-PY'];
       contractCols.forEach(function(col){
         var v=contractVals[col]!==undefined?contractVals[col]:(row[col]||'');
-        cells+='<td>'+(v!==null&&v!==undefined?v:'')+'</td>';
+        if(dollarContractCols.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollar(parseFloat(v));
+        if(statContractCols.indexOf(col)>=0&&v!==''&&!isNaN(parseFloat(v)))v=fStat(parseFloat(v));
+        var rj=rjustContractCols.indexOf(col)>=0?'text-align:right;':'';
+        cells+='<td style="'+rj+'">'+(v!==null&&v!==undefined?v:'')+'</td>';
       });
 
       // Stat period cells — map period key to py0/py1/py2 objects or rawRow
@@ -1449,8 +1456,10 @@ function buildViewTable(tableType){
             if(v!==''&&!isNaN(parseFloat(v))){
               var pctCols=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
               var warCols=['rWAR','fWAR','aWAR','aWAR/650'];
+              var statCols3=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA'];
               if(pctCols.indexOf(col)>=0)v=fPct(parseFloat(v));
               else if(warCols.indexOf(col)>=0)v=fWAR(parseFloat(v));
+              else if(statCols3.indexOf(col)>=0)v=fStat(parseFloat(v));
               else v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
             }
           }else{
@@ -1460,12 +1469,15 @@ function buildViewTable(tableType){
             if(v!==''&&!isNaN(parseFloat(v))){
               var pctCols2=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
               var warCols2=['rWAR','fWAR','aWAR','aWAR/650'];
+              var statCols3b=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA'];
               if(pctCols2.indexOf(col)>=0)v=fPct(parseFloat(v));
               else if(warCols2.indexOf(col)>=0)v=fWAR(parseFloat(v));
+              else if(statCols3b.indexOf(col)>=0)v=fStat(parseFloat(v));
             }
           }
           var isFirst=si===0;
-          cells+='<td class="'+(isFirst?cls:'')+(isFirst?' g-first':'')+'" style="'+(isFirst?'border-left:2px solid currentColor;':'')+'">'+v+'</td>';
+          var rjStyle='text-align:right;'+(isFirst?'border-left:2px solid currentColor;':'');
+          cells+='<td class="'+(isFirst?cls:'')+(isFirst?' g-first':'')+'" style="'+rjStyle+'">'+v+'</td>';
         });
       });
 
