@@ -1707,10 +1707,17 @@ function vfApply(view,players,activePer){
       if(type==='numeric'){
         var v=parseFloat(vfGetVal(p,col,per));
         if(isNaN(v)){
-          // If filter is set and value is missing, exclude
-          if(f.min!==''&&f.min!==null&&f.min!==undefined)return false;
+          if((f.min!==''&&f.min!==null)||(f.vals&&f.vals.length>0))return false;
           return true;
         }
+        // Individual picks: if any are selected, value must match one of them
+        if(f.vals&&f.vals.length>0){
+          var vStr=vfFmtNum(v);
+          if(f.vals.indexOf(vStr)>=0)return true;
+          // If ONLY picks (no range), exclude non-matches
+          if(f.min===''&&f.max==='')return false;
+        }
+        // Range check
         if(f.min!==''&&f.min!==null&&!isNaN(parseFloat(f.min))&&v<parseFloat(f.min))return false;
         if(f.max!==''&&f.max!==null&&!isNaN(parseFloat(f.max))&&v>parseFloat(f.max))return false;
         return true;
@@ -1750,9 +1757,14 @@ function vfChipLabel(f){
   var perLabel={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'CAR'};
   var prefix=f.per&&f.per!=='contract'?'['+perLabel[f.per]+'] ':'';
   if(f.type==='numeric'){
+    // Individual picks take priority for label
+    if(f.vals&&f.vals.length>0&&f.min===''&&f.max===''){
+      return prefix+f.col+': '+(f.vals.length<=3?f.vals.join(', '):f.vals.length+' values');
+    }
     var parts=[];
     if(f.min!==''&&f.min!==null)parts.push('≥'+f.min);
     if(f.max!==''&&f.max!==null)parts.push('≤'+f.max);
+    if(f.vals&&f.vals.length>0)parts.push('or '+f.vals.join('/'));
     return prefix+f.col+': '+parts.join(' ');
   }else if(f.type==='date'){
     var parts=[];
@@ -1823,6 +1835,14 @@ function vfPopulateColSel(view){
   sel.onchange=function(){vfOnColChange(view);};
 }
 
+// Format a numeric value for display — integers stay integers, decimals get 2dp
+function vfFmtNum(n){
+  if(n===''||n===null||n===undefined)return'';
+  var f=parseFloat(n);
+  if(isNaN(f))return String(n);
+  return f%1===0?String(Math.round(f)):f.toFixed(2);
+}
+
 function vfOnColChange(view){
   var pfx=view==='h'?'h':'p';
   var sel=document.getElementById('vf-col-'+pfx);
@@ -1836,7 +1856,6 @@ function vfOnColChange(view){
   vfBuilderType=vfColType(vfBuilderCol);
   vfBuilderView=view;
 
-  // Get all players for this view to determine unique values
   var isHit=view==='h';
   var players=DB.merged.filter(function(p){
     if(!p.sheetTab)return false;
@@ -1845,15 +1864,28 @@ function vfOnColChange(view){
   var per=vfBuilderPer==='contract'?'py':vfBuilderPer;
 
   if(vfBuilderType==='numeric'){
-    // Min/max inputs
     var nums=players.map(function(p){return parseFloat(vfGetVal(p,vfBuilderCol,per));}).filter(function(n){return!isNaN(n);});
     var mn=nums.length?Math.min.apply(null,nums):'';
     var mx=nums.length?Math.max.apply(null,nums):'';
-    inputArea.innerHTML=
-      '<span class="vf-lbl">Min</span>'+
-      '<input class="vf-input" id="vf-min-'+pfx+'" type="number" placeholder="'+(mn!==''?mn.toFixed(2):'')+'" step="any">'+
-      '<span class="vf-lbl">Max</span>'+
-      '<input class="vf-input" id="vf-max-'+pfx+'" type="number" placeholder="'+(mx!==''?mx.toFixed(2):'')+'" step="any">';
+    // Unique sorted display values
+    var seen={};
+    nums.forEach(function(n){var lbl=vfFmtNum(n);seen[lbl]=n;});
+    var uniqNums=Object.keys(seen).sort(function(a,b){return seen[a]-seen[b];});
+    var html=
+      '<div style="display:flex;flex-direction:column;gap:8px;width:100%">'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+        '<span class="vf-lbl">Range:</span>'+
+        '<input class="vf-input" id="vf-min-'+pfx+'" type="number" placeholder="'+(mn!==''?vfFmtNum(mn):'')+'" step="any" style="width:90px">'+
+        '<span class="vf-lbl">to</span>'+
+        '<input class="vf-input" id="vf-max-'+pfx+'" type="number" placeholder="'+(mx!==''?vfFmtNum(mx):'')+'" step="any" style="width:90px">'+
+      '</div>'+
+      '<span class="vf-lbl" style="color:var(--dim)">— or select individual values —</span>'+
+      '<div class="vf-multi" id="vf-multi-'+pfx+'">';
+    uniqNums.forEach(function(label){
+      html+='<div class="vf-mitem" data-val="'+label+'" onclick="vfToggleMitem(this)">'+label+'</div>';
+    });
+    html+='</div></div>';
+    inputArea.innerHTML=html;
   }else if(vfBuilderType==='date'){
     inputArea.innerHTML=
       '<span class="vf-lbl">From</span>'+
@@ -1861,11 +1893,11 @@ function vfOnColChange(view){
       '<span class="vf-lbl">To</span>'+
       '<input class="vf-input" id="vf-max-'+pfx+'" type="date" style="width:130px">';
   }else{
-    // Multi-select
     var uniq=vfUniqueVals(players,vfBuilderCol,per);
     var html='<div class="vf-multi" id="vf-multi-'+pfx+'">';
     uniq.forEach(function(v){
-      html+='<label class="vf-mitem" onclick="vfToggleMitem(this)"><input type="checkbox" value="'+v.replace(/"/g,'&quot;')+'">'+v+'</label>';
+      var safe=v.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      html+='<div class="vf-mitem" data-val="'+safe+'" onclick="vfToggleMitem(this)">'+v+'</div>';
     });
     html+='</div>';
     inputArea.innerHTML=html;
@@ -1874,7 +1906,6 @@ function vfOnColChange(view){
 
 function vfToggleMitem(el){
   el.classList.toggle('on');
-  el.querySelector('input').checked=el.classList.contains('on');
 }
 
 function vfApplyFilter(view){
@@ -1882,17 +1913,28 @@ function vfApplyFilter(view){
   var sel=document.getElementById('vf-col-'+pfx);
   if(!sel||!sel.value)return;
   var filter={col:vfBuilderCol,per:vfBuilderPer,type:vfBuilderType};
-  if(vfBuilderType==='numeric'||vfBuilderType==='date'){
+  if(vfBuilderType==='numeric'){
     var minEl=document.getElementById('vf-min-'+pfx);
     var maxEl=document.getElementById('vf-max-'+pfx);
     filter.min=minEl?minEl.value:'';
     filter.max=maxEl?maxEl.value:'';
-    if(filter.min===''&&filter.max==='')return; // nothing set
-  }else{
+    // Also collect any individually selected values
     var multi=document.getElementById('vf-multi-'+pfx);
-    var checked=multi?Array.from(multi.querySelectorAll('input:checked')).map(function(i){return i.value;}):[]; 
-    filter.vals=checked;
-    if(checked.length===0)return;
+    var picked=multi?Array.from(multi.querySelectorAll('.vf-mitem.on')).map(function(el){return el.dataset.val;}).filter(Boolean):[];
+    filter.vals=picked;
+    if(filter.min===''&&filter.max===''&&picked.length===0)return; // nothing set
+  }else if(vfBuilderType==='date'){
+    var minEl=document.getElementById('vf-min-'+pfx);
+    var maxEl=document.getElementById('vf-max-'+pfx);
+    filter.min=minEl?minEl.value:'';
+    filter.max=maxEl?maxEl.value:'';
+    if(filter.min===''&&filter.max==='')return;
+  }else{
+    // categorical — read data-val from selected .vf-mitem.on divs
+    var multi=document.getElementById('vf-multi-'+pfx);
+    var picked=multi?Array.from(multi.querySelectorAll('.vf-mitem.on')).map(function(el){return el.dataset.val;}).filter(Boolean):[];
+    filter.vals=picked;
+    if(picked.length===0)return;
   }
   vfState[view].filters.push(filter);
   vfCloseBuilder(view);
