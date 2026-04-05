@@ -840,17 +840,27 @@ function mergeFullData(){
     for(var i=2;i<rows.length;i++){
       var vals=rows[i];
       var nm=String(vals[0]||'').trim();if(!nm)continue;
-      var mIdx=DB.merged.findIndex(function(p){return normName(p.name)===normName(nm);});
+      // Match by sheetTab+name first, fall back to name-only
+      var mIdx=DB.merged.findIndex(function(p){
+        return normName(p.name)===normName(nm)&&p.sheetTab===sheetName;
+      });
+      if(mIdx<0)mIdx=DB.merged.findIndex(function(p){return normName(p.name)===normName(nm);});
+      var row2={};
+      var hCount2={};
+      headers.forEach(function(h,j){
+        var cnt=hCount2[h]||0;
+        row2[h+'_'+cnt]=vals[j]!==undefined?String(vals[j]).trim():'';
+        if(cnt===0)row2[h]=vals[j]!==undefined?String(vals[j]).trim():'';
+        hCount2[h]=cnt+1;
+      });
       if(mIdx>=0){
-        var row={};
-        var hCount2={};
-        headers.forEach(function(h,j){
-          var cnt=hCount2[h]||0;
-          row[h+'_'+cnt]=vals[j]!==undefined?String(vals[j]).trim():'';
-          if(cnt===0)row[h]=vals[j]!==undefined?String(vals[j]).trim():'';
-          hCount2[h]=cnt+1;
-        });
-        DB.merged[mIdx]._rawRow=Object.assign(DB.merged[mIdx]._rawRow||{},row);
+        // Also stamp the sheetTab in case fast pass didn't set it
+        if(!DB.merged[mIdx].sheetTab)DB.merged[mIdx].sheetTab=sheetName;
+        DB.merged[mIdx]._rawRow=Object.assign(DB.merged[mIdx]._rawRow||{},row2);
+      }else{
+        // Player missing from merged (fast pass skipped this sheet tab) — build and add them
+        var p2=buildPlayer(row2,headers,vals);
+        if(p2){p2.sheetTab=sheetName;p2._rawRow=row2;DB.merged.push(p2);}
       }
     }
   });
@@ -1115,7 +1125,8 @@ function renderAll(){
   try{renderManualTable();}catch(e){}
   try{renderDBInfo();}catch(e){}
   try{renderSuppSummary();}catch(e){}
-  // Hitters/Pitchers only render on demand (too large to always render)
+  // Hitters/Pitchers: re-render if currently visible
+  try{var hp=document.querySelector('.pnl.on');if(hp){if(hp.id==='p-hitters')renderHitters();else if(hp.id==='p-pitchers')renderPitchers();}}catch(e){}
 }
 function populateYrFilters(){
   var years=[];DB.merged.forEach(function(p){if(p.py&&years.indexOf(p.py)===-1)years.push(p.py);});years.sort(function(a,b){return b-a;});
@@ -1410,8 +1421,10 @@ function buildViewTable(tableType){
 
   // ── Build body rows ──
   var tbody='';
+  var fullLoaded=DB.allCols.length>0;
   if(!players.length){
-    tbody='<tr><td colspan="'+(contractCols.length+50)+'" style="text-align:center;padding:40px;color:var(--dim)">No '+tableType+' data loaded yet — click Refresh Sheet</td></tr>';
+    var msg=fullLoaded?'No '+tableType+' data found — check sheet tab name':'Loading all columns... please wait a moment then try again';
+    tbody='<tr><td colspan="'+(contractCols.length+50)+'" style="text-align:center;padding:40px;color:var(--dim)">'+msg+'</td></tr>';
   }else{
     tbody=players.map(function(p){
       var row=p._rawRow||{};
@@ -1453,9 +1466,9 @@ function buildViewTable(tableType){
           if(per==='py'||per==='py1'||per==='py2'){
             // Read directly from _rawRow using period index (0=PY, 1=PY-1, 2=PY-2)
             var perIdx={'py':0,'py1':1,'py2':2}[per];
+            // Try indexed key first (e.g. ERA_0 for PY), then plain key
             var raw=row[col+'_'+perIdx];
-            // Fall back to first occurrence if indexed version missing
-            if(raw===undefined||raw===null)raw=row[col]||'';
+            if(raw===undefined||raw===null||raw==='')raw=row[col+'_0']||row[col]||'';
             v=String(raw).trim();
             if(v!==''&&!isNaN(parseFloat(v))){
               var pctCols=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
