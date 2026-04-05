@@ -1145,9 +1145,11 @@ function fmPct(x){if(!x||isNaN(x))return'—';return parseFloat(x).toFixed(1)+'%
 function gc(v,lo,hi){if(!v||isNaN(v))return'';return v>=hi?'gc':v<=lo?'rc':'';}
 function fDate(s){if(!s)return'—';return String(s).split('T')[0];}
 function fDollar(v){if(!v&&v!==0)return'—';var n=parseFloat(v);if(isNaN(n)||n===0)return'—';return'$'+Math.round(n*1000000).toLocaleString('en-US');}
+function fDollarRaw(v){if(!v&&v!==0)return'—';var n=parseFloat(v);if(isNaN(n)||n===0)return'—';return'$'+Math.round(n).toLocaleString('en-US');}
 function fPct(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';return(parseFloat(v)*100).toFixed(1);}
 function fWAR(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';var n=parseFloat(v);return n.toFixed(1).replace(/^0/,'');}
 function fStat(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';return parseFloat(v).toFixed(3).replace(/^0/,'');}
+function fDec1(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))return'—';var n=parseFloat(v);return n.toFixed(1).replace(/^0\./,'.');}
 
 // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
@@ -1443,7 +1445,7 @@ function buildViewTable(tableType){
       var rjustContractCols=['MLSsig','CAR MLS-PY'];
       contractCols.forEach(function(col){
         var v=contractVals[col]!==undefined?contractVals[col]:(row[col]||'');
-        if(dollarContractCols.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollar(parseFloat(v));
+        if(dollarContractCols.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollarRaw(parseFloat(v));
         if(statContractCols.indexOf(col)>=0&&v!==''&&!isNaN(parseFloat(v)))v=fStat(parseFloat(v));
         var rj=rjustContractCols.indexOf(col)>=0?'text-align:right;':'';
         cells+='<td style="'+rj+'">'+(v!==null&&v!==undefined?v:'')+'</td>';
@@ -1474,9 +1476,11 @@ function buildViewTable(tableType){
               var pctCols=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
               var warCols=['rWAR','fWAR','aWAR','aWAR/650'];
               var statCols3=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA'];
+              var dec1Cols=['AB/HR','LA','Max EV','AvgEV','IP','IP/GS','ERA','FIP','xFIP','gmLI','oSLG','aEV','MPH(FF)','MPH(SI)','MPH(FC)'];
               if(pctCols.indexOf(col)>=0)v=fPct(parseFloat(v));
               else if(warCols.indexOf(col)>=0)v=fWAR(parseFloat(v));
               else if(statCols3.indexOf(col)>=0)v=fStat(parseFloat(v));
+              else if(dec1Cols.indexOf(col)>=0)v=fDec1(parseFloat(v));
               else v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
             }
           }else{
@@ -1487,9 +1491,11 @@ function buildViewTable(tableType){
               var pctCols2=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
               var warCols2=['rWAR','fWAR','aWAR','aWAR/650'];
               var statCols3b=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA'];
+              var dec1Cols2=['AB/HR','LA','Max EV','AvgEV','IP','IP/GS','ERA','FIP','xFIP','gmLI','oSLG','aEV','MPH(FF)','MPH(SI)','MPH(FC)'];
               if(pctCols2.indexOf(col)>=0)v=fPct(parseFloat(v));
               else if(warCols2.indexOf(col)>=0)v=fWAR(parseFloat(v));
               else if(statCols3b.indexOf(col)>=0)v=fStat(parseFloat(v));
+              else if(dec1Cols2.indexOf(col)>=0)v=fDec1(parseFloat(v));
             }
           }
           var isFirst=si===0;
