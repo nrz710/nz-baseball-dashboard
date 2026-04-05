@@ -196,6 +196,42 @@ svg.ch{display:block}
 .big-ts th.g-l2{border-left:1px solid rgba(232,128,128,0.3)}
 .big-ts th.g-l3{border-left:1px solid rgba(206,147,216,0.3)}
 .big-ts th.g-car{border-left:1px solid rgba(255,152,0,0.3)}
+
+/* ── View-tab filter system ── */
+.vf-bar{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px}
+.vf-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vf-chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0;align-items:center}
+.vf-chip{display:flex;align-items:center;gap:5px;background:var(--s3);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:3px 10px 3px 8px;font-size:10px;white-space:nowrap}
+.vf-chip-col{color:var(--dim);font-size:9px;letter-spacing:1px;text-transform:uppercase}
+.vf-chip-val{color:var(--accent);font-weight:700}
+.vf-chip-rm{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;line-height:1;padding:0;margin-left:2px}
+.vf-chip-rm:hover{color:var(--red)}
+.vf-add{background:var(--s2);border:1px dashed rgba(255,255,255,0.15);border-radius:20px;color:var(--dim);cursor:pointer;font-size:10px;letter-spacing:1px;padding:3px 12px;white-space:nowrap;transition:all .15s}
+.vf-add:hover{border-color:var(--accent);color:var(--accent)}
+.vf-count{font-size:10px;color:var(--dim);white-space:nowrap;margin-left:auto}
+.vf-clear{background:none;border:none;color:var(--dim);cursor:pointer;font-size:10px;letter-spacing:1px;text-decoration:underline;padding:0;white-space:nowrap}
+.vf-clear:hover{color:var(--red)}
+/* Filter builder panel */
+.vf-panel{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.vf-panel.open{display:block}
+.vf-builder{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.vf-sel{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;padding:6px 10px;outline:none;cursor:pointer;min-width:160px}
+.vf-sel:focus{border-color:var(--accent)}
+.vf-inputs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.vf-input{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;padding:6px 10px;outline:none;width:110px}
+.vf-input:focus{border-color:var(--accent)}
+.vf-lbl{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.vf-apply{background:var(--accent);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:1px;padding:6px 14px;text-transform:uppercase}
+.vf-apply:hover{opacity:.85}
+.vf-cancel{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--dim);cursor:pointer;font-size:11px;padding:6px 12px}
+.vf-cancel:hover{color:var(--text)}
+/* Multi-select checkboxes inside filter builder */
+.vf-multi{display:flex;flex-wrap:wrap;gap:4px;max-width:500px;max-height:120px;overflow-y:auto;padding:4px}
+.vf-multi::-webkit-scrollbar{width:3px}
+.vf-multi::-webkit-scrollbar-thumb{background:var(--s3)}
+.vf-mitem{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:3px;padding:3px 8px;cursor:pointer;font-size:10px;color:var(--mid)}
+.vf-mitem.on{background:rgba(232,197,71,0.12);border-color:var(--accent);color:var(--accent)}
+.vf-mitem input{display:none}
 </style>
 </head>
 <body>
@@ -553,8 +589,9 @@ svg.ch{display:block}
     <div class="pnl" id="p-hitters">
       <div class="pgt">Hitters</div>
       <div class="pgs">All hitter contracts &middot; toggle stat period groups below</div>
-      <div class="view-bar">
-        <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Show Periods:</span>
+      <!-- Period toggles -->
+      <div class="view-bar" style="margin-bottom:8px">
+        <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Periods:</span>
         <button class="grp-btn g-py on" onclick="toggleGrp('h','py',this)">PY</button>
         <button class="grp-btn g-py1" onclick="toggleGrp('h','py1',this)">PY-1</button>
         <button class="grp-btn g-py2" onclick="toggleGrp('h','py2',this)">PY-2</button>
@@ -562,8 +599,25 @@ svg.ch{display:block}
         <button class="grp-btn g-l3" onclick="toggleGrp('h','l3',this)">L3</button>
         <button class="grp-btn g-car" onclick="toggleGrp('h','car',this)">Career</button>
         <div style="margin-left:auto;display:flex;gap:8px">
-          <input class="si2" placeholder="Search hitter..." oninput="fTbl('t-hit',this.value)" style="width:160px">
+          <input class="si2" placeholder="Search..." oninput="vfSearch('h',this.value)" style="width:140px">
           <button class="btn bts bsm" onclick="exportViewCSV('hitters')">Export CSV</button>
+        </div>
+      </div>
+      <!-- Filter bar -->
+      <div class="vf-bar">
+        <div class="vf-top">
+          <div class="vf-chips" id="vf-chips-h"></div>
+          <button class="vf-add" onclick="vfOpenBuilder('h')">+ Add Filter</button>
+          <span class="vf-count" id="vf-count-h"></span>
+          <button class="vf-clear" onclick="vfClearFilters('h')" style="display:none" id="vf-clear-h">Clear All</button>
+        </div>
+        <div class="vf-panel" id="vf-panel-h">
+          <div class="vf-builder">
+            <div><div class="vf-lbl" style="margin-bottom:4px">Column</div><select class="vf-sel" id="vf-col-h"><option value="">Choose column...</option></select></div>
+            <div class="vf-inputs" id="vf-inputs-h"></div>
+            <button class="vf-apply" onclick="vfApplyFilter('h')">Apply</button>
+            <button class="vf-cancel" onclick="vfCloseBuilder('h')">Cancel</button>
+          </div>
         </div>
       </div>
       <div class="tw">
@@ -574,8 +628,9 @@ svg.ch{display:block}
     <div class="pnl" id="p-pitchers">
       <div class="pgt">Pitchers</div>
       <div class="pgs">All pitcher contracts &middot; toggle stat period groups below</div>
-      <div class="view-bar">
-        <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Show Periods:</span>
+      <!-- Period toggles -->
+      <div class="view-bar" style="margin-bottom:8px">
+        <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Periods:</span>
         <button class="grp-btn g-py on" onclick="toggleGrp('p','py',this)">PY</button>
         <button class="grp-btn g-py1" onclick="toggleGrp('p','py1',this)">PY-1</button>
         <button class="grp-btn g-py2" onclick="toggleGrp('p','py2',this)">PY-2</button>
@@ -583,8 +638,25 @@ svg.ch{display:block}
         <button class="grp-btn g-l3" onclick="toggleGrp('p','l3',this)">L3</button>
         <button class="grp-btn g-car" onclick="toggleGrp('p','car',this)">Career</button>
         <div style="margin-left:auto;display:flex;gap:8px">
-          <input class="si2" placeholder="Search pitcher..." oninput="fTbl('t-pit',this.value)" style="width:160px">
+          <input class="si2" placeholder="Search..." oninput="vfSearch('p',this.value)" style="width:140px">
           <button class="btn bts bsm" onclick="exportViewCSV('pitchers')">Export CSV</button>
+        </div>
+      </div>
+      <!-- Filter bar -->
+      <div class="vf-bar">
+        <div class="vf-top">
+          <div class="vf-chips" id="vf-chips-p"></div>
+          <button class="vf-add" onclick="vfOpenBuilder('p')">+ Add Filter</button>
+          <span class="vf-count" id="vf-count-p"></span>
+          <button class="vf-clear" onclick="vfClearFilters('p')" style="display:none" id="vf-clear-p">Clear All</button>
+        </div>
+        <div class="vf-panel" id="vf-panel-p">
+          <div class="vf-builder">
+            <div><div class="vf-lbl" style="margin-bottom:4px">Column</div><select class="vf-sel" id="vf-col-p"><option value="">Choose column...</option></select></div>
+            <div class="vf-inputs" id="vf-inputs-p"></div>
+            <button class="vf-apply" onclick="vfApplyFilter('p')">Apply</button>
+            <button class="vf-cancel" onclick="vfCloseBuilder('p')">Cancel</button>
+          </div>
         </div>
       </div>
       <div class="tw">
@@ -1394,10 +1466,22 @@ function buildViewTable(tableType){
 
   // Filter players by sheet tab
   var sheetKey=isHit?'Hitters':'Pitchers'; // partial match
-  var players=DB.merged.filter(function(p){
+  var allPlayers=DB.merged.filter(function(p){
     if(!p.sheetTab)return false;
     return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
   });
+  // Apply view-tab filters
+  var view=isHit?'h':'p';
+  var activePer=Object.keys(isHit?hGrps:pGrps).find(function(k){return(isHit?hGrps:pGrps)[k];})||'py';
+  var players=vfApply(view,allPlayers,activePer);
+  // Apply search
+  var srch=vfState[view].search||'';
+  if(srch)players=players.filter(function(p){return(p.name||'').toLowerCase().indexOf(srch)>=0||(p.pPos||'').toLowerCase().indexOf(srch)>=0||(p.sigTm||'').toLowerCase().indexOf(srch)>=0;});
+  // Update count display
+  var countEl=document.getElementById('vf-count-'+view);
+  if(countEl)countEl.textContent=players.length+' / '+allPlayers.length+' players';
+  var clearBtn=document.getElementById('vf-clear-'+view);
+  if(clearBtn)clearBtn.style.display=vfState[view].filters.length?'':'none';
 
   // ── Build header rows ──
   // Row 1: group span headers
@@ -1521,12 +1605,14 @@ function buildViewTable(tableType){
 }
 
 function renderHitters(){
+  vfRenderChips('h');
   var result=buildViewTable('hitters');
   document.getElementById('hit-head').innerHTML=result.head;
   document.getElementById('b-hit').innerHTML=result.body;
 }
 
 function renderPitchers(){
+  vfRenderChips('p');
   var result=buildViewTable('pitchers');
   document.getElementById('pit-head').innerHTML=result.head;
   document.getElementById('b-pit').innerHTML=result.body;
@@ -1551,6 +1637,300 @@ function exportViewCSV(type){
   a.download=type+'_export.csv';
   a.click();
   toast('Exported '+players.length+' '+type);
+}
+
+
+// ═══ VIEW-TAB FILTER ENGINE (Hitters & Pitchers) ═══
+// State: separate filter sets per view
+var vfState={
+  h:{filters:[],sortCol:-1,sortAsc:true,search:''},
+  p:{filters:[],sortCol:-1,sortAsc:true,search:''}
+};
+
+function vfSearch(view,q){
+  vfState[view].search=q.toLowerCase();
+  vfRender(view);
+}
+
+// Determine what type a column is: 'numeric', 'date', 'categorical'
+function vfColType(col){
+  var dateCols=['SigDate'];
+  var numericCols=['PY','FY','FY Age','SigAge','Term','AAV','GUAR AAV','GUAR','Pot IB','Pot OB','cPY','MLSsig','CAR MLS-PY',
+    'G','GS','PA','HR','AB/HR','RBI','SB','SB%','BB%','K%','AVG','OBP','SLG','OPS','ISO','OPS+','wRC+','wOBA',
+    'xAVG','xSLG','xwOBA','Brl%','HH%','LA','SwSp%','Max EV','AvgEV','DRS','OAA','rWAR','fWAR','aWAR','aWAR/650',
+    'QS%','GR','IP','IP/GS','gmLI','Sv','Hld','Sv%','SwStr%','HR%','GB%','oSLG','aEV','MPH(FF)','%(FF)',
+    'MPH(SI)','%(SI)','MPH(FC)','%(FC)','ERA','ERA+','FIP','xFIP'];
+  if(dateCols.indexOf(col)>=0)return'date';
+  if(numericCols.indexOf(col)>=0)return'numeric';
+  return'categorical';
+}
+
+// Get raw numeric value from a player's row (for a given col + period)
+function vfGetVal(p,col,per){
+  var row=p._rawRow||{};
+  // Contract cols
+  var contractMap={'PY':p.py,'FY':p.fy,'FY Age':p.fyAge,'SigAge':p.sigAge,'Term':p.term,
+    'AAV':p.aav,'GUAR AAV':p.guarAav,'GUAR':p.guar,'SigDate':p.sigDate,
+    'Player':p.name,'pPos':p.pPos,'SigTm':p.sigTm,'Code':p.code,'ArbSys':row['ArbSys']||'',
+    'T+O':row['T+O']||'','PlyrOpt?':row['PlyrOpt?']||'','Def?':row['Def?']||'',
+    'Pot IB':parseFloat(row['Pot IB'])||0,'Pot OB':parseFloat(row['Pot OB'])||0,
+    'cPY':row['cPY']||'','MLSsig':parseFloat(row['MLSsig'])||0,'CAR MLS-PY':parseFloat(row['CAR MLS-PY'])||0};
+  if(col in contractMap)return contractMap[col];
+  // Stat cols — look up from rawRow with period suffix
+  var perIdx={'py':0,'py1':1,'py2':2,'l2':3,'l3':4,'car':5};
+  var idx=perIdx[per]!==undefined?perIdx[per]:0;
+  var raw=row[col+'_'+idx];
+  if(raw===undefined||raw===null||raw==='')raw=row[col+'_0']||row[col]||'';
+  return raw===''?null:parseFloat(raw);
+}
+
+function vfGetCatVal(p,col,per){
+  var row=p._rawRow||{};
+  var contractCatMap={'Player':p.name,'pPos':p.pPos,'SigTm':p.sigTm,'Code':row['Code']||'',
+    'ArbSys':row['ArbSys']||'','T+O':row['T+O']||'','PlyrOpt?':row['PlyrOpt?']||'','Def?':row['Def?']||'',
+    'cPY':row['cPY']||'','SigDate':p.sigDate,'FY':String(p.fy||'')};
+  if(col in contractCatMap)return String(contractCatMap[col]);
+  var perIdx={'py':0,'py1':1,'py2':2,'l2':3,'l3':4,'car':5};
+  var idx=perIdx[per]!==undefined?perIdx[per]:0;
+  var raw=row[col+'_'+idx]||row[col+'_0']||row[col]||'';
+  return String(raw);
+}
+
+// Apply all active filters for a view to a list of players
+function vfApply(view,players,activePer){
+  var state=vfState[view];
+  return players.filter(function(p){
+    return state.filters.every(function(f){
+      var col=f.col,type=f.type;
+      // Determine which period to read from
+      var per=f.per||activePer||'py';
+      if(type==='numeric'){
+        var v=parseFloat(vfGetVal(p,col,per));
+        if(isNaN(v)){
+          // If filter is set and value is missing, exclude
+          if(f.min!==''&&f.min!==null&&f.min!==undefined)return false;
+          return true;
+        }
+        if(f.min!==''&&f.min!==null&&!isNaN(parseFloat(f.min))&&v<parseFloat(f.min))return false;
+        if(f.max!==''&&f.max!==null&&!isNaN(parseFloat(f.max))&&v>parseFloat(f.max))return false;
+        return true;
+      }else if(type==='date'){
+        var dv=vfGetCatVal(p,col,per);
+        var d=new Date(dv);
+        if(isNaN(d.getTime()))return f.min===''&&f.max==='';
+        if(f.min&&f.min!==''&&new Date(f.min)>d)return false;
+        if(f.max&&f.max!==''&&new Date(f.max)<d)return false;
+        return true;
+      }else{
+        // categorical: multi-select
+        var cv=vfGetCatVal(p,col,per);
+        if(!f.vals||f.vals.length===0)return true;
+        return f.vals.indexOf(cv)>=0;
+      }
+    });
+  });
+}
+
+// Get all unique categorical values for a column across players
+function vfUniqueVals(players,col,per){
+  var seen={};
+  players.forEach(function(p){
+    var v=vfGetCatVal(p,col,per||'py');
+    if(v&&v!=='null'&&v!=='undefined')seen[v]=true;
+  });
+  return Object.keys(seen).sort(function(a,b){
+    var an=parseFloat(a),bn=parseFloat(b);
+    if(!isNaN(an)&&!isNaN(bn))return an-bn;
+    return a.localeCompare(b);
+  });
+}
+
+// Build the chip label for a filter
+function vfChipLabel(f){
+  var perLabel={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'CAR'};
+  var prefix=f.per&&f.per!=='contract'?'['+perLabel[f.per]+'] ':'';
+  if(f.type==='numeric'){
+    var parts=[];
+    if(f.min!==''&&f.min!==null)parts.push('≥'+f.min);
+    if(f.max!==''&&f.max!==null)parts.push('≤'+f.max);
+    return prefix+f.col+': '+parts.join(' ');
+  }else if(f.type==='date'){
+    var parts=[];
+    if(f.min)parts.push('from '+f.min);
+    if(f.max)parts.push('to '+f.max);
+    return prefix+f.col+': '+(parts.join(' ')||'any');
+  }else{
+    var vv=f.vals||[];
+    return prefix+f.col+': '+(vv.length===0?'any':vv.length<=2?vv.join(', '):vv.length+' selected');
+  }
+}
+
+// State for the builder UI
+var vfBuilderView=null;
+var vfBuilderCol=null;
+var vfBuilderPer=null;
+var vfBuilderType=null;
+
+function vfOpenBuilder(view){
+  vfBuilderView=view;
+  var pfx=view==='h'?'h':'p';
+  var panel=document.getElementById('vf-panel-'+pfx);
+  if(!panel)return;
+  panel.classList.add('open');
+  vfPopulateColSel(view);
+}
+function vfCloseBuilder(view){
+  var pfx=view==='h'?'h':'p';
+  var panel=document.getElementById('vf-panel-'+pfx);
+  if(panel)panel.classList.remove('open');
+}
+
+function vfPopulateColSel(view){
+  var pfx=view==='h'?'h':'p';
+  var sel=document.getElementById('vf-col-'+pfx);
+  if(!sel)return;
+  sel.innerHTML='<option value="">Choose column...</option>';
+  // Grouped by section
+  var contractCols=view==='h'?H_CONTRACT:P_CONTRACT;
+  var statCols=view==='h'?H_STAT_COLS:P_STAT_COLS;
+  var periods=H_PERIODS;
+  var periodLabels={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'Career'};
+
+  // Contract group
+  var og=document.createElement('optgroup');
+  og.label='── Contract Info';
+  contractCols.forEach(function(col){
+    var o=document.createElement('option');
+    o.value='contract|'+col;
+    o.textContent=col;
+    og.appendChild(o);
+  });
+  sel.appendChild(og);
+
+  // Stat groups by period
+  periods.forEach(function(per){
+    var og2=document.createElement('optgroup');
+    og2.label='── Stats: '+periodLabels[per];
+    statCols.forEach(function(col){
+      var o=document.createElement('option');
+      o.value=per+'|'+col;
+      o.textContent=col;
+      og2.appendChild(o);
+    });
+    sel.appendChild(og2);
+  });
+
+  sel.onchange=function(){vfOnColChange(view);};
+}
+
+function vfOnColChange(view){
+  var pfx=view==='h'?'h':'p';
+  var sel=document.getElementById('vf-col-'+pfx);
+  var inputArea=document.getElementById('vf-inputs-'+pfx);
+  if(!sel||!inputArea)return;
+  var val=sel.value;
+  if(!val){inputArea.innerHTML='';return;}
+  var parts=val.split('|');
+  vfBuilderPer=parts[0]==='contract'?'contract':parts[0];
+  vfBuilderCol=parts[1];
+  vfBuilderType=vfColType(vfBuilderCol);
+  vfBuilderView=view;
+
+  // Get all players for this view to determine unique values
+  var isHit=view==='h';
+  var players=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
+  });
+  var per=vfBuilderPer==='contract'?'py':vfBuilderPer;
+
+  if(vfBuilderType==='numeric'){
+    // Min/max inputs
+    var nums=players.map(function(p){return parseFloat(vfGetVal(p,vfBuilderCol,per));}).filter(function(n){return!isNaN(n);});
+    var mn=nums.length?Math.min.apply(null,nums):'';
+    var mx=nums.length?Math.max.apply(null,nums):'';
+    inputArea.innerHTML=
+      '<span class="vf-lbl">Min</span>'+
+      '<input class="vf-input" id="vf-min-'+pfx+'" type="number" placeholder="'+(mn!==''?mn.toFixed(2):'')+'" step="any">'+
+      '<span class="vf-lbl">Max</span>'+
+      '<input class="vf-input" id="vf-max-'+pfx+'" type="number" placeholder="'+(mx!==''?mx.toFixed(2):'')+'" step="any">';
+  }else if(vfBuilderType==='date'){
+    inputArea.innerHTML=
+      '<span class="vf-lbl">From</span>'+
+      '<input class="vf-input" id="vf-min-'+pfx+'" type="date" style="width:130px">'+
+      '<span class="vf-lbl">To</span>'+
+      '<input class="vf-input" id="vf-max-'+pfx+'" type="date" style="width:130px">';
+  }else{
+    // Multi-select
+    var uniq=vfUniqueVals(players,vfBuilderCol,per);
+    var html='<div class="vf-multi" id="vf-multi-'+pfx+'">';
+    uniq.forEach(function(v){
+      html+='<label class="vf-mitem" onclick="vfToggleMitem(this)"><input type="checkbox" value="'+v.replace(/"/g,'&quot;')+'">'+v+'</label>';
+    });
+    html+='</div>';
+    inputArea.innerHTML=html;
+  }
+}
+
+function vfToggleMitem(el){
+  el.classList.toggle('on');
+  el.querySelector('input').checked=el.classList.contains('on');
+}
+
+function vfApplyFilter(view){
+  var pfx=view==='h'?'h':'p';
+  var sel=document.getElementById('vf-col-'+pfx);
+  if(!sel||!sel.value)return;
+  var filter={col:vfBuilderCol,per:vfBuilderPer,type:vfBuilderType};
+  if(vfBuilderType==='numeric'||vfBuilderType==='date'){
+    var minEl=document.getElementById('vf-min-'+pfx);
+    var maxEl=document.getElementById('vf-max-'+pfx);
+    filter.min=minEl?minEl.value:'';
+    filter.max=maxEl?maxEl.value:'';
+    if(filter.min===''&&filter.max==='')return; // nothing set
+  }else{
+    var multi=document.getElementById('vf-multi-'+pfx);
+    var checked=multi?Array.from(multi.querySelectorAll('input:checked')).map(function(i){return i.value;}):[]; 
+    filter.vals=checked;
+    if(checked.length===0)return;
+  }
+  vfState[view].filters.push(filter);
+  vfCloseBuilder(view);
+  // Reset column selector
+  if(sel)sel.value='';
+  var inputArea=document.getElementById('vf-inputs-'+pfx);
+  if(inputArea)inputArea.innerHTML='';
+  vfRender(view);
+}
+
+function vfRemoveFilter(view,idx){
+  vfState[view].filters.splice(idx,1);
+  vfRender(view);
+}
+function vfClearFilters(view){
+  vfState[view].filters=[];
+  vfRender(view);
+}
+
+function vfRenderChips(view){
+  var pfx=view==='h'?'h':'p';
+  var container=document.getElementById('vf-chips-'+pfx);
+  var countEl=document.getElementById('vf-count-'+pfx);
+  if(!container)return;
+  var filters=vfState[view].filters;
+  container.innerHTML=filters.map(function(f,i){
+    return'<div class="vf-chip">'+
+      '<span class="vf-chip-val">'+vfChipLabel(f)+'</span>'+
+      '<button class="vf-chip-rm" onclick="vfRemoveFilter(\''+view+'\','+i+')">×</button>'+
+    '</div>';
+  }).join('');
+}
+
+// Main render: applies filters then re-renders the table
+function vfRender(view){
+  vfRenderChips(view);
+  if(view==='h')renderHitters();
+  else renderPitchers();
 }
 
 // ═══ TOAST ═══
