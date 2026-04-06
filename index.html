@@ -2192,9 +2192,8 @@ function renderCorr(){
     svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="1" opacity="0.85">'
       +'<title>'+d.label+': r='+d.r.toFixed(3)+' (n='+d.n+')</title>'
       +'</rect>';
-    svg+='<text x="'+(x+bW/2)+'" y="'+(y-2)+'" text-anchor="middle" font-size="7" fill="'+col+'">'+rStr+'</text>';
-    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+11)+'" text-anchor="end" font-size="7" fill="#5a6a8a"'
-      +' transform="rotate(-40,'+(x+bW/2)+','+(pt+chartH+11)+')">'+lbl+'</text>';
+   svg += '<text x="' + (x + bW/2) + '" y="' + (y - 2) + '" text-anchor="middle" font-size="7" fill="' + col + '">' + rStr + '</text>';
+svg += '<text x="' + (x + bW/2) + '" y="' + (pt + chartH + 11) + '" text-anchor="middle" font-size="7" fill="#5a6a8a">' + lbl + '</text>';
   });
   svg+='</svg>';
   el.innerHTML=svg;
