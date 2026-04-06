@@ -232,6 +232,8 @@ svg.ch{display:block}
 .vf-mitem{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:3px;padding:3px 8px;cursor:pointer;font-size:10px;color:var(--mid)}
 .vf-mitem.on{background:rgba(232,197,71,0.12);border-color:var(--accent);color:var(--accent)}
 .vf-mitem input{display:none}
+
+.ov-highlight{background:rgba(232,197,71,0.10)!important;outline:1px solid rgba(232,197,71,0.35);}
 </style>
 </head>
 <body>
@@ -285,49 +287,46 @@ svg.ch{display:block}
 
     <div class="pnl on" id="p-overview">
       <div class="pgt">Contract Overview</div>
-      <div class="pgs">Master data from Google Sheet &middot; all large contracts</div>
+      <div class="pgs">Filter and summarize contracts from Hitters &amp; Pitchers</div>
+      <!-- KPI cards — summarize only filtered rows -->
       <div class="kr">
-        <div class="kc"><div class="kl">Players</div><div class="kv" id="k-n">0</div><div class="kn">in database</div></div>
-        <div class="kc b"><div class="kl">Total Guaranteed</div><div class="kv" id="k-guar">$0B</div><div class="kn">across all contracts</div></div>
+        <div class="kc"><div class="kl">Players</div><div class="kv" id="k-n">0</div><div class="kn">shown</div></div>
+        <div class="kc b"><div class="kl">Total Guaranteed</div><div class="kv" id="k-guar">$0B</div><div class="kn">filtered contracts</div></div>
         <div class="kc b"><div class="kl">Avg AAV</div><div class="kv" id="k-aav">$0M</div><div class="kn">annual avg value</div></div>
         <div class="kc g"><div class="kl">Avg Term</div><div class="kv" id="k-term">—</div><div class="kn">years</div></div>
         <div class="kc p"><div class="kl">Avg Age @ Sign</div><div class="kv" id="k-age">—</div><div class="kn">signing age</div></div>
       </div>
-      <div class="filter-bar" id="filter-bar">
-        <div id="active-filters" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"></div>
-        <button class="add-filter-btn" onclick="showAddFilter()">+ Add Filter</button>
-        <div id="add-filter-row" style="display:none;width:100%" class="filter-add-row">
-          <select class="sel" id="filter-col-pick" style="min-width:180px"><option value="">Choose column...</option></select>
-          <button class="btn bts bsm" onclick="addFilter()">Add</button>
-          <button class="btn bts bsm" onclick="hideAddFilter()">Cancel</button>
-        </div>
-      </div>
-      <div class="tw">
-        <div class="th">
-          <div class="tt">All Contracts</div>
-          <div class="tc">
-            <input class="si2" placeholder="Search player..." oninput="fTbl('t-ov',this.value)">
-            <button class="btn bts bsm" onclick="exportCSV()">Export CSV</button>
-            <button class="btn bts bsm" onclick="resetFilters()">Reset Filters</button>
+      <!-- Tab selector + filter bar -->
+      <div class="vf-bar" style="margin-bottom:8px">
+        <div class="vf-top" style="margin-bottom:8px">
+          <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:8px">View:</span>
+          <button class="grp-btn g-py on" id="ov-tab-h" onclick="ovSetTab('h')">Hitters</button>
+          <button class="grp-btn g-py1" id="ov-tab-p" onclick="ovSetTab('p')">Pitchers</button>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <input class="si2" placeholder="Search player..." oninput="ovSearch(this.value)" style="width:160px">
+            <button class="btn bts bsm" onclick="exportOvCSV()">Export CSV</button>
           </div>
         </div>
-        <div class="ts"><table id="t-ov">
-          <thead><tr>
-            <th onclick="srt('t-ov',0)">Player</th><th onclick="srt('t-ov',1)">PY</th>
-            <th onclick="srt('t-ov',2)">Pos</th><th onclick="srt('t-ov',3)">Team</th>
-            <th onclick="srt('t-ov',4)">FY</th><th onclick="srt('t-ov',5)">FY Age</th>
-            <th onclick="srt('t-ov',6)">Term</th><th onclick="srt('t-ov',7)">AAV</th>
-            <th onclick="srt('t-ov',8)">GUAR AAV</th>
-            <th onclick="srt('t-ov',9)">Guaranteed</th><th onclick="srt('t-ov',10)">aWAR</th>
-            <th onclick="srt('t-ov',11)">$/aWAR</th><th onclick="srt('t-ov',12)">Value</th>
-            <th>Edit</th>
-          </tr></thead>
-          <tbody id="b-ov"></tbody>
-        </table></div>
+        <!-- Filter chips row -->
+        <div class="vf-top">
+          <div class="vf-chips" id="vf-chips-ov"></div>
+          <button class="vf-add" onclick="vfOpenBuilder('ov')">+ Add Filter</button>
+          <span class="vf-count" id="vf-count-ov"></span>
+          <button class="vf-clear" onclick="vfClearFilters('ov')" style="display:none" id="vf-clear-ov">Clear All</button>
+        </div>
+        <!-- Filter builder panel -->
+        <div class="vf-panel" id="vf-panel-ov">
+          <div class="vf-builder">
+            <div><div class="vf-lbl" style="margin-bottom:4px">Column</div><select class="vf-sel" id="vf-col-ov"><option value="">Choose column...</option></select></div>
+            <div class="vf-inputs" id="vf-inputs-ov"></div>
+            <button class="vf-apply" onclick="vfApplyFilter('ov')">Apply</button>
+            <button class="vf-cancel" onclick="vfCloseBuilder('ov')">Cancel</button>
+          </div>
+        </div>
       </div>
-      <div class="cr">
-        <div class="cb"><div class="cbt">AAV Distribution</div><div class="cbs">Top 20 by annual value</div><div class="ca" id="c-aav"></div></div>
-        <div class="cb"><div class="cbt">Guaranteed $ by Position</div><div class="cbs">Total guaranteed commitments</div><div class="ca" id="c-pos-guar"></div></div>
+      <!-- Contracts table -->
+      <div class="tw">
+        <div class="big-ts"><table id="t-ov"><thead id="ov-head"></thead><tbody id="b-ov"></tbody></table></div>
       </div>
     </div>
 
@@ -758,6 +757,7 @@ function go(id){
     else if(id==='stats')try{renderStats();}catch(e){console.error(e);}
     else if(id==='settings')try{renderDBInfo();}catch(e){}
     else if(id==='sources')try{renderSuppSummary();}catch(e){}
+    else if(id==='overview')try{renderOverview();}catch(e){console.error(e);}
     else if(id==='hitters')try{renderHitters();}catch(e){console.error(e);}
     else if(id==='pitchers')try{renderPitchers();}catch(e){console.error(e);}
     else if(id==='edit')try{renderManualTable();}catch(e){}
@@ -1610,6 +1610,7 @@ function renderHitters(){
   var result=buildViewTable('hitters');
   document.getElementById('hit-head').innerHTML=result.head;
   document.getElementById('b-hit').innerHTML=result.body;
+  try{ovUpdateHighlights(ovState.highlightedNames);}catch(e){}
 }
 
 function renderPitchers(){
@@ -1617,6 +1618,7 @@ function renderPitchers(){
   var result=buildViewTable('pitchers');
   document.getElementById('pit-head').innerHTML=result.head;
   document.getElementById('b-pit').innerHTML=result.body;
+  try{ovUpdateHighlights(ovState.highlightedNames);}catch(e){}
 }
 
 function srtBig(th,col){var id=th.dataset.tbl;srt(id,col);}
@@ -1645,7 +1647,8 @@ function exportViewCSV(type){
 // State: separate filter sets per view
 var vfState={
   h:{filters:[],sortCol:-1,sortAsc:true,search:''},
-  p:{filters:[],sortCol:-1,sortAsc:true,search:''}
+  p:{filters:[],sortCol:-1,sortAsc:true,search:''},
+  ov:{filters:[],sortCol:-1,sortAsc:true,search:''}
 };
 
 function vfSearch(view,q){
@@ -1797,23 +1800,24 @@ var vfBuilderType=null;
 
 function vfOpenBuilder(view){
   vfBuilderView=view;
-  var pfx=view==='h'?'h':'p';
+  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
   var panel=document.getElementById('vf-panel-'+pfx);
   if(!panel)return;
   panel.classList.add('open');
   vfPopulateColSel(view);
 }
 function vfCloseBuilder(view){
-  var pfx=view==='h'?'h':'p';
+  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
   var panel=document.getElementById('vf-panel-'+pfx);
   if(panel)panel.classList.remove('open');
 }
 
 function vfPopulateColSel(view){
-  var pfx=view==='h'?'h':'p';
+  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
   var sel=document.getElementById('vf-col-'+pfx);
   if(!sel)return;
   sel.innerHTML='<option value="">Choose column...</option>';
+  var effectiveView=view==='ov'?ovState.tab:view;
   // Grouped by section
   var contractCols=view==='h'?H_CONTRACT:P_CONTRACT;
   var statCols=view==='h'?H_STAT_COLS:P_STAT_COLS;
@@ -1856,7 +1860,7 @@ function vfFmtNum(n){
 }
 
 function vfOnColChange(view){
-  var pfx=view==='h'?'h':'p';
+  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
   var sel=document.getElementById('vf-col-'+pfx);
   var inputArea=document.getElementById('vf-inputs-'+pfx);
   if(!sel||!inputArea)return;
@@ -1921,7 +1925,7 @@ function vfToggleMitem(el){
 }
 
 function vfApplyFilter(view){
-  var pfx=view==='h'?'h':'p';
+  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
   var sel=document.getElementById('vf-col-'+pfx);
   if(!sel||!sel.value)return;
   var filter={col:vfBuilderCol,per:vfBuilderPer,type:vfBuilderType};
@@ -1967,7 +1971,7 @@ function vfClearFilters(view){
 }
 
 function vfRenderChips(view){
-  var pfx=view==='h'?'h':'p';
+  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
   var container=document.getElementById('vf-chips-'+pfx);
   var countEl=document.getElementById('vf-count-'+pfx);
   if(!container)return;
@@ -1984,7 +1988,143 @@ function vfRenderChips(view){
 function vfRender(view){
   vfRenderChips(view);
   if(view==='h')renderHitters();
-  else renderPitchers();
+  else if(view==='p')renderPitchers();
+  else renderOverview();
+}
+
+
+// ═══ CONTRACT OVERVIEW ENGINE ═══
+var ovState={tab:'h',search:'',highlightedNames:{}};
+
+// Extend vfState to include 'ov'
+if(!vfState['ov'])vfState['ov']={filters:[],sortCol:-1,sortAsc:true,search:''};
+
+function ovSetTab(tab){
+  ovState.tab=tab;
+  document.getElementById('ov-tab-h').classList.toggle('on',tab==='h');
+  document.getElementById('ov-tab-p').classList.toggle('on',tab==='p');
+  document.getElementById('ov-tab-h').classList.toggle('g-py',tab==='h');
+  document.getElementById('ov-tab-p').classList.toggle('g-py1',tab==='p');
+  // Re-populate filter column selector for new tab
+  vfPopulateColSel('ov');
+  renderOverview();
+}
+
+function ovSearch(q){
+  vfState['ov'].search=q.toLowerCase();
+  renderOverview();
+}
+
+function exportOvCSV(){
+  var players=ovGetFiltered();
+  if(!players.length){toast('No data to export');return;}
+  var rows=players.map(function(p){var r=p._rawRow||{};return Object.values(r).join(',');});
+  var hdrs=players.length?Object.keys(players[0]._rawRow||{}).join(','):'';
+  var b=new Blob([hdrs+'\n'+rows.join('\n')],{type:'text/csv'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='overview_export.csv';a.click();
+  toast('Exported '+players.length+' contracts');
+}
+
+function ovGetBase(){
+  var tab=ovState.tab;
+  return DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return tab==='h'?p.sheetTab.toLowerCase().indexOf('hitter')>=0:p.sheetTab.toLowerCase().indexOf('pitcher')>=0;
+  });
+}
+
+function ovGetFiltered(){
+  var base=ovGetBase();
+  var activePer='py';
+  var filtered=vfApply('ov',base,activePer);
+  var srch=vfState['ov'].search||'';
+  if(srch)filtered=filtered.filter(function(p){
+    return(p.name||'').toLowerCase().indexOf(srch)>=0||(p.pPos||'').toLowerCase().indexOf(srch)>=0||(p.sigTm||'').toLowerCase().indexOf(srch)>=0;
+  });
+  return filtered;
+}
+
+function renderOverview(){
+  if(!vfState['ov'])vfState['ov']={filters:[],sortCol:-1,sortAsc:true,search:''};
+
+  var base=ovGetBase();
+  var filtered=ovGetFiltered();
+
+  // ── Update KPI cards from filtered rows only ──
+  var totalGuar=filtered.reduce(function(a,p){return a+(p.guar||0);},0);
+  var totalAav=filtered.reduce(function(a,p){return a+(p.aav||0);},0);
+  var ages=filtered.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});
+  var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;
+  var terms=filtered.map(function(p){return p.term||0;}).filter(function(t){return t>0;});
+  var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;
+
+  document.getElementById('k-n').textContent=filtered.length+(filtered.length!==base.length?' / '+base.length:'');
+  document.getElementById('k-guar').textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');
+  document.getElementById('k-aav').textContent='$'+(filtered.length?(totalAav/filtered.length).toFixed(1):'0')+'M';
+  document.getElementById('k-age').textContent=avgAge?avgAge.toFixed(1):'—';
+  document.getElementById('k-term').textContent=avgTerm?avgTerm.toFixed(1):'—';
+
+  // ── Update filter chip count ──
+  var countEl=document.getElementById('vf-count-ov');
+  if(countEl)countEl.textContent=filtered.length+' / '+base.length+' players';
+  var clearBtn=document.getElementById('vf-clear-ov');
+  if(clearBtn)clearBtn.style.display=vfState['ov'].filters.length?'':'none';
+  vfRenderChips('ov');
+
+  // ── Build table header ──
+  var isHit=ovState.tab==='h';
+  var contractCols=isHit?H_CONTRACT:P_CONTRACT;
+  var headHTML='<tr>';
+  contractCols.forEach(function(col,i){headHTML+='<th onclick="srt(\'t-ov\','+i+')" class="grp-hdr g-contract" style="text-align:left;font-size:9px;letter-spacing:1px;color:#66bb6a;padding:5px 8px;cursor:pointer;white-space:nowrap;background:var(--s2)">'+col+'</th>';});
+  headHTML+='</tr>';
+  document.getElementById('ov-head').innerHTML=headHTML;
+
+  // ── Build table body ──
+  var highlightedNames={};
+  if(!filtered.length){
+    document.getElementById('b-ov').innerHTML='<tr><td colspan="'+contractCols.length+'" style="text-align:center;padding:40px;color:var(--dim)">'+(base.length?'No results — adjust filters above':'No data loaded')+'</td></tr>';
+    ovUpdateHighlights(highlightedNames);return;
+  }
+
+  document.getElementById('b-ov').innerHTML=filtered.map(function(p){
+    highlightedNames[normName(p.name)]=true;
+    var row=p._rawRow||{};
+    var contractVals={
+      'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+      'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
+      'Term':p.term,'AAV':fDollar(p.aav),'GUAR AAV':fDollar(p.guarAav),'GUAR':fDollar(p.guar)
+    };
+    var dollarCC=['Pot IB','Pot OB'],statCC=['MLSsig','CAR MLS-PY'];
+    var cells=contractCols.map(function(col){
+      var v=contractVals[col]!==undefined?contractVals[col]:(row[col+'_0']!==undefined&&row[col+'_0']!==''?row[col+'_0']:row[col]||'');
+      if(dollarCC.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollarRaw(parseFloat(v));
+      if(statCC.indexOf(col)>=0&&v!==''&&!isNaN(parseFloat(v)))v=fStat(parseFloat(v));
+      return'<td style="white-space:nowrap;padding:4px 8px;font-size:11px">'+(v||'—')+'</td>';
+    }).join('');
+    return'<tr>'+cells+'</tr>';
+  }).join('');
+
+  ovUpdateHighlights(highlightedNames);
+}
+
+function ovUpdateHighlights(namesMap){
+  ovState.highlightedNames=namesMap||{};
+  // Highlight matching rows in hitters tab
+  document.querySelectorAll('#b-hit tr').forEach(function(row){
+    var firstCell=row.cells&&row.cells[0];
+    if(!firstCell)return;
+    var nm=normName(firstCell.textContent);
+    if(ovState.highlightedNames[nm])row.classList.add('ov-highlight');
+    else row.classList.remove('ov-highlight');
+  });
+  // Highlight matching rows in pitchers tab
+  document.querySelectorAll('#b-pit tr').forEach(function(row){
+    var firstCell=row.cells&&row.cells[0];
+    if(!firstCell)return;
+    var nm=normName(firstCell.textContent);
+    if(ovState.highlightedNames[nm])row.classList.add('ov-highlight');
+    else row.classList.remove('ov-highlight');
+  });
 }
 
 // ═══ TOAST ═══
