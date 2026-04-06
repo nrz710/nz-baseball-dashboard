@@ -290,11 +290,8 @@ svg.ch{display:block}
         <div class="kc"><div class="kl">Players</div><div class="kv" id="k-n">0</div><div class="kn">in database</div></div>
         <div class="kc b"><div class="kl">Total Guaranteed</div><div class="kv" id="k-guar">$0B</div><div class="kn">across all contracts</div></div>
         <div class="kc b"><div class="kl">Avg AAV</div><div class="kv" id="k-aav">$0M</div><div class="kn">annual avg value</div></div>
-        <div class="kc g"><div class="kl">Above Value</div><div class="kv" id="k-ab">0</div><div class="kn">aWAR surplus</div></div>
-        <div class="kc r"><div class="kl">Below Value</div><div class="kv" id="k-bl">0</div><div class="kn">aWAR deficit</div></div>
-        <div class="kc"><div class="kl">Avg aWAR</div><div class="kv" id="k-war">—</div><div class="kn">platform year</div></div>
+        <div class="kc g"><div class="kl">Avg Term</div><div class="kv" id="k-term">—</div><div class="kn">years</div></div>
         <div class="kc p"><div class="kl">Avg Age @ Sign</div><div class="kv" id="k-age">—</div><div class="kn">signing age</div></div>
-        <div class="kc"><div class="kl">Avg Term</div><div class="kv" id="k-term">—</div><div class="kn">years</div></div>
       </div>
       <div class="filter-bar" id="filter-bar">
         <div id="active-filters" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"></div>
@@ -1226,9 +1223,11 @@ function fDec2(v){if(v===null||v===undefined||v===''||isNaN(parseFloat(v)))retur
 
 // ═══ LIGHTWEIGHT TABLE REFRESH (keeps dropdowns open) ═══
 function refreshTableOnly(){
-  var ps=DB.merged;
+  var ps=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf('hitter')>=0||p.sheetTab.toLowerCase().indexOf('pitcher')>=0;
+  });
   var filtered=applyFilters(ps);
-  // Update player count KPI
   document.getElementById('k-n').textContent=ps.length+(filtered.length!==ps.length?' ('+filtered.length+' shown)':'');
   var tb=document.getElementById('b-ov');
   if(!tb)return;
@@ -1244,22 +1243,22 @@ function refreshTableOnly(){
 
 // ═══ OVERVIEW ═══
 function renderOverview(){
-  var ps=DB.merged;var filtered=applyFilters(ps);
+  // Feed from hitters + pitchers tabs only (same source as those tabs)
+  var ps=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf('hitter')>=0||p.sheetTab.toLowerCase().indexOf('pitcher')>=0;
+  });
+  var filtered=applyFilters(ps);
   var totalGuar=ps.reduce(function(a,p){return a+(p.guar||0);},0);
   var totalAav=ps.reduce(function(a,p){return a+(p.aav||0);},0);
-  var wars=ps.map(function(p){return(p.py0&&p.py0.aWAR)||0;}).filter(function(w){return w>0;});
-  var avgWar=wars.length?wars.reduce(function(a,b){return a+b;},0)/wars.length:0;
   var ages=ps.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});
   var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;
   var terms=ps.map(function(p){return p.term||0;}).filter(function(t){return t>0;});
   var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;
-  var above=ps.filter(function(p){return vRate(p)==='above';}).length;
-  var below=ps.filter(function(p){return vRate(p)==='below';}).length;
   document.getElementById('k-n').textContent=ps.length+(filtered.length!==ps.length?' ('+filtered.length+' shown)':'');
   document.getElementById('k-guar').textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');
   document.getElementById('k-aav').textContent='$'+(ps.length?(totalAav/ps.length).toFixed(1):'0')+'M';
-  document.getElementById('k-ab').textContent=above;document.getElementById('k-bl').textContent=below;
-  document.getElementById('k-war').textContent=avgWar.toFixed(1);document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);
+  document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);
   var tb=document.getElementById('b-ov');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(p){
