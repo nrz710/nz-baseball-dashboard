@@ -234,6 +234,18 @@ svg.ch{display:block}
 .vf-mitem input{display:none}
 
 .ov-highlight{background:rgba(232,197,71,0.10)!important;outline:1px solid rgba(232,197,71,0.35);}
+
+.col-toggle-wrap{position:relative;display:inline-block}
+.col-toggle-btn{background:var(--s2);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 10px;text-transform:uppercase;white-space:nowrap}
+.col-toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
+.col-toggle-panel{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--s2);border:1px solid rgba(255,255,255,0.12);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,0.7);z-index:99999;min-width:200px;max-height:320px;overflow-y:auto;padding:6px}
+.col-toggle-panel.open{display:block}
+.col-toggle-panel::-webkit-scrollbar{width:3px}
+.col-toggle-panel::-webkit-scrollbar-thumb{background:var(--s3)}
+.col-grp-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:4px 6px 2px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.col-item{display:flex;align-items:center;gap:7px;padding:4px 6px;cursor:pointer;border-radius:3px;font-size:11px;color:var(--mid);user-select:none}
+.col-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.col-item input[type=checkbox]{width:12px;height:12px;accent-color:var(--accent);flex-shrink:0}
 </style>
 </head>
 <body>
@@ -288,22 +300,64 @@ svg.ch{display:block}
     <div class="pnl on" id="p-overview">
       <div class="pgt">Contract Overview</div>
       <div class="pgs">Filter and summarize contracts from Hitters &amp; Pitchers</div>
-      <!-- KPI cards — summarize only filtered rows -->
-      <div class="kr">
-        <div class="kc"><div class="kl">Players</div><div class="kv" id="k-n">0</div><div class="kn">shown</div></div>
-        <div class="kc b"><div class="kl">Total Guaranteed</div><div class="kv" id="k-guar">$0B</div><div class="kn">filtered contracts</div></div>
-        <div class="kc b"><div class="kl">Avg AAV</div><div class="kv" id="k-aav">$0M</div><div class="kn">annual avg value</div></div>
-        <div class="kc g"><div class="kl">Avg Term</div><div class="kv" id="k-term">—</div><div class="kn">years</div></div>
-        <div class="kc p"><div class="kl">Avg Age @ Sign</div><div class="kv" id="k-age">—</div><div class="kn">signing age</div></div>
+      <!-- KPI row 1 — compact summary stats -->
+      <div class="kr" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
+        <div class="kc" style="padding:10px 14px"><div class="kl">Players</div><div class="kv" style="font-size:20px" id="k-n">0</div></div>
+        <div class="kc b" style="padding:10px 14px"><div class="kl">Total Guar.</div><div class="kv" style="font-size:20px" id="k-guar">$0B</div></div>
+        <div class="kc b" style="padding:10px 14px"><div class="kl">Avg AAV</div><div class="kv" style="font-size:20px" id="k-aav">$0M</div></div>
+        <div class="kc g" style="padding:10px 14px"><div class="kl">Avg Term</div><div class="kv" style="font-size:20px" id="k-term">—</div></div>
+        <div class="kc p" style="padding:10px 14px"><div class="kl">Avg Age @ Sign</div><div class="kv" style="font-size:20px" id="k-age">—</div></div>
       </div>
-      <!-- Tab selector + filter bar -->
+      <!-- KPI row 2 — position breakdown + salary correlations -->
+      <div class="cr" style="margin-bottom:12px">
+        <div class="cb" style="padding:14px">
+          <div class="cbt" style="font-size:12px">Position Breakdown</div>
+          <div class="cbs">% of filtered contracts by position</div>
+          <div id="k-pos-chart" style="margin-top:8px"></div>
+        </div>
+        <div class="cb" style="padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+            <div>
+              <div class="cbt" style="font-size:12px">Salary Correlations</div>
+              <div class="cbs">top stats correlating with selected metric</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:3px 7px">
+                <option value="guar">Total Guaranteed</option>
+                <option value="aav">AAV</option>
+                <option value="guaraav">Guar AAV</option>
+                <option value="term">Term</option>
+              </select>
+              <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:3px 7px">
+                <option value="py">PY</option>
+                <option value="py1">PY-1</option>
+                <option value="py2">PY-2</option>
+                <option value="l2">L2</option>
+                <option value="l3">L3</option>
+                <option value="car">Career</option>
+                <option value="all">All Periods</option>
+              </select>
+            </div>
+          </div>
+          <div id="k-corr-chart"></div>
+        </div>
+      </div>
+      <!-- Tab selector + period toggles + filter bar -->
       <div class="vf-bar" style="margin-bottom:8px">
         <div class="vf-top" style="margin-bottom:8px">
           <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:8px">View:</span>
           <button class="grp-btn g-py on" id="ov-tab-h" onclick="ovSetTab('h')">Hitters</button>
           <button class="grp-btn g-py1" id="ov-tab-p" onclick="ovSetTab('p')">Pitchers</button>
-          <div style="margin-left:auto;display:flex;gap:8px">
-            <input class="si2" placeholder="Search player..." oninput="ovSearch(this.value)" style="width:160px">
+          <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:0 8px">Periods:</span>
+          <button class="grp-btn g-py on" id="ov-grp-py" onclick="toggleOvGrp('py',this)">PY</button>
+          <button class="grp-btn g-py1" id="ov-grp-py1" onclick="toggleOvGrp('py1',this)">PY-1</button>
+          <button class="grp-btn g-py2" id="ov-grp-py2" onclick="toggleOvGrp('py2',this)">PY-2</button>
+          <button class="grp-btn g-l2" id="ov-grp-l2" onclick="toggleOvGrp('l2',this)">L2</button>
+          <button class="grp-btn g-l3" id="ov-grp-l3" onclick="toggleOvGrp('l3',this)">L3</button>
+          <button class="grp-btn g-car" id="ov-grp-car" onclick="toggleOvGrp('car',this)">Career</button>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <input class="si2" placeholder="Search player..." oninput="ovSearch(this.value)" style="width:140px">
+            <div class="col-toggle-wrap"><button class="col-toggle-btn" onclick="openColPanel('ov',this)">&#9776; Columns</button><div class="col-toggle-panel" id="col-panel-ov"></div></div>
             <button class="btn bts bsm" onclick="exportOvCSV()">Export CSV</button>
           </div>
         </div>
@@ -594,8 +648,9 @@ svg.ch{display:block}
         <button class="grp-btn g-l2" onclick="toggleGrp('h','l2',this)">L2</button>
         <button class="grp-btn g-l3" onclick="toggleGrp('h','l3',this)">L3</button>
         <button class="grp-btn g-car" onclick="toggleGrp('h','car',this)">Career</button>
-        <div style="margin-left:auto;display:flex;gap:8px">
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
           <input class="si2" placeholder="Search..." oninput="vfSearch('h',this.value)" style="width:140px">
+          <div class="col-toggle-wrap"><button class="col-toggle-btn" onclick="openColPanel('h',this)">&#9776; Columns</button><div class="col-toggle-panel" id="col-panel-h"></div></div>
           <button class="btn bts bsm" onclick="exportViewCSV('hitters')">Export CSV</button>
         </div>
       </div>
@@ -633,8 +688,9 @@ svg.ch{display:block}
         <button class="grp-btn g-l2" onclick="toggleGrp('p','l2',this)">L2</button>
         <button class="grp-btn g-l3" onclick="toggleGrp('p','l3',this)">L3</button>
         <button class="grp-btn g-car" onclick="toggleGrp('p','car',this)">Career</button>
-        <div style="margin-left:auto;display:flex;gap:8px">
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
           <input class="si2" placeholder="Search..." oninput="vfSearch('p',this.value)" style="width:140px">
+          <div class="col-toggle-wrap"><button class="col-toggle-btn" onclick="openColPanel('p',this)">&#9776; Columns</button><div class="col-toggle-panel" id="col-panel-p"></div></div>
           <button class="btn bts bsm" onclick="exportViewCSV('pitchers')">Export CSV</button>
         </div>
       </div>
@@ -1242,35 +1298,7 @@ function refreshTableOnly(){
 }
 
 // ═══ OVERVIEW ═══
-function renderOverview(){
-  // Feed from hitters + pitchers tabs only (same source as those tabs)
-  var ps=DB.merged.filter(function(p){
-    if(!p.sheetTab)return false;
-    return p.sheetTab.toLowerCase().indexOf('hitter')>=0||p.sheetTab.toLowerCase().indexOf('pitcher')>=0;
-  });
-  var filtered=applyFilters(ps);
-  var totalGuar=ps.reduce(function(a,p){return a+(p.guar||0);},0);
-  var totalAav=ps.reduce(function(a,p){return a+(p.aav||0);},0);
-  var ages=ps.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});
-  var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;
-  var terms=ps.map(function(p){return p.term||0;}).filter(function(t){return t>0;});
-  var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;
-  document.getElementById('k-n').textContent=ps.length+(filtered.length!==ps.length?' ('+filtered.length+' shown)':'');
-  document.getElementById('k-guar').textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');
-  document.getElementById('k-aav').textContent='$'+(ps.length?(totalAav/ps.length).toFixed(1):'0')+'M';
-  document.getElementById('k-age').textContent=avgAge.toFixed(1);document.getElementById('k-term').textContent=avgTerm.toFixed(1);
-  var tb=document.getElementById('b-ov');
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="emp"><div class="ei">&#128203;</div><div class="et">'+(ps.length?'No Results':'No Players Loaded')+'</div><div class="ex">'+(ps.length?'Adjust filters above':'Click Refresh Sheet')+'</div></div></td></tr>';return;}
-  tb.innerHTML=filtered.map(function(p){
-    var idx=DB.merged.indexOf(p);var war=(p.py0&&p.py0.aWAR)||0;var dw=war>0?'$'+Math.round(p.aav/war*1000000).toLocaleString('en-US'):'—';
-    return'<tr><td><strong>'+p.name+'</strong></td><td>'+(p.py||'—')+'</td><td>'+(p.pPos?pTag(p.pPos):'—')+'</td><td>'+(p.sigTm||'—')+'</td><td>'+(p.fy||'—')+'</td><td>'+(p.fyAge?p.fyAge.toFixed(0):'—')+'</td><td>'+(p.term||'—')+'yr</td><td class="ac"><strong>'+fDollar(p.aav)+'</strong></td><td>'+fDollar(p.guarAav)+'</td><td>'+fDollar(p.guar)+'</td><td class="'+gc(war,2,5)+'">'+fWAR(war)+'</td><td>'+dw+'</td><td>'+bdg(vRate(p))+'</td><td><button class="btn bts bsm" onclick="openEdit('+idx+')">Edit</button></td></tr>';
-  }).join('');
-  var topAAV=[].concat(filtered).sort(function(a,b){return(b.aav||0)-(a.aav||0);}).slice(0,20);
-  bSVG('c-aav',topAAV.map(function(p){return{l:p.name.split(',')[0],v:p.aav||0,c:'#e8c547'};}),true);
-  var posMap={};filtered.forEach(function(p){var pos=p.pPos||'?';posMap[pos]=(posMap[pos]||0)+(p.guar||0);});
-  var cols=['#e8c547','#4fc3f7','#66bb6a','#ef5350','#ce93d8','#ff9800','#26c6da'];
-  pSVG('c-pos-guar',Object.keys(posMap).sort(function(a,b){return posMap[b]-posMap[a];}).slice(0,7).map(function(k,i){return{l:k,v:posMap[k],c:cols[i%cols.length]};}));
-}
+// [old renderOverview removed]
 
 // ═══ STATS ═══
 function renderStats(){
@@ -1495,9 +1523,13 @@ function buildViewTable(tableType){
   periods.forEach(function(per){
     if(!grps[per])return;
     var cls=grpColors[per];
-    row1+='<th colspan="'+statCols.length+'" class="grp-hdr '+cls+'">'+periodLabels[per]+'</th>';
+    var visColCount=statCols.filter(function(col){var hid=isHit?hColHidden[colKey(per,col)]:pColHidden[colKey(per,col)];return!hid;}).length;
+    if(visColCount===0)return;
+    row1+='<th colspan="'+visColCount+'" class="grp-hdr '+cls+'">'+periodLabels[per]+'</th>';
     statCols.forEach(function(col,si){
       var isFirst=si===0;
+      var hidden=view==='h'?hColHidden[colKey(per,col)]:(view==='p'?pColHidden[colKey(per,col)]:ovColHidden[colKey(per,col)]);
+      if(hidden){colIdx++;return;}
       row2+='<th class="'+(isFirst?cls+' ':'')+cls+'" onclick="srtBig(this,'+colIdx+')" data-tbl="'+(isHit?'t-hit':'t-pit')+'" style="'+(isFirst?'border-left-width:2px':'')+'">'+col+'</th>';
       colIdx++;
     });
@@ -1591,6 +1623,8 @@ function buildViewTable(tableType){
               else if(dec2Cols2.indexOf(col)>=0)v=fDec2(parseFloat(v));
             }
           }
+          var colHidState=isHit?hColHidden:pColHidden;
+          if(colHidState[colKey(per,col)])return;
           var isFirst=si===0;
           var rjStyle='text-align:right;'+(isFirst?'border-left:2px solid currentColor;':'');
           if(v===''||v===null||v===undefined)v='—';
@@ -1872,7 +1906,7 @@ function vfOnColChange(view){
   vfBuilderType=vfColType(vfBuilderCol);
   vfBuilderView=view;
 
-  var isHit=view==='h';
+  var isHit=view==='ov'?(ovState.tab==='h'):(view==='h');
   var players=DB.merged.filter(function(p){
     if(!p.sheetTab)return false;
     return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
@@ -1993,6 +2027,113 @@ function vfRender(view){
 }
 
 
+
+// ═══ OVERVIEW PERIOD + COLUMN STATE ═══
+var ovGrps={py:true,py1:false,py2:false,l2:false,l3:false,car:false};
+
+function toggleOvGrp(grp,btn){
+  ovGrps[grp]=!ovGrps[grp];
+  btn.classList.toggle('on',ovGrps[grp]);
+  renderOverview();
+}
+
+// Position breakdown chart
+function renderPosChart(players){
+  var el=document.getElementById('k-pos-chart');if(!el)return;
+  var map={};players.forEach(function(p){var pos=p.pPos||'?';map[pos]=(map[pos]||0)+1;});
+  var total=players.length||1;
+  var entries=Object.keys(map).sort(function(a,b){return map[b]-map[a];}).slice(0,12);
+  var cols=['#e8c547','#4fc3f7','#66bb6a','#ef5350','#ce93d8','#ff9800','#26c6da','#f06292','#aed581','#80cbc4','#ffb74d','#90caf9'];
+  var html='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  entries.forEach(function(pos,i){
+    var pct=((map[pos]/total)*100).toFixed(1);
+    var w=Math.max(28,Math.round((map[pos]/total)*240));
+    html+='<div style="display:flex;align-items:center;gap:5px;width:100%">'
+      +'<span style="font-size:10px;color:var(--dim);width:28px;text-align:right">'+pos+'</span>'
+      +'<div style="height:14px;width:'+w+'px;background:'+cols[i%cols.length]+';border-radius:2px;opacity:0.85"></div>'
+      +'<span style="font-size:10px;color:var(--mid)">'+map[pos]+' ('+pct+'%)</span>'
+      +'</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// Pearson correlation helper
+function pearsonR(xs,ys){
+  var n=xs.length;if(n<3)return 0;
+  var mx=xs.reduce(function(a,b){return a+b;},0)/n;
+  var my=ys.reduce(function(a,b){return a+b;},0)/n;
+  var num=0,dx2=0,dy2=0;
+  for(var i=0;i<n;i++){var dx=xs[i]-mx,dy=ys[i]-my;num+=dx*dy;dx2+=dx*dx;dy2+=dy*dy;}
+  var denom=Math.sqrt(dx2*dy2);
+  return denom===0?0:num/denom;
+}
+
+function renderCorr(){
+  var el=document.getElementById('k-corr-chart');if(!el)return;
+  var metric=document.getElementById('corr-metric')?document.getElementById('corr-metric').value:'guar';
+  var period=document.getElementById('corr-period')?document.getElementById('corr-period').value:'py';
+  var players=ovGetFiltered();
+  if(players.length<5){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px">Need at least 5 contracts for correlation</div>';return;}
+
+  var metricFn=function(p){
+    if(metric==='guar')return p.guar||0;
+    if(metric==='aav')return p.aav||0;
+    if(metric==='guaraav')return p.guarAav||0;
+    if(metric==='term')return p.term||0;
+    return 0;
+  };
+
+  var isHit=ovState.tab==='h';
+  var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
+  var periods=period==='all'?H_PERIODS:[period];
+
+  var results=[];
+  periods.forEach(function(per){
+    var perIdx={'py':0,'py1':1,'py2':2,'l2':3,'l3':4,'car':5};
+    var idx=perIdx[per]!==undefined?perIdx[per]:0;
+    statCols.forEach(function(col){
+      var pairs=[];
+      players.forEach(function(p){
+        var row=p._rawRow||{};
+        var raw=row[col+'_'+idx];
+        if(raw===undefined||raw===null||raw==='')raw=row[col+'_0']||row[col]||'';
+        var v=parseFloat(raw);
+        var y=metricFn(p);
+        if(!isNaN(v)&&v!==0&&y>0)pairs.push([v,y]);
+      });
+      if(pairs.length<5)return;
+      var xs=pairs.map(function(p){return p[0];});
+      var ys=pairs.map(function(p){return p[1];});
+      var r=pearsonR(xs,ys);
+      var label=period==='all'?col+' ('+per.toUpperCase()+')':col;
+      results.push({label:label,r:r,n:pairs.length});
+    });
+  });
+
+  // Sort by absolute r, take top 10
+  results.sort(function(a,b){return Math.abs(b.r)-Math.abs(a.r);});
+  var top=results.slice(0,10);
+
+  if(!top.length){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px">Not enough data for correlations</div>';return;}
+
+  var maxR=Math.max.apply(null,top.map(function(d){return Math.abs(d.r);}));
+  var html='<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">';
+  top.forEach(function(d){
+    var pct=Math.abs(d.r)/Math.max(maxR,0.01);
+    var w=Math.round(pct*220);
+    var col=d.r>=0?'#66bb6a':'#ef5350';
+    var rStr=(d.r>=0?'+':'')+d.r.toFixed(3);
+    html+='<div style="display:flex;align-items:center;gap:5px">'
+      +'<span style="font-size:9px;color:var(--dim);width:90px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+d.label+'">'+d.label+'</span>'
+      +'<div style="height:12px;width:'+w+'px;background:'+col+';border-radius:2px;opacity:0.85;min-width:4px"></div>'
+      +'<span style="font-size:9px;color:var(--mid)">'+rStr+'</span>'
+      +'</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
 // ═══ CONTRACT OVERVIEW ENGINE ═══
 var ovState={tab:'h',search:'',highlightedNames:{}};
 
@@ -2046,85 +2187,195 @@ function ovGetFiltered(){
 
 function renderOverview(){
   if(!vfState['ov'])vfState['ov']={filters:[],sortCol:-1,sortAsc:true,search:''};
-
   var base=ovGetBase();
   var filtered=ovGetFiltered();
 
-  // ── Update KPI cards from filtered rows only ──
+  // ── KPI row 1 — from filtered rows ──
   var totalGuar=filtered.reduce(function(a,p){return a+(p.guar||0);},0);
   var totalAav=filtered.reduce(function(a,p){return a+(p.aav||0);},0);
   var ages=filtered.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});
   var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;
   var terms=filtered.map(function(p){return p.term||0;}).filter(function(t){return t>0;});
   var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;
-
   document.getElementById('k-n').textContent=filtered.length+(filtered.length!==base.length?' / '+base.length:'');
   document.getElementById('k-guar').textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');
   document.getElementById('k-aav').textContent='$'+(filtered.length?(totalAav/filtered.length).toFixed(1):'0')+'M';
   document.getElementById('k-age').textContent=avgAge?avgAge.toFixed(1):'—';
   document.getElementById('k-term').textContent=avgTerm?avgTerm.toFixed(1):'—';
 
-  // ── Update filter chip count ──
+  // ── KPI row 2 charts ──
+  try{renderPosChart(filtered);}catch(e){console.error('posChart',e);}
+  try{renderCorr();}catch(e){console.error('corr',e);}
+
+  // ── Filter chips ──
   var countEl=document.getElementById('vf-count-ov');
   if(countEl)countEl.textContent=filtered.length+' / '+base.length+' players';
   var clearBtn=document.getElementById('vf-clear-ov');
   if(clearBtn)clearBtn.style.display=vfState['ov'].filters.length?'':'none';
   vfRenderChips('ov');
 
-  // ── Build table header ──
+  // ── Build table via buildOvTable ──
+  var result=buildOvTable(filtered);
+  document.getElementById('ov-head').innerHTML=result.head;
+  document.getElementById('b-ov').innerHTML=result.body;
+
+  // ── Cross-tab highlight ──
+  var hn={};filtered.forEach(function(p){hn[normName(p.name)]=true;});
+  ovUpdateHighlights(hn);
+}
+
+function buildOvTable(filtered){
   var isHit=ovState.tab==='h';
   var contractCols=isHit?H_CONTRACT:P_CONTRACT;
-  var headHTML='<tr>';
-  contractCols.forEach(function(col,i){headHTML+='<th onclick="srt(\'t-ov\','+i+')" class="grp-hdr g-contract" style="text-align:left;font-size:9px;letter-spacing:1px;color:#66bb6a;padding:5px 8px;cursor:pointer;white-space:nowrap;background:var(--s2)">'+col+'</th>';});
-  headHTML+='</tr>';
-  document.getElementById('ov-head').innerHTML=headHTML;
+  var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
+  var grpColors={'py':'g-py','py1':'g-py1','py2':'g-py2','l2':'g-l2','l3':'g-l3','car':'g-car'};
+  var periodLabels=H_PERIOD_LABELS;
 
-  // ── Build table body ──
-  var highlightedNames={};
+  // Header row 1: contract block + visible stat period blocks
+  var row1='<tr><th colspan="'+contractCols.length+'" class="grp-hdr g-contract">Contract Info</th>';
+  var row2='<tr>';
+  contractCols.forEach(function(col,i){
+    row2+='<th onclick="srtBig(this,'+i+')" data-tbl="t-ov" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#66bb6a;padding:5px 8px;cursor:pointer;white-space:nowrap;background:var(--s2);border-bottom:1px solid var(--border)">'+col+'</th>';
+  });
+  var colIdx=contractCols.length;
+  H_PERIODS.forEach(function(per){
+    if(!ovGrps[per])return;
+    var cls=grpColors[per];
+    var visCols=statCols.filter(function(col){return!ovColHidden[colKey(per,col)];});
+    if(!visCols.length)return;
+    row1+='<th colspan="'+visCols.length+'" class="grp-hdr '+cls+'">'+periodLabels[per]+'</th>';
+    statCols.forEach(function(col,si){
+      if(ovColHidden[colKey(per,col)]){colIdx++;return;}
+      var isFirst=si===0;
+      row2+='<th class="'+(isFirst?cls+' ':'')+cls+'" onclick="srtBig(this,'+colIdx+')" data-tbl="t-ov" style="'+(isFirst?'border-left-width:2px':'')+'">'+col+'</th>';
+      colIdx++;
+    });
+  });
+  row1+='</tr>'; row2+='</tr>';
+
+  var base=ovGetBase();
   if(!filtered.length){
-    document.getElementById('b-ov').innerHTML='<tr><td colspan="'+contractCols.length+'" style="text-align:center;padding:40px;color:var(--dim)">'+(base.length?'No results — adjust filters above':'No data loaded')+'</td></tr>';
-    ovUpdateHighlights(highlightedNames);return;
+    return{head:row1+row2,body:'<tr><td colspan="'+(contractCols.length+60)+'" style="text-align:center;padding:40px;color:var(--dim)">'+(base.length?'No results — adjust filters above':'No data loaded')+'</td></tr>'};
   }
 
-  document.getElementById('b-ov').innerHTML=filtered.map(function(p){
-    highlightedNames[normName(p.name)]=true;
+  var pC=['BB%','K%','SB%','Brl%','HH%','SwSp%','QS%','Sv%','SwStr%','HR%','GB%','%(FF)','%(SI)','%(FC)'];
+  var wC=['rWAR','fWAR','aWAR','aWAR/650'];
+  var s3=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA','oSLG'];
+  var d1=['AB/HR','LA','Max EV','AvgEV','IP','IP/GS','aEV','MPH(FF)','MPH(SI)','MPH(FC)'];
+  var d2=['gmLI','ERA','FIP','xFIP'];
+  var dollarCC=['Pot IB','Pot OB'],statCC=['MLSsig','CAR MLS-PY'],rjCC=['MLSsig','CAR MLS-PY'];
+
+  var body=filtered.map(function(p){
     var row=p._rawRow||{};
-    var contractVals={
-      'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+    var cv={'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
       'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
-      'Term':p.term,'AAV':fDollar(p.aav),'GUAR AAV':fDollar(p.guarAav),'GUAR':fDollar(p.guar)
-    };
-    var dollarCC=['Pot IB','Pot OB'],statCC=['MLSsig','CAR MLS-PY'];
-    var cells=contractCols.map(function(col){
-      var v=contractVals[col]!==undefined?contractVals[col]:(row[col+'_0']!==undefined&&row[col+'_0']!==''?row[col+'_0']:row[col]||'');
+      'Term':p.term,'AAV':fDollar(p.aav),'GUAR AAV':fDollar(p.guarAav),'GUAR':fDollar(p.guar)};
+    var cells='';
+    contractCols.forEach(function(col){
+      var v=cv[col]!==undefined?cv[col]:(row[col+'_0']!==undefined&&row[col+'_0']!==''?row[col+'_0']:row[col]||'');
       if(dollarCC.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollarRaw(parseFloat(v));
       if(statCC.indexOf(col)>=0&&v!==''&&!isNaN(parseFloat(v)))v=fStat(parseFloat(v));
-      return'<td style="white-space:nowrap;padding:4px 8px;font-size:11px">'+(v||'—')+'</td>';
-    }).join('');
+      var rj=rjCC.indexOf(col)>=0?'text-align:right;':'';
+      cells+='<td style="'+rj+'white-space:nowrap;padding:4px 8px;font-size:11px">'+(v!==null&&v!==undefined&&v!==''?v:'—')+'</td>';
+    });
+    H_PERIODS.forEach(function(per){
+      if(!ovGrps[per])return;
+      var cls=grpColors[per];
+      statCols.forEach(function(col,si){
+        if(ovColHidden[colKey(per,col)])return;
+        var v='';
+        var perIdxMap={'py':0,'py1':1,'py2':2};
+        if(perIdxMap[per]!==undefined){
+          var pi=perIdxMap[per];
+          var raw=row[col+'_'+pi];
+          if(raw===undefined||raw===null||raw==='')raw=row[col+'_0']||row[col]||'';
+          v=String(raw).trim();
+        }else{
+          v=row[col]||'';
+        }
+        if(v!==''&&!isNaN(parseFloat(v))){
+          if(pC.indexOf(col)>=0)v=fPct(parseFloat(v));
+          else if(wC.indexOf(col)>=0)v=fWAR(parseFloat(v));
+          else if(s3.indexOf(col)>=0)v=fStat(parseFloat(v));
+          else if(d1.indexOf(col)>=0)v=fDec1(parseFloat(v));
+          else if(d2.indexOf(col)>=0)v=fDec2(parseFloat(v));
+          else v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
+        }
+        var isFirst=si===0;
+        var rj2='text-align:right;'+(isFirst?'border-left:2px solid currentColor;':'');
+        if(v===''||v===null||v===undefined)v='—';
+        cells+='<td class="'+(isFirst?cls:'')+(isFirst?' g-first':'')+'" style="'+rj2+'font-size:11px;padding:4px 8px">'+v+'</td>';
+      });
+    });
     return'<tr>'+cells+'</tr>';
   }).join('');
-
-  ovUpdateHighlights(highlightedNames);
+  return{head:row1+row2,body:body};
 }
 
 function ovUpdateHighlights(namesMap){
   ovState.highlightedNames=namesMap||{};
-  // Highlight matching rows in hitters tab
-  document.querySelectorAll('#b-hit tr').forEach(function(row){
-    var firstCell=row.cells&&row.cells[0];
-    if(!firstCell)return;
-    var nm=normName(firstCell.textContent);
+  document.querySelectorAll('#b-hit tr,#b-pit tr').forEach(function(row){
+    var fc=row.cells&&row.cells[0];if(!fc)return;
+    var nm=normName(fc.textContent);
     if(ovState.highlightedNames[nm])row.classList.add('ov-highlight');
     else row.classList.remove('ov-highlight');
   });
-  // Highlight matching rows in pitchers tab
-  document.querySelectorAll('#b-pit tr').forEach(function(row){
-    var firstCell=row.cells&&row.cells[0];
-    if(!firstCell)return;
-    var nm=normName(firstCell.textContent);
-    if(ovState.highlightedNames[nm])row.classList.add('ov-highlight');
-    else row.classList.remove('ov-highlight');
+}
+
+// ═══ COLUMN VISIBILITY STATE ═══
+var hColHidden={};  // {per_col: true} e.g. {'py_G': true}
+var pColHidden={};
+var ovColHidden={};
+
+function colKey(per,col){return per+'_'+col;}
+
+function toggleCol(view,per,col,cb){
+  var state=view==='h'?hColHidden:(view==='p'?pColHidden:ovColHidden);
+  var k=colKey(per,col);
+  if(cb.checked)delete state[k]; else state[k]=true;
+  if(view==='h')renderHitters();
+  else if(view==='p')renderPitchers();
+  else renderOverview();
+}
+
+function openColPanel(view,btn){
+  var panel=document.getElementById('col-panel-'+view);
+  if(!panel)return;
+  // Populate if empty
+  if(!panel.dataset.built){
+    buildColPanel(view,panel);
+    panel.dataset.built='1';
+  }
+  var isOpen=panel.classList.contains('open');
+  // Close all other col panels
+  document.querySelectorAll('.col-toggle-panel.open').forEach(function(p){p.classList.remove('open');});
+  if(!isOpen)panel.classList.add('open');
+}
+document.addEventListener('mousedown',function(e){
+  if(!e.target.closest('.col-toggle-wrap'))
+    document.querySelectorAll('.col-toggle-panel.open').forEach(function(p){p.classList.remove('open');});
+});
+
+function buildColPanel(view,panel){
+  var isHit=view==='h'||(view==='ov'&&ovState.tab==='h');
+  var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
+  var state=view==='h'?hColHidden:(view==='p'?pColHidden:ovColHidden);
+  var periodLabels={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'Career'};
+  var html='';
+  H_PERIODS.forEach(function(per){
+    html+='<div class="col-grp-lbl">'+periodLabels[per]+'</div>';
+    statCols.forEach(function(col){
+      var k=colKey(per,col);
+      var checked=!state[k]?' checked':'';
+      html+='<label class="col-item"><input type="checkbox"'+checked+' onchange="toggleCol(\''+view+'\',\''+per+'\',\''+col.replace(/'/g,"\\'")+'\'\',this)">'+col+'</label>\n';
+    });
   });
+  panel.innerHTML=html;
+}
+
+function rebuildColPanel(view){
+  var panel=document.getElementById('col-panel-'+view);
+  if(panel){panel.dataset.built='';buildColPanel(view,panel);}
 }
 
 // ═══ TOAST ═══
