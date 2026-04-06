@@ -308,38 +308,36 @@ svg.ch{display:block}
         <div class="kc g" style="padding:10px 14px"><div class="kl">Avg Term</div><div class="kv" style="font-size:20px" id="k-term">—</div></div>
         <div class="kc p" style="padding:10px 14px"><div class="kl">Avg Age @ Sign</div><div class="kv" style="font-size:20px" id="k-age">—</div></div>
       </div>
-      <!-- KPI row 2 — position breakdown + salary correlations -->
-      <div class="cr" style="margin-bottom:12px;grid-template-columns:minmax(0,1fr) minmax(0,2.4fr)">
+      <!-- KPI row 2 — position breakdown + salary correlations (equal width) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
         <div class="cb" style="padding:10px 12px">
           <div class="cbt" style="font-size:11px;margin-bottom:1px">Position Breakdown</div>
           <div class="cbs" style="margin-bottom:7px">% of filtered contracts</div>
           <div id="k-pos-chart"></div>
         </div>
-        <div class="cb" style="padding:10px 12px;display:flex;gap:12px;align-items:flex-start">
-          <!-- Left: title + filters stacked -->
-          <div style="flex-shrink:0;width:130px">
-            <div class="cbt" style="font-size:11px;margin-bottom:3px">Salary Correlations</div>
-            <div class="cbs" style="margin-bottom:6px">top 10 stats</div>
-            <div style="display:flex;flex-direction:column;gap:5px">
-              <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:2px 6px;width:100%">
-                <option value="guar">Total Guaranteed</option>
-                <option value="aav">AAV</option>
-                <option value="guaraav">Guar AAV</option>
-                <option value="term">Term</option>
-              </select>
-              <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:2px 6px;width:100%">
-                <option value="py">PY</option>
-                <option value="py1">PY-1</option>
-                <option value="py2">PY-2</option>
-                <option value="l2">L2</option>
-                <option value="l3">L3</option>
-                <option value="car">Career</option>
-                <option value="all">All Periods</option>
-              </select>
-            </div>
+        <div class="cb" style="padding:10px 12px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+            <div class="cbt" style="font-size:11px">Salary Correlations</div>
+            <div class="cbs">top 10 stats</div>
           </div>
-          <!-- Right: chart output fills remaining space -->
-          <div id="k-corr-chart" style="flex:1;min-width:0"></div>
+          <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
+            <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:2px 6px">
+              <option value="guar">Total Guaranteed</option>
+              <option value="aav">AAV</option>
+              <option value="guaraav">Guar AAV</option>
+              <option value="term">Term</option>
+            </select>
+            <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:2px 6px">
+              <option value="py">PY</option>
+              <option value="py1">PY-1</option>
+              <option value="py2">PY-2</option>
+              <option value="l2">L2</option>
+              <option value="l3">L3</option>
+              <option value="car">Career</option>
+              <option value="all">All Periods</option>
+            </select>
+          </div>
+          <div id="k-corr-chart"></div>
         </div>
       </div>
       <!-- Tab selector + period toggles + filter bar -->
@@ -2169,30 +2167,32 @@ function renderCorr(){
   if(!top.length){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">Not enough data for correlations</div>';return;}
 
 
-  // ── Compact vertical bars — fills flex container beside filters ──
+  // ── Fixed-size compact vertical bars — stays small regardless of card width ──
   var N=top.length;
-  var W=280,H=86,pb=26,pt=12,pl=2,pr=2;
-  var chartW=W-pl-pr,chartH=H-pt-pb;
+  var bW=16,barGap=4,pt=14,pb=24,pl=2,pr=2;
+  var chartH=52;
+  var W=pl+pr+(bW+barGap)*N+barGap;
+  var H=pt+chartH+pb;
   var maxR=Math.max.apply(null,top.map(function(d){return Math.abs(d.r);}));
-  var bW=Math.max(4,Math.floor(chartW/N)-3);
-  var gap=(chartW-bW*N)/(N+1);
 
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
-  svg+='<line x1="'+pl+'" x2="'+(pl+chartW)+'" y1="'+(pt+chartH)+'" y2="'+(pt+chartH)+'" stroke="rgba(255,255,255,0.1)"/>';
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg"'
+    +' style="display:block;overflow:visible">';
+  svg+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(pt+chartH)+'" y2="'+(pt+chartH)+'"'
+    +' stroke="rgba(255,255,255,0.12)"/>';
 
   top.forEach(function(d,i){
-    var x=pl+gap+(bW+gap)*i;
+    var x=pl+barGap+(bW+barGap)*i;
     var bH=Math.max(2,Math.abs(d.r)/maxR*chartH);
     var y=pt+chartH-bH;
     var col=d.r>=0?'#66bb6a':'#ef5350';
     var rStr=d.r.toFixed(2);
-    var lbl=d.label.length>6?d.label.slice(0,5)+'…':d.label;
+    var lbl=d.label.length>7?d.label.slice(0,6)+'…':d.label;
     svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="1" opacity="0.85">'
       +'<title>'+d.label+': r='+d.r.toFixed(3)+' (n='+d.n+')</title>'
       +'</rect>';
     svg+='<text x="'+(x+bW/2)+'" y="'+(y-2)+'" text-anchor="middle" font-size="7" fill="'+col+'">'+rStr+'</text>';
-    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+10)+'" text-anchor="end" font-size="7" fill="#5a6a8a"'
-      +' transform="rotate(-40,'+(x+bW/2)+','+(pt+chartH+10)+')">'+lbl+'</text>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+11)+'" text-anchor="end" font-size="7" fill="#5a6a8a"'
+      +' transform="rotate(-40,'+(x+bW/2)+','+(pt+chartH+11)+')">'+lbl+'</text>';
   });
   svg+='</svg>';
   el.innerHTML=svg;
