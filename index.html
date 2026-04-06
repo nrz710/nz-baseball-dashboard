@@ -309,23 +309,25 @@ svg.ch{display:block}
         <div class="kc p" style="padding:10px 14px"><div class="kl">Avg Age @ Sign</div><div class="kv" style="font-size:20px" id="k-age">—</div></div>
       </div>
       <!-- KPI row 2 — position breakdown + salary correlations -->
-      <div class="cr" style="margin-bottom:12px;grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
-        <div class="cb" style="padding:12px 14px">
+      <div class="cr" style="margin-bottom:12px;grid-template-columns:minmax(0,1fr) minmax(0,2.4fr)">
+        <div class="cb" style="padding:10px 12px">
           <div class="cbt" style="font-size:11px;margin-bottom:1px">Position Breakdown</div>
-          <div class="cbs" style="margin-bottom:8px">% of filtered contracts</div>
+          <div class="cbs" style="margin-bottom:7px">% of filtered contracts</div>
           <div id="k-pos-chart"></div>
         </div>
-        <div class="cb" style="padding:12px 14px">
-          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px">
-            <div class="cbt" style="font-size:11px">Salary Correlations</div>
-            <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-              <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:2px 6px">
+        <div class="cb" style="padding:10px 12px;display:flex;gap:12px;align-items:flex-start">
+          <!-- Left: title + filters stacked -->
+          <div style="flex-shrink:0;width:130px">
+            <div class="cbt" style="font-size:11px;margin-bottom:3px">Salary Correlations</div>
+            <div class="cbs" style="margin-bottom:6px">top 10 stats</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:2px 6px;width:100%">
                 <option value="guar">Total Guaranteed</option>
                 <option value="aav">AAV</option>
                 <option value="guaraav">Guar AAV</option>
                 <option value="term">Term</option>
               </select>
-              <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:2px 6px">
+              <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:2px 6px;width:100%">
                 <option value="py">PY</option>
                 <option value="py1">PY-1</option>
                 <option value="py2">PY-2</option>
@@ -336,8 +338,8 @@ svg.ch{display:block}
               </select>
             </div>
           </div>
-          <div class="cbs" style="margin-bottom:6px">top 10 stats · green = positive · red = negative</div>
-          <div id="k-corr-chart"></div>
+          <!-- Right: chart output fills remaining space -->
+          <div id="k-corr-chart" style="flex:1;min-width:0"></div>
         </div>
       </div>
       <!-- Tab selector + period toggles + filter bar -->
@@ -916,6 +918,7 @@ function processSheetData(data){
     var rows=Array.isArray(sheetObj)?sheetObj:(sheetObj&&sheetObj.rows?sheetObj.rows:null);
     if(!rows||rows.length<3)return;
     var headers=rows[1].map(function(h){return String(h||'').trim();});
+    var fontColorRow=rows[0]&&Array.isArray(rows[0])?rows[0]:null;
     for(var i=2;i<rows.length;i++){
       var vals=rows[i];
       var firstName=String(vals[0]||'').trim();
@@ -924,15 +927,21 @@ function processSheetData(data){
       var headerCount={};
       headers.forEach(function(h,j){
         var count=headerCount[h]||0;
-        // Store with position suffix for duplicates (e.g. G_0, G_1, G_2)
         row[h+'_'+count]=vals[j]!==undefined&&vals[j]!==null?String(vals[j]).trim():'';
-        // Also store the first occurrence without suffix for backward compat
         if(count===0)row[h]=vals[j]!==undefined&&vals[j]!==null?String(vals[j]).trim():'';
         headerCount[h]=count+1;
       });
       if(!row['Player'])continue;
       var p=buildPlayer(row,headers,vals);
-      if(p){p.sheetTab=sheetName;allPlayers.push(p);}
+      if(p){
+        p.sheetTab=sheetName;
+        if(fontColorRow){
+          var nameColorArr=fontColorRow[i];
+          var nc=Array.isArray(nameColorArr)?String(nameColorArr[0]||'').toLowerCase():String(nameColorArr||'').toLowerCase();
+          p.purpleName=isPurpleHex(nc);
+        }
+        allPlayers.push(p);
+      }
     }
   });
   DB.players=allPlayers;
@@ -960,6 +969,7 @@ function mergeFullData(){
     var rows=Array.isArray(sheetObj)?sheetObj:(sheetObj&&sheetObj.rows?sheetObj.rows:null);
     if(!rows||rows.length<3)return;
     var headers=rows[1].map(function(h){return String(h||'').trim();});
+    var fontColorRowFull=rows[0]&&Array.isArray(rows[0])?rows[0]:null;
     for(var i=2;i<rows.length;i++){
       var vals=rows[i];
       var nm=String(vals[0]||'').trim();if(!nm)continue;
@@ -994,6 +1004,12 @@ function mergeFullData(){
             merged2[k]=existingRaw[k];
         });
         DB.merged[mIdx]._rawRow=merged2;
+        // Stamp purple from full pass if not already set from fast pass
+        if(fontColorRowFull&&!DB.merged[mIdx].purpleName){
+          var nc2=String(fontColorRowFull[i]&&fontColorRowFull[i][0]?fontColorRowFull[i][0]:'').toLowerCase();
+          if(!nc2)nc2=String(fontColorRowFull[i]||'').toLowerCase();
+          if(isPurpleHex(nc2))DB.merged[mIdx].purpleName=true;
+        }
       }else{
         // Player missing from merged (fast pass skipped this sheet tab) — build and add them
         var p2=buildPlayer(row2,headers,vals);
@@ -1038,6 +1054,21 @@ function buildPlayer(row,headers,vals){
     code:(row['Code_0']||row['Code']||'').trim(),source:'gs',_rawRow:row,
     py0:getSet(0),py1:getSet(1),py2:getSet(2)
   };
+}
+
+
+// Detect purple/violet font colors from Google Sheets hex codes
+function isPurpleHex(hex){
+  if(!hex||hex.length<4)return false;
+  hex=hex.replace('#','');
+  if(hex.length===3)hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  if(hex.length!==6)return false;
+  var r=parseInt(hex.slice(0,2),16);
+  var g=parseInt(hex.slice(2,4),16);
+  var b=parseInt(hex.slice(4,6),16);
+  // Purple: blue and red both high, green relatively low
+  // Covers #674ea7, #7030a0, #9900ff, #8000ff, #6600cc etc.
+  return b>100&&r>80&&g<(r+b)*0.45&&r<230&&b>r*0.5;
 }
 
 // ═══ MERGE ═══
@@ -1562,7 +1593,7 @@ function buildViewTable(tableType){
 
       // Contract cells
       var contractVals={
-        'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+        'Player':p.purpleName?'<span style="color:#ce93d8">'+p.name+'</span>':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
         'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
         'Term':p.term,'AAV':fDollar(p.aav),
         'GUAR AAV':fDollar(p.guarAav),
@@ -2137,35 +2168,31 @@ function renderCorr(){
 
   if(!top.length){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">Not enough data for correlations</div>';return;}
 
-  // ── Vertical bar chart (SVG), left=highest |r|, right=lowest ──
-  var W=480,H=130,pb=36,pt=8,pl=6,pr=6;
+
+  // ── Compact vertical bars — fills flex container beside filters ──
+  var N=top.length;
+  var W=280,H=86,pb=26,pt=12,pl=2,pr=2;
   var chartW=W-pl-pr,chartH=H-pt-pb;
   var maxR=Math.max.apply(null,top.map(function(d){return Math.abs(d.r);}));
-  var bW=Math.floor(chartW/top.length)-4;
-  var gap=(chartW-bW*top.length)/(top.length+1);
+  var bW=Math.max(4,Math.floor(chartW/N)-3);
+  var gap=(chartW-bW*N)/(N+1);
 
   var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
-  // Zero line
   svg+='<line x1="'+pl+'" x2="'+(pl+chartW)+'" y1="'+(pt+chartH)+'" y2="'+(pt+chartH)+'" stroke="rgba(255,255,255,0.1)"/>';
-  // r=1 guide line
-  var r1y=pt+chartH-(chartH*1/maxR);
-  if(r1y>pt)svg+='<line x1="'+pl+'" x2="'+(pl+chartW)+'" y1="'+r1y+'" y2="'+r1y+'" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3"/>';
 
   top.forEach(function(d,i){
     var x=pl+gap+(bW+gap)*i;
-    var bH=Math.max(3,Math.abs(d.r)/maxR*chartH);
+    var bH=Math.max(2,Math.abs(d.r)/maxR*chartH);
     var y=pt+chartH-bH;
     var col=d.r>=0?'#66bb6a':'#ef5350';
-    var rStr=(d.r>=0?'+':'')+d.r.toFixed(2);
-    var lbl=d.label.length>7?d.label.slice(0,6)+'…':d.label;
-    svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="2" opacity="0.85">'
+    var rStr=d.r.toFixed(2);
+    var lbl=d.label.length>6?d.label.slice(0,5)+'…':d.label;
+    svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="1" opacity="0.85">'
       +'<title>'+d.label+': r='+d.r.toFixed(3)+' (n='+d.n+')</title>'
       +'</rect>';
-    // r value above bar
-    svg+='<text x="'+(x+bW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-size="8" fill="'+col+'">'+rStr+'</text>';
-    // label below axis — rotated
-    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+12)+'" text-anchor="end" font-size="8" fill="#5a6a8a"'
-      +' transform="rotate(-38,'+(x+bW/2)+','+(pt+chartH+12)+')">'+lbl+'</text>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(y-2)+'" text-anchor="middle" font-size="7" fill="'+col+'">'+rStr+'</text>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+10)+'" text-anchor="end" font-size="7" fill="#5a6a8a"'
+      +' transform="rotate(-40,'+(x+bW/2)+','+(pt+chartH+10)+')">'+lbl+'</text>';
   });
   svg+='</svg>';
   el.innerHTML=svg;
@@ -2304,7 +2331,7 @@ function buildOvTable(filtered){
 
   var body=filtered.map(function(p){
     var row=p._rawRow||{};
-    var cv={'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+    var cv={'Player':p.purpleName?'<span style="color:#ce93d8">'+p.name+'</span>':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
       'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
       'Term':p.term,'AAV':fDollar(p.aav),'GUAR AAV':fDollar(p.guarAav),'GUAR':fDollar(p.guar)};
     var cells='';
