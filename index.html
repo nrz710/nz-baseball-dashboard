@@ -309,26 +309,23 @@ svg.ch{display:block}
         <div class="kc p" style="padding:10px 14px"><div class="kl">Avg Age @ Sign</div><div class="kv" style="font-size:20px" id="k-age">—</div></div>
       </div>
       <!-- KPI row 2 — position breakdown + salary correlations -->
-      <div class="cr" style="margin-bottom:12px">
-        <div class="cb" style="padding:14px">
-          <div class="cbt" style="font-size:12px">Position Breakdown</div>
-          <div class="cbs">% of filtered contracts by position</div>
-          <div id="k-pos-chart" style="margin-top:8px"></div>
+      <div class="cr" style="margin-bottom:12px;grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
+        <div class="cb" style="padding:12px 14px">
+          <div class="cbt" style="font-size:11px;margin-bottom:1px">Position Breakdown</div>
+          <div class="cbs" style="margin-bottom:8px">% of filtered contracts</div>
+          <div id="k-pos-chart"></div>
         </div>
-        <div class="cb" style="padding:14px">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:4px">
-            <div>
-              <div class="cbt" style="font-size:12px">Salary Correlations</div>
-              <div class="cbs">top stats correlating with selected metric</div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-              <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:3px 7px">
+        <div class="cb" style="padding:12px 14px">
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+            <div class="cbt" style="font-size:11px">Salary Correlations</div>
+            <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+              <select class="sel" id="corr-metric" onchange="renderCorr()" style="font-size:10px;padding:2px 6px">
                 <option value="guar">Total Guaranteed</option>
                 <option value="aav">AAV</option>
                 <option value="guaraav">Guar AAV</option>
                 <option value="term">Term</option>
               </select>
-              <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:3px 7px">
+              <select class="sel" id="corr-period" onchange="renderCorr()" style="font-size:10px;padding:2px 6px">
                 <option value="py">PY</option>
                 <option value="py1">PY-1</option>
                 <option value="py2">PY-2</option>
@@ -339,6 +336,7 @@ svg.ch{display:block}
               </select>
             </div>
           </div>
+          <div class="cbs" style="margin-bottom:6px">top 10 stats · green = positive · red = negative</div>
           <div id="k-corr-chart"></div>
         </div>
       </div>
@@ -981,7 +979,21 @@ function mergeFullData(){
       if(mIdx>=0){
         // Also stamp the sheetTab in case fast pass didn't set it
         if(!DB.merged[mIdx].sheetTab)DB.merged[mIdx].sheetTab=sheetName;
-        DB.merged[mIdx]._rawRow=Object.assign(DB.merged[mIdx]._rawRow||{},row2);
+        // Merge strategy: full-pass row2 wins for stat columns (new data),
+        // but fast-pass values win for contract-level columns that get corrupted
+        // when the full sheet has more columns and Code_0 lands on wrong index.
+        var contractKeysToPreserve=['Code','Code_0','ArbSys','ArbSys_0',
+          'T+O','T+O_0','PlyrOpt?','PlyrOpt?_0','Def?','Def?_0',
+          'Pot IB','Pot IB_0','Pot OB','Pot OB_0',
+          'cPY','cPY_0','MLSsig','MLSsig_0','CAR MLS-PY','CAR MLS-PY_0'];
+        var existingRaw=DB.merged[mIdx]._rawRow||{};
+        // Start with full-pass data (more complete), then restore fast-pass contract vals
+        var merged2=Object.assign({},existingRaw,row2);
+        contractKeysToPreserve.forEach(function(k){
+          if(k in existingRaw&&existingRaw[k]!==undefined&&existingRaw[k]!=='')
+            merged2[k]=existingRaw[k];
+        });
+        DB.merged[mIdx]._rawRow=merged2;
       }else{
         // Player missing from merged (fast pass skipped this sheet tab) — build and add them
         var p2=buildPlayer(row2,headers,vals);
@@ -2044,18 +2056,26 @@ function renderPosChart(players){
   var total=players.length||1;
   var entries=Object.keys(map).sort(function(a,b){return map[b]-map[a];}).slice(0,12);
   var cols=['#e8c547','#4fc3f7','#66bb6a','#ef5350','#ce93d8','#ff9800','#26c6da','#f06292','#aed581','#80cbc4','#ffb74d','#90caf9'];
-  var html='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  if(!entries.length){el.innerHTML='<div style="font-size:10px;color:var(--dim)">No data</div>';return;}
+  // Single stacked horizontal bar
+  var barHTML='<div style="display:flex;height:22px;border-radius:4px;overflow:hidden;width:100%">';
+  entries.forEach(function(pos,i){
+    var pct=(map[pos]/total)*100;
+    barHTML+='<div style="width:'+pct.toFixed(2)+'%;background:'+cols[i%cols.length]+';opacity:0.9;transition:width .3s" title="'+pos+': '+map[pos]+' ('+pct.toFixed(1)+'%)"></div>';
+  });
+  barHTML+='</div>';
+  // Legend below bar
+  var legHTML='<div style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px">';
   entries.forEach(function(pos,i){
     var pct=((map[pos]/total)*100).toFixed(1);
-    var w=Math.max(28,Math.round((map[pos]/total)*240));
-    html+='<div style="display:flex;align-items:center;gap:5px;width:100%">'
-      +'<span style="font-size:10px;color:var(--dim);width:28px;text-align:right">'+pos+'</span>'
-      +'<div style="height:14px;width:'+w+'px;background:'+cols[i%cols.length]+';border-radius:2px;opacity:0.85"></div>'
-      +'<span style="font-size:10px;color:var(--mid)">'+map[pos]+' ('+pct+'%)</span>'
+    legHTML+='<div style="display:flex;align-items:center;gap:4px">'
+      +'<div style="width:9px;height:9px;border-radius:2px;background:'+cols[i%cols.length]+';opacity:0.9;flex-shrink:0"></div>'
+      +'<span style="font-size:10px;color:var(--mid)">'+pos+'</span>'
+      +'<span style="font-size:9px;color:var(--dim)">'+map[pos]+' ('+pct+'%)</span>'
       +'</div>';
   });
-  html+='</div>';
-  el.innerHTML=html;
+  legHTML+='</div>';
+  el.innerHTML=barHTML+legHTML;
 }
 
 // Pearson correlation helper
@@ -2074,7 +2094,7 @@ function renderCorr(){
   var metric=document.getElementById('corr-metric')?document.getElementById('corr-metric').value:'guar';
   var period=document.getElementById('corr-period')?document.getElementById('corr-period').value:'py';
   var players=ovGetFiltered();
-  if(players.length<5){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px">Need at least 5 contracts for correlation</div>';return;}
+  if(players.length<5){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">Need at least 5 contracts for correlation</div>';return;}
 
   var metricFn=function(p){
     if(metric==='guar')return p.guar||0;
@@ -2111,27 +2131,44 @@ function renderCorr(){
     });
   });
 
-  // Sort by absolute r, take top 10
+  // Sort by absolute r descending, take top 10
   results.sort(function(a,b){return Math.abs(b.r)-Math.abs(a.r);});
   var top=results.slice(0,10);
 
-  if(!top.length){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px">Not enough data for correlations</div>';return;}
+  if(!top.length){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">Not enough data for correlations</div>';return;}
 
+  // ── Vertical bar chart (SVG), left=highest |r|, right=lowest ──
+  var W=480,H=130,pb=36,pt=8,pl=6,pr=6;
+  var chartW=W-pl-pr,chartH=H-pt-pb;
   var maxR=Math.max.apply(null,top.map(function(d){return Math.abs(d.r);}));
-  var html='<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">';
-  top.forEach(function(d){
-    var pct=Math.abs(d.r)/Math.max(maxR,0.01);
-    var w=Math.round(pct*220);
+  var bW=Math.floor(chartW/top.length)-4;
+  var gap=(chartW-bW*top.length)/(top.length+1);
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
+  // Zero line
+  svg+='<line x1="'+pl+'" x2="'+(pl+chartW)+'" y1="'+(pt+chartH)+'" y2="'+(pt+chartH)+'" stroke="rgba(255,255,255,0.1)"/>';
+  // r=1 guide line
+  var r1y=pt+chartH-(chartH*1/maxR);
+  if(r1y>pt)svg+='<line x1="'+pl+'" x2="'+(pl+chartW)+'" y1="'+r1y+'" y2="'+r1y+'" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3"/>';
+
+  top.forEach(function(d,i){
+    var x=pl+gap+(bW+gap)*i;
+    var bH=Math.max(3,Math.abs(d.r)/maxR*chartH);
+    var y=pt+chartH-bH;
     var col=d.r>=0?'#66bb6a':'#ef5350';
-    var rStr=(d.r>=0?'+':'')+d.r.toFixed(3);
-    html+='<div style="display:flex;align-items:center;gap:5px">'
-      +'<span style="font-size:9px;color:var(--dim);width:90px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+d.label+'">'+d.label+'</span>'
-      +'<div style="height:12px;width:'+w+'px;background:'+col+';border-radius:2px;opacity:0.85;min-width:4px"></div>'
-      +'<span style="font-size:9px;color:var(--mid)">'+rStr+'</span>'
-      +'</div>';
+    var rStr=(d.r>=0?'+':'')+d.r.toFixed(2);
+    var lbl=d.label.length>7?d.label.slice(0,6)+'…':d.label;
+    svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="2" opacity="0.85">'
+      +'<title>'+d.label+': r='+d.r.toFixed(3)+' (n='+d.n+')</title>'
+      +'</rect>';
+    // r value above bar
+    svg+='<text x="'+(x+bW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-size="8" fill="'+col+'">'+rStr+'</text>';
+    // label below axis — rotated
+    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+12)+'" text-anchor="end" font-size="8" fill="#5a6a8a"'
+      +' transform="rotate(-38,'+(x+bW/2)+','+(pt+chartH+12)+')">'+lbl+'</text>';
   });
-  html+='</div>';
-  el.innerHTML=html;
+  svg+='</svg>';
+  el.innerHTML=svg;
 }
 
 // ═══ CONTRACT OVERVIEW ENGINE ═══
