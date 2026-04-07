@@ -2428,7 +2428,11 @@ function buildColPanel(view,panel){
   var periodLabels={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'Career'};
   var html='';
   H_PERIODS.forEach(function(per){
-    html+='<div class="col-grp-lbl">'+periodLabels[per]+'</div>';
+    var allChecked=statCols.every(function(col){return!state[colKey(per,col)];});
+    html+='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">';
+    html+=periodLabels[per];
+    html+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allChecked?' checked':'')+' onchange="toggleAllPeriodCols(\''+view+'\',\''+per+'\',this)"> All</label>';
+    html+='</div>';
     statCols.forEach(function(col){
       var k=colKey(per,col);
       var checked=!state[k]?' checked':'';
@@ -2436,6 +2440,22 @@ function buildColPanel(view,panel){
     });
   });
   panel.innerHTML=html;
+}
+
+function toggleAllPeriodCols(view,per,cb){
+  var state=view==='h'?hColHidden:(view==='p'?pColHidden:ovColHidden);
+  var isHit=view==='h'||(view==='ov'&&ovState.tab==='h');
+  var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
+  statCols.forEach(function(col){
+    var k=colKey(per,col);
+    if(cb.checked)delete state[k]; else state[k]=true;
+  });
+  // Rebuild panel to sync all individual checkboxes cleanly
+  var panel=document.getElementById('col-panel-'+view);
+  if(panel){panel.dataset.built='';buildColPanel(view,panel);}
+  if(view==='h')renderHitters();
+  else if(view==='p')renderPitchers();
+  else renderOverview();
 }
 
 function rebuildColPanel(view){
