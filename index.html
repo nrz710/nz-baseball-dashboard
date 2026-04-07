@@ -2432,7 +2432,7 @@ function buildColPanel(view,panel){
     statCols.forEach(function(col){
       var k=colKey(per,col);
       var checked=!state[k]?' checked':'';
-      html+='<label class="col-item"><input type="checkbox"'+checked+' onchange="toggleCol(\''+view+'\',\''+per+'\',\''+col.replace(/'/g,"\\'")+'\'\',this)">'+col+'</label>\n';
+      html+='<label class="col-item"><input type="checkbox"'+checked+' onchange="toggleCol(\''+view+'\',\''+per+'\',\''+col.replace(/'/g,"\\'")+'\',this)">'+col+'</label>\n';
     });
   });
   panel.innerHTML=html;
