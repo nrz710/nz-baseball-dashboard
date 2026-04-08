@@ -254,14 +254,19 @@ svg.ch{display:block}
   <div class="lt">Diamond Dollars</div>
   <div class="ls">Baseball Contract Analysis</div>
   <div class="lb">
-    <div class="ll">Password</div>
-    <div class="pw-wrap">
-      <input class="li" type="password" id="pw-in" placeholder="diamond1" autocomplete="off">
-      <button class="eye-btn" id="eye-btn" type="button" onclick="togglePw()">&#128065;</button>
+    <div class="ll">Select User</div>
+    <select class="li" id="user-sel" style="letter-spacing:1px;font-size:14px;padding:12px 16px;cursor:pointer" onchange="onUserSelChange()">
+      <option value="">— choose user —</option>
+    </select>
+    <div id="pw-row" style="display:none">
+      <div class="ll" style="margin-top:10px">Password</div>
+      <div class="pw-wrap">
+        <input class="li" type="password" id="pw-in" placeholder="" autocomplete="off">
+        <button class="eye-btn" id="eye-btn" type="button" onclick="togglePw()">&#128065;</button>
+      </div>
     </div>
-    <button class="lbtn" type="button" onclick="checkPw()">Open Sesame</button>
+    <button class="lbtn" type="button" onclick="checkPw()" style="margin-top:10px">Sign In</button>
     <div class="lerr" id="pw-err"></div>
-    <div class="lhint">Default: diamond1 &mdash; eye icon reveals what you typed</div>
   </div>
 </div>
 
@@ -272,7 +277,9 @@ svg.ch{display:block}
       <span id="gs-status"><span class="dot warn"></span>Loading...</span>
       <span id="hdr-ct">0 Players</span>
       <span class="bg-badge" id="bg-badge"></span>
+      <span id="hdr-user" style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:1px"></span>
       <button class="lnk" onclick="go('settings')">Settings</button>
+      <button class="lnk" onclick="signOut()">Sign Out</button>
     </div>
   </div>
   <div class="sbar">
@@ -617,11 +624,35 @@ svg.ch{display:block}
           <div class="br"><button class="btn" onclick="saveMktSettings()">Save Settings</button></div>
         </div>
         <div class="fc">
-          <div class="fct" style="color:var(--red)">Change Password</div>
-          <div style="margin-bottom:10px"><label class="fl">Current Password</label><input class="fi" type="password" id="s-cur"></div>
-          <div style="margin-bottom:10px"><label class="fl">New Password</label><input class="fi" type="password" id="s-new"></div>
-          <div style="margin-bottom:10px"><label class="fl">Confirm New Password</label><input class="fi" type="password" id="s-cfm"></div>
-          <div class="br"><button class="btn" onclick="chgPw()">Update Password</button></div>
+          <div class="fct" style="color:var(--red)">User Management</div>
+          <div style="font-size:10px;color:var(--dim);margin-bottom:14px">Up to 5 users. Each user's filters, column settings, and data are saved separately and restored on login.</div>
+          <div id="user-mgmt-list" style="margin-bottom:14px"></div>
+          <div id="user-add-form" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+            <div class="slbl" style="color:var(--accent);margin-top:0">Add New User</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+              <div><label class="fl">Username</label><input class="fi" id="nu-name" placeholder="e.g. Scout1" maxlength="24"></div>
+              <div><label class="fl">Password</label><input class="fi" type="password" id="nu-pw" placeholder="min 1 character"></div>
+              <div><label class="fl">Confirm Password</label><input class="fi" type="password" id="nu-pw2" placeholder="repeat password"></div>
+            </div>
+            <div class="br" style="margin-top:10px">
+              <button class="btn" onclick="addUser()">Create User</button>
+              <button class="btn bts" onclick="document.getElementById('user-add-form').style.display='none'">Cancel</button>
+            </div>
+          </div>
+          <div id="user-chpw-form" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+            <div class="slbl" style="color:var(--accent);margin-top:0">Change Password — <span id="chpw-username" style="color:var(--text)"></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+              <div><label class="fl">New Password</label><input class="fi" type="password" id="chpw-new" placeholder="new password"></div>
+              <div><label class="fl">Confirm Password</label><input class="fi" type="password" id="chpw-cfm" placeholder="repeat new password"></div>
+            </div>
+            <div class="br" style="margin-top:10px">
+              <button class="btn" onclick="saveChPw()">Update Password</button>
+              <button class="btn bts" onclick="document.getElementById('user-chpw-form').style.display='none'">Cancel</button>
+            </div>
+          </div>
+          <div class="br" style="margin-top:10px">
+            <button class="btn bts" id="add-user-btn" onclick="openAddUserForm()">+ Add User</button>
+          </div>
           <div id="pw-msg" style="font-size:11px;margin-top:8px;min-height:14px;color:var(--red)"></div>
         </div>
         <div class="fc">
@@ -722,9 +753,98 @@ svg.ch{display:block}
 <script>
 // ═══ CONFIG ═══
 var SCRIPT_URL='https://script.google.com/macros/s/AKfycbw1EmCRxRNRm_n1o-yKjTUSnAwpGtYZCmGIIWTU-oQd93_SM1Sxb8djt5h7_SL5bTykOg/exec';
+
+// ═══ MULTI-USER SYSTEM ═══
+// Users stored as: dl_users → [{id, name, pw}]
+// Per-user state stored as: dl_state_{userId} → {cfg, manual, fg, savant, filters, vfState, hColHidden, pColHidden, ovColHidden, hGrps, pGrps, ovState, activeFilters}
+var USERS_KEY='dl_users';
+var currentUser=null; // {id, name, pw}
+
+function getUsers(){
+  try{var u=localStorage.getItem(USERS_KEY);if(u)return JSON.parse(u);}catch(e){}
+  return[];
+}
+function saveUsers(users){try{localStorage.setItem(USERS_KEY,JSON.stringify(users));}catch(e){}}
+function userStateKey(uid){return'dl_state_'+uid;}
+
+function loadUserState(user){
+  try{
+    var raw=localStorage.getItem(userStateKey(user.id));
+    if(!raw)return;
+    var s=JSON.parse(raw);
+    if(s.cfg)CFG=Object.assign({marketRate:8.0,season:'2025'},s.cfg);
+    if(s.manual)DB.manual=s.manual;
+    if(s.fg)DB.fg=s.fg;
+    if(s.savant)DB.savant=s.savant;
+    if(s.activeFilters)activeFilters=s.activeFilters;
+    if(s.vfState)vfState=Object.assign({h:{filters:[],sortCol:-1,sortAsc:true,search:''},p:{filters:[],sortCol:-1,sortAsc:true,search:''},ov:{filters:[],sortCol:-1,sortAsc:true,search:''}},s.vfState);
+    if(s.hColHidden)hColHidden=s.hColHidden;
+    if(s.pColHidden)pColHidden=s.pColHidden;
+    if(s.ovColHidden)ovColHidden=s.ovColHidden;
+    if(s.hGrps)hGrps=Object.assign({py:true,py1:false,py2:false,l2:false,l3:false,car:false},s.hGrps);
+    if(s.pGrps)pGrps=Object.assign({py:true,py1:false,py2:false,l2:false,l3:false,car:false},s.pGrps);
+    if(s.ovState)ovState=Object.assign({tab:'h',search:'',highlightedNames:{}},s.ovState);
+  }catch(e){console.error('loadUserState error',e);}
+}
+
+function saveUserState(){
+  if(!currentUser)return;
+  try{
+    var s={
+      cfg:CFG,
+      manual:DB.manual,
+      fg:DB.fg,
+      savant:DB.savant,
+      activeFilters:activeFilters,
+      vfState:vfState,
+      hColHidden:hColHidden,
+      pColHidden:pColHidden,
+      ovColHidden:ovColHidden,
+      hGrps:hGrps,
+      pGrps:pGrps,
+      ovState:{tab:ovState.tab,search:ovState.search,highlightedNames:ovState.highlightedNames||{}}
+    };
+    localStorage.setItem(userStateKey(currentUser.id),JSON.stringify(s));
+  }catch(e){console.error('saveUserState error',e);}
+}
+
+// Aliases so existing code still works
+function saveDB(){saveUserState();}
+function saveCFG(){saveUserState();}
+function saveFilters(){saveUserState();}
+function getPw(){return currentUser?currentUser.pw:'diamond1';}
+
+// Populate the login user dropdown
+function populateUserSel(){
+  var sel=document.getElementById('user-sel');
+  if(!sel)return;
+  var users=getUsers();
+  sel.innerHTML='<option value="">— choose user —</option>';
+  users.forEach(function(u){
+    var o=document.createElement('option');
+    o.value=u.id;
+    o.textContent=u.name;
+    sel.appendChild(o);
+  });
+}
+
+function onUserSelChange(){
+  var sel=document.getElementById('user-sel');
+  var pwRow=document.getElementById('pw-row');
+  var inp=document.getElementById('pw-in');
+  if(!sel||!pwRow)return;
+  if(sel.value){
+    pwRow.style.display='';
+    if(inp)inp.focus();
+  }else{
+    pwRow.style.display='none';
+  }
+}
+
+// ═══ CONFIG / DB defaults ═══
 var CFG={marketRate:8.0,season:'2025'};
 var DB={players:[],manual:[],fg:[],savant:[],merged:[],allCols:[],fullData:{}};
-var SK='dl_data', PK='dl_pw', CK='dl_cfg', FK='dl_filters';
+var FK='dl_filters'; // legacy — unused but kept to not break anything
 var LOADING=false;
 var DEFAULT_FILTERS=[
   {col:'FY',label:'FY',value:''},
@@ -734,16 +854,15 @@ var DEFAULT_FILTERS=[
 ];
 var activeFilters=DEFAULT_FILTERS.map(function(f){return Object.assign({},f);});
 
+// Bootstrap: ensure at least one default user exists, then populate login
 (function(){
-  try{var c=localStorage.getItem(CK);if(c)CFG=Object.assign(CFG,JSON.parse(c));}catch(e){}
-  try{var d=localStorage.getItem(SK);if(d){var p=JSON.parse(d);DB.manual=p.manual||[];DB.fg=p.fg||[];DB.savant=p.savant||[];}}catch(e){}
-  try{var f=localStorage.getItem(FK);if(f)activeFilters=JSON.parse(f);}catch(e){}
+  var users=getUsers();
+  if(!users.length){
+    users=[{id:'u1',name:'Admin',pw:'diamond1'}];
+    saveUsers(users);
+  }
+  populateUserSel();
 })();
-
-function saveDB(){try{localStorage.setItem(SK,JSON.stringify({manual:DB.manual,fg:DB.fg,savant:DB.savant}));}catch(e){}}
-function saveCFG(){try{localStorage.setItem(CK,JSON.stringify(CFG));}catch(e){}}
-function saveFilters(){try{localStorage.setItem(FK,JSON.stringify(activeFilters));}catch(e){}}
-function getPw(){try{var s=localStorage.getItem(PK);if(s&&s.length>0)return s;}catch(e){}return'diamond1';}
 
 // ═══ EYE TOGGLE ═══
 function togglePw(){
@@ -760,25 +879,67 @@ function togglePw(){
   inp.focus();
 }
 
-// ═══ PASSWORD ═══
+// ═══ LOGIN ═══
 function checkPw(){
+  var sel=document.getElementById('user-sel');
   var inp=document.getElementById('pw-in');
   var errEl=document.getElementById('pw-err');
-  if(!inp)return;
-  var typed=inp.value;
-  if(typed===getPw()){
-    document.getElementById('lock').classList.add('gone');
-    document.getElementById('app').classList.add('on');
-    try{document.getElementById('s-mr').value=CFG.marketRate;}catch(e){}
-    try{document.getElementById('s-yr').value=CFG.season;}catch(e){}
-    refreshAll();
-  }else{
-    // Show what was typed but NOT the correct password
-    errEl.innerHTML='Incorrect password. You typed: <strong style="color:var(--accent)">'+typed+'</strong>';
+  if(!sel||!inp)return;
+  var uid=sel.value;
+  if(!uid){errEl.textContent='Please select a user.';return;}
+  var users=getUsers();
+  var user=users.find(function(u){return u.id===uid;});
+  if(!user){errEl.textContent='User not found.';return;}
+  if(inp.value!==user.pw){
+    errEl.textContent='Incorrect password.';
     inp.value='';
     if(inp.type==='text')togglePw();
-    setTimeout(function(){errEl.innerHTML='';},5000);
+    setTimeout(function(){errEl.textContent='';},4000);
+    return;
   }
+  // Success
+  currentUser=user;
+  loadUserState(user);
+  document.getElementById('lock').classList.add('gone');
+  document.getElementById('app').classList.add('on');
+  document.getElementById('hdr-user').textContent=user.name;
+  try{document.getElementById('s-mr').value=CFG.marketRate;}catch(e){}
+  try{document.getElementById('s-yr').value=CFG.season;}catch(e){}
+  // Sync period group buttons from restored state
+  syncPeriodButtons();
+  refreshAll();
+}
+
+function syncPeriodButtons(){
+  // Sync hitter period buttons
+  ['py','py1','py2','l2','l3','car'].forEach(function(per){
+    var hBtn=document.querySelector('.grp-btn.g-'+per+'[onclick*="\'h\'"]');
+    if(hBtn)hBtn.classList.toggle('on',!!hGrps[per]);
+    var pBtn=document.querySelector('.grp-btn.g-'+per+'[onclick*="\'p\'"]');
+    if(pBtn)pBtn.classList.toggle('on',!!pGrps[per]);
+  });
+}
+
+function signOut(){
+  saveUserState();
+  currentUser=null;
+  // Reset runtime state to defaults
+  CFG={marketRate:8.0,season:'2025'};
+  DB={players:[],manual:[],fg:[],savant:[],merged:[],allCols:[],fullData:{}};
+  activeFilters=DEFAULT_FILTERS.map(function(f){return Object.assign({},f);});
+  vfState={h:{filters:[],sortCol:-1,sortAsc:true,search:''},p:{filters:[],sortCol:-1,sortAsc:true,search:''},ov:{filters:[],sortCol:-1,sortAsc:true,search:''}};
+  hColHidden={};pColHidden={};ovColHidden={};
+  hGrps={py:true,py1:false,py2:false,l2:false,l3:false,car:false};
+  pGrps={py:true,py1:false,py2:false,l2:false,l3:false,car:false};
+  ovState={tab:'h',search:'',highlightedNames:{}};
+  // Reset UI
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('lock').classList.remove('gone');
+  document.getElementById('hdr-user').textContent='';
+  var inp=document.getElementById('pw-in');if(inp){inp.value='';if(inp.type==='text')togglePw();}
+  var sel=document.getElementById('user-sel');if(sel){sel.value='';onUserSelChange();}
+  document.getElementById('pw-err').textContent='';
+  populateUserSel();
 }
 
 (function(){
@@ -786,16 +947,111 @@ function checkPw(){
   if(inp)inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();checkPw();}});
 })();
 
-function chgPw(){
-  var cur=document.getElementById('s-cur').value,nw=document.getElementById('s-new').value,
-      cf=document.getElementById('s-cfm').value,msg=document.getElementById('pw-msg');
-  if(cur!==getPw()){msg.textContent='Current password incorrect.';return;}
+// ═══ USER MANAGEMENT (Settings panel) ═══
+var chpwTargetId=null;
+
+function isAdmin(){return currentUser&&currentUser.name.toLowerCase()==='admin';}
+
+function renderUserMgmt(){
+  var el=document.getElementById('user-mgmt-list');if(!el)return;
+  var users=getUsers();
+  if(!users.length){el.innerHTML='<div style="color:var(--dim);font-size:11px">No users yet.</div>';return;}
+  var admin=isAdmin();
+  el.innerHTML=users.map(function(u){
+    var isMe=currentUser&&currentUser.id===u.id;
+    var canEdit=isMe||admin;
+    var canDelete=admin&&!isMe&&users.length>1;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="flex:1;font-size:13px;font-weight:700;color:'+(isMe?'var(--accent)':'var(--text)')+'">'+u.name+(isMe?' <span style="font-size:9px;color:var(--dim);letter-spacing:1px">(you)</span>':'')+'</span>'
+      +(canEdit?'<button class="btn bts bsm" onclick="openChPwForm(\''+u.id+'\',\''+u.name.replace(/'/g,"\\'")+'\')\" style="font-size:10px;padding:4px 10px">Change PW</button>':'')
+      +(canDelete?'<button class="btn btd bsm" onclick="deleteUser(\''+u.id+'\')" style="font-size:10px;padding:4px 10px">Remove</button>':'')
+      +'</div>';
+  }).join('');
+  var addBtn=document.getElementById('add-user-btn');
+  if(addBtn)addBtn.style.display=(!admin||users.length>=5)?'none':'';
+}
+
+function openAddUserForm(){
+  document.getElementById('user-add-form').style.display='';
+  document.getElementById('user-chpw-form').style.display='none';
+  document.getElementById('nu-name').value='';
+  document.getElementById('nu-pw').value='';
+  document.getElementById('nu-pw2').value='';
+  document.getElementById('nu-name').focus();
+  document.getElementById('pw-msg').textContent='';
+}
+
+function addUser(){
+  if(!isAdmin()){toast('Only Admin can add users.');return;}
+  var name=document.getElementById('nu-name').value.trim();
+  var pw=document.getElementById('nu-pw').value;
+  var pw2=document.getElementById('nu-pw2').value;
+  var msg=document.getElementById('pw-msg');
+  msg.style.color='var(--red)';
+  if(!name){msg.textContent='Username cannot be empty.';return;}
+  if(pw.length<1){msg.textContent='Password cannot be empty.';return;}
+  if(pw!==pw2){msg.textContent='Passwords do not match.';return;}
+  var users=getUsers();
+  if(users.length>=5){msg.textContent='Maximum 5 users reached.';return;}
+  if(users.find(function(u){return u.name.toLowerCase()===name.toLowerCase();})){msg.textContent='Username already exists.';return;}
+  var newId='u'+Date.now();
+  users.push({id:newId,name:name,pw:pw});
+  saveUsers(users);
+  document.getElementById('user-add-form').style.display='none';
+  msg.style.color='var(--green)';
+  msg.textContent='User "'+name+'" created.';
+  setTimeout(function(){msg.textContent='';},3000);
+  renderUserMgmt();
+  populateUserSel();
+}
+
+function openChPwForm(uid,uname){
+  chpwTargetId=uid;
+  document.getElementById('chpw-username').textContent=uname;
+  document.getElementById('user-chpw-form').style.display='';
+  document.getElementById('user-add-form').style.display='none';
+  document.getElementById('chpw-new').value='';
+  document.getElementById('chpw-cfm').value='';
+  document.getElementById('chpw-new').focus();
+  document.getElementById('pw-msg').textContent='';
+}
+
+function saveChPw(){
+  var nw=document.getElementById('chpw-new').value;
+  var cf=document.getElementById('chpw-cfm').value;
+  var msg=document.getElementById('pw-msg');
+  msg.style.color='var(--red)';
+  // Permission check: must be own account or admin
+  if(chpwTargetId!==currentUser.id&&!isAdmin()){msg.textContent='Permission denied.';return;}
   if(nw.length<1){msg.textContent='Password cannot be empty.';return;}
-  if(nw!==cf){msg.textContent='New passwords do not match.';return;}
-  localStorage.setItem(PK,nw);
-  msg.style.color='var(--green)';msg.textContent='Password updated successfully.';
-  ['s-cur','s-new','s-cfm'].forEach(function(id){document.getElementById(id).value='';});
-  setTimeout(function(){msg.textContent='';msg.style.color='var(--red)';},4000);
+  if(nw!==cf){msg.textContent='Passwords do not match.';return;}
+  var users=getUsers();
+  var idx=users.findIndex(function(u){return u.id===chpwTargetId;});
+  if(idx<0){msg.textContent='User not found.';return;}
+  users[idx].pw=nw;
+  // Update currentUser in memory if changing own password
+  if(currentUser&&currentUser.id===chpwTargetId)currentUser.pw=nw;
+  saveUsers(users);
+  document.getElementById('user-chpw-form').style.display='none';
+  msg.style.color='var(--green)';
+  msg.textContent='Password updated.';
+  setTimeout(function(){msg.textContent='';},3000);
+}
+
+function deleteUser(uid){
+  if(!isAdmin()){toast('Only Admin can remove users.');return;}
+  var users=getUsers();
+  var u=users.find(function(u){return u.id===uid;});
+  if(!u)return;
+  if(!confirm('Remove user "'+u.name+'"? Their saved state will also be deleted.'))return;
+  users=users.filter(function(u){return u.id!==uid;});
+  saveUsers(users);
+  try{localStorage.removeItem(userStateKey(uid));}catch(e){}
+  document.getElementById('pw-msg').style.color='var(--green)';
+  document.getElementById('pw-msg').textContent='User removed.';
+  setTimeout(function(){document.getElementById('pw-msg').textContent='';},3000);
+  renderUserMgmt();
+  populateUserSel();
 }
 
 // ═══ TABS ═══
@@ -811,7 +1067,7 @@ function go(id){
     else if(id==='value')try{renderValue();}catch(e){console.error(e);}
     else if(id==='trend')try{renderTrend();}catch(e){console.error(e);}
     else if(id==='stats')try{renderStats();}catch(e){console.error(e);}
-    else if(id==='settings')try{renderDBInfo();}catch(e){}
+    else if(id==='settings')try{renderDBInfo();renderUserMgmt();}catch(e){}
     else if(id==='sources')try{renderSuppSummary();}catch(e){}
     else if(id==='overview')try{renderOverview();}catch(e){console.error(e);}
     else if(id==='hitters')try{renderHitters();}catch(e){console.error(e);}
@@ -1295,6 +1551,8 @@ function renderAll(){
   try{renderSuppSummary();}catch(e){}
   // Hitters/Pitchers: re-render if currently visible
   try{var hp=document.querySelector('.pnl.on');if(hp){if(hp.id==='p-hitters')renderHitters();else if(hp.id==='p-pitchers')renderPitchers();}}catch(e){}
+  // Persist user state after every full render
+  try{saveUserState();}catch(e){}
 }
 function populateYrFilters(){
   var years=[];DB.merged.forEach(function(p){if(p.py&&years.indexOf(p.py)===-1)years.push(p.py);});years.sort(function(a,b){return b-a;});
@@ -1509,6 +1767,7 @@ function toggleGrp(view,grp,btn){
   btn.classList.toggle('on',grps[grp]);
   if(view==='h')renderHitters();
   else renderPitchers();
+  try{saveUserState();}catch(e){}
 }
 
 function getPeriodCol(rawRow,colName,periodIdx){
@@ -2036,15 +2295,18 @@ function vfApplyFilter(view){
   var inputArea=document.getElementById('vf-inputs-'+pfx);
   if(inputArea)inputArea.innerHTML='';
   vfRender(view);
+  try{saveUserState();}catch(e){}
 }
 
 function vfRemoveFilter(view,idx){
   vfState[view].filters.splice(idx,1);
   vfRender(view);
+  try{saveUserState();}catch(e){}
 }
 function vfClearFilters(view){
   vfState[view].filters=[];
   vfRender(view);
+  try{saveUserState();}catch(e){}
 }
 
 function vfRenderChips(view){
@@ -2214,6 +2476,7 @@ function ovSetTab(tab){
   // Re-populate filter column selector for new tab
   vfPopulateColSel('ov');
   renderOverview();
+  try{saveUserState();}catch(e){}
 }
 
 function ovSearch(q){
@@ -2401,6 +2664,7 @@ function toggleCol(view,per,col,cb){
   if(view==='h')renderHitters();
   else if(view==='p')renderPitchers();
   else renderOverview();
+  try{saveUserState();}catch(e){}
 }
 
 function openColPanel(view,btn){
