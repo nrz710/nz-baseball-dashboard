@@ -2934,47 +2934,97 @@ function fgLoad(mode,onSuccess,onError){
   document.head.appendChild(script);
 }
 
-// ── Pull FanGraphs data (both tabs share one pull button) ──
+// ── Pull FanGraphs data ──
+// The GAS pull now runs type-by-type via a 1-minute trigger chain.
+// fg_pull returns immediately with status:'started'.
+// We then poll fg_status every 30s to show progress until done.
+var FG_POLL_TIMER=null;
+
 function fgPull(){
   if(FG.loading){toast('Pull already in progress...');return;}
   FG.loading=true;
   ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
     var b=document.getElementById(id);
-    if(b){b.textContent='Pulling... (may take 5–8 min)';b.className='fg-pull-btn pulling';}
+    if(b){b.textContent='Starting pull...';b.className='fg-pull-btn pulling';}
   });
-  fgSetStatus('fgs-status','Fetching all FanGraphs leaderboards — this takes 5–8 minutes...',null);
-  fgSetStatus('fgl-status','Pulling data...',null);
+  fgSetStatus('fgs-status','Starting FanGraphs pull — processing 21 leaderboard types in background...',null);
+  fgSetStatus('fgl-status','Pull started...', null);
 
   fgLoad('fg_pull',function(data){
-    FG.loading=false;
-    ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
-      var b=document.getElementById(id);
-      if(b){b.textContent='✓ Pull Complete';b.className='fg-pull-btn done';
-        setTimeout(function(){b.textContent='⟳ Pull FanGraphs Data';b.className='fg-pull-btn';},4000);}
-    });
-    if(data&&data.status==='ok'){
-      FG.pulledAt=data.pulled_at;
-      toast('FanGraphs pull complete! Reloading data...');
-      // Invalidate cached data and reload both tabs
-      FG.contracts={hitters:null,pitchers:null};
-      FG.live={hitters:null,pitchers:null};
-      setTimeout(function(){
-        fgsLoadData();
-        fglLoadData();
-      },1000);
+    if(data&&(data.status==='started'||data.status==='ok')){
+      toast('FanGraphs pull started — background processing begun');
+      // Begin polling every 30s for progress
+      fgStartPolling();
     }else{
-      var msg=(data&&data.message)||'Pull failed — check Apps Script logs';
+      FG.loading=false;
+      var msg=(data&&data.message)||'Pull failed to start — check Apps Script logs';
       fgSetStatus('fgs-status',msg,'err');
-      toast('FG pull error — see status bar');
+      fgResetPullBtns();
     }
   },function(err){
     FG.loading=false;
-    ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
-      var b=document.getElementById(id);
-      if(b){b.textContent='⟳ Pull FanGraphs Data';b.className='fg-pull-btn';}
-    });
     fgSetStatus('fgs-status','Pull error: '+err,'err');
+    fgResetPullBtns();
     toast('FG pull error: '+err);
+  });
+}
+
+function fgStartPolling(){
+  if(FG_POLL_TIMER)clearInterval(FG_POLL_TIMER);
+  FG_POLL_TIMER=setInterval(function(){fgPollStatus();},30000);
+  // First poll after 5s
+  setTimeout(function(){fgPollStatus();},5000);
+}
+
+function fgPollStatus(){
+  fgLoad('fg_status',function(meta){
+    if(!meta)return;
+    var ps=meta.pull_status||'idle';
+    var pct=meta.pull_pct||0;
+    var msg=meta.pull_msg||'';
+
+    if(ps==='running'){
+      var statusMsg='Pulling… '+pct+'% — '+msg;
+      fgSetStatus('fgs-status',statusMsg,null);
+      fgSetStatus('fgl-status',statusMsg,null);
+      ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
+        var b=document.getElementById(id);
+        if(b)b.textContent='Pulling… '+pct+'%';
+      });
+    }else if(ps==='complete'||meta.pulled_at){
+      // Pull finished
+      clearInterval(FG_POLL_TIMER);FG_POLL_TIMER=null;
+      FG.loading=false;
+      FG.pulledAt=meta.pulled_at;
+      var d=meta.pulled_at?new Date(meta.pulled_at):null;
+      var ts=d?d.toLocaleDateString()+' '+d.toLocaleTimeString():'just now';
+      var completeMsg='Pull complete: '+ts
+        +(meta.hitter_seasons?' · '+meta.hitter_seasons+' hitter-seasons':'')
+        +(meta.pitcher_seasons?' · '+meta.pitcher_seasons+' pitcher-seasons':'');
+      fgSetStatus('fgs-status',completeMsg,'ok');
+      fgSetStatus('fgl-status',completeMsg,'ok');
+      ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
+        var b=document.getElementById(id);
+        if(b){b.textContent='✓ Pull Complete';b.className='fg-pull-btn done';
+          setTimeout(function(){b.textContent='⟳ Pull FanGraphs Data';b.className='fg-pull-btn';},5000);}
+      });
+      toast('FanGraphs pull complete! Loading data...');
+      FG.contracts={hitters:null,pitchers:null};
+      FG.live={hitters:null,pitchers:null};
+      setTimeout(function(){fgsLoadData();fglLoadData();},1500);
+    }else{
+      // idle — pull may have been cancelled or not started
+      clearInterval(FG_POLL_TIMER);FG_POLL_TIMER=null;
+      FG.loading=false;
+      fgResetPullBtns();
+    }
+  });
+}
+
+function fgResetPullBtns(){
+  ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b){b.textContent='⟳ Pull FanGraphs Data';b.className='fg-pull-btn';}
   });
 }
 
@@ -3363,16 +3413,33 @@ function fglExportCSV(){
   setTimeout(function(){
     try{
       fgLoad('fg_status',function(meta){
-        if(meta&&meta.pulled_at){
+        if(!meta)return;
+        var ps=meta.pull_status||'idle';
+        if(ps==='running'){
+          // Pull is in progress from a previous session — resume polling
+          FG.loading=true;
+          fgSetStatus('fgs-status','Pull in progress: '+meta.pull_pct+'% — '+meta.pull_msg,null);
+          fgSetStatus('fgl-status','Pull in progress: '+meta.pull_pct+'%',null);
+          ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
+            var b=document.getElementById(id);
+            if(b){b.textContent='Pulling… '+meta.pull_pct+'%';b.className='fg-pull-btn pulling';}
+          });
+          fgStartPolling();
+        }else if(meta.pulled_at){
           FG.pulledAt=meta.pulled_at;
           var d=new Date(meta.pulled_at);
-          fgSetStatus('fgs-status','Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString(),'ok');
+          var ts=d.toLocaleDateString()+' '+d.toLocaleTimeString();
+          var statusMsg='Last pull: '+ts
+            +(meta.hitter_seasons&&meta.hitter_seasons!=='0'?' · '+meta.hitter_seasons+' hitter-seasons':'')
+            +(meta.pitcher_seasons&&meta.pitcher_seasons!=='0'?' · '+meta.pitcher_seasons+' pitcher-seasons':'');
+          fgSetStatus('fgs-status',statusMsg,'ok');
+          fgSetStatus('fgl-status',ts,'ok');
         }else{
           fgSetStatus('fgs-status','No FanGraphs data yet — click "Pull FanGraphs Data" to fetch','err');
         }
       });
     }catch(e){}
-  },3000); // wait 3s after page load so sheet data gets priority
+  },3000);
 })();
 </script>
 </body>
