@@ -2888,13 +2888,11 @@ var FG_PITCHER_TYPES=[
 
 // ── Runtime state ──
 var FG={
-  contracts:{hitters:null,pitchers:null},  // filtered contract data from GAS
-  live:{hitters:null,pitchers:null},       // full current-season leaderboard
+  contracts:{hitters:null,pitchers:null,cache:{}},
+  live:{hitters:null,pitchers:null},
   pulledAt:null,
   loading:false,
-  // FG Contract Stats tab state
   fgs:{side:'h',type:'Standard',season:'all',sortCol:0,sortAsc:true},
-  // FG Live Leaderboard tab state
   fgl:{side:'h',type:'Standard',sortCol:0,sortAsc:true}
 };
 
@@ -3056,7 +3054,7 @@ function initFgStats(){
   fgsBuildTypeTabs();
   fgsPopulateSeasons();
   var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
+  if(FG.contracts.cache[cacheKey]){
     fgsRender();
   }else{
     fgsLoadData();
@@ -3164,7 +3162,7 @@ function fgsSetType(t){
 function fgsPopulateSeasons(){
   var sel=document.getElementById('fgs-season');if(!sel)return;
   var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+  var cached=FG.contracts.cache[cacheKey];
   if(!cached||!cached.headers||!cached.rows)return;
   var seasonIdx=cached.headers.indexOf('season');
   if(seasonIdx<0)return;
@@ -3201,11 +3199,11 @@ function fgsColLabel(h,typeKey){
 function fgsRender(){
   var wrap=document.getElementById('fgs-table-wrap');if(!wrap)return;
   var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+  var cached=FG.contracts.cache[cacheKey];
 
   if(!cached){
-    // Not in cache yet — trigger a load
-    fgsLoadData();return;
+    wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading '+FG.fgs.type+'...</div>';
+    return;
   }
 
   var headers=cached.headers;
@@ -3303,7 +3301,7 @@ function fgsSortBy(ci){
 
 function fgsExportCSV(){
   var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+  var cached=FG.contracts.cache[cacheKey];
   if(!cached||!cached.rows||!cached.rows.length){toast('No data to export');return;}
   var headers=cached.headers;
   var typePrefix=FG.fgs.type+'_';
