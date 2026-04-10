@@ -2930,7 +2930,9 @@ function fgLoad(mode,onSuccess,onError){
   };
 
   var sep=base.indexOf('?')>=0?'&':'?';
-  script.src=base+sep+'mode='+mode+'&callback='+cbName;
+  var extraParams=arguments[3]||{};
+  var paramStr=Object.keys(extraParams).map(function(k){return'&'+k+'='+encodeURIComponent(extraParams[k]);}).join('');
+  script.src=base+sep+'mode='+mode+'&callback='+cbName+paramStr;
   document.head.appendChild(script);
 }
 
@@ -3021,7 +3023,7 @@ function fgPollStatus(){
           setTimeout(function(){b.textContent='⟳ Pull FanGraphs Data';b.className='fg-pull-btn';},5000);}
       });
       toast('FanGraphs pull complete! Loading data...');
-      FG.contracts={hitters:null,pitchers:null};
+      FG.contracts={hitters:null,pitchers:null,cache:{}};
       FG.live={hitters:null,pitchers:null};
       setTimeout(function(){fgsLoadData();fglLoadData();},1500);
     }else{
@@ -3053,51 +3055,58 @@ function fgSetStatus(elId,msg,cls){
 function initFgStats(){
   fgsBuildTypeTabs();
   fgsPopulateSeasons();
-  if(!FG.contracts.hitters&&!FG.contracts.pitchers){
-    fgsLoadData();
-  }else{
+  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
+  if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
     fgsRender();
+  }else{
+    fgsLoadData();
   }
 }
 
 function fgsLoadData(){
   var wrap=document.getElementById('fgs-table-wrap');
-  if(wrap)wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading contract FG stats...</div>';
-  fgSetStatus('fgs-status','Checking FanGraphs data...',null);
+  if(wrap)wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading '+FG.fgs.type+'...</div>';
+  fgSetStatus('fgs-status','Loading '+FG.fgs.type+'...',null);
+
+  var side=FG.fgs.side;
+  var typeKey=FG.fgs.type;
+  var cacheKey=side+'_'+typeKey;
+
+  // Check in-memory cache first
+  if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
+    fgsRender();
+    return;
+  }
 
   fgLoad('fg_contracts',function(data){
     if(!data){
       fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
-      if(wrap)wrap.innerHTML=fgsNoDataHTML();
-      return;
+      if(wrap)wrap.innerHTML=fgsNoDataHTML();return;
     }
-    // Nothing at all yet and pull running — show progress bar
     if(data.status==='pull_running'){
       var pct=data.pull_pct||0;
-      fgSetStatus('fgs-status','Pull in progress: '+pct+'% — '+(data.pull_msg||''),null);
+      fgSetStatus('fgs-status','Pull in progress: '+pct+'% — this type not yet downloaded',null);
       if(wrap)wrap.innerHTML=fgsPullProgressHTML(pct,data.pull_msg||'');
       if(!FG.loading){FG.loading=true;fgStartPolling();}
       return;
     }
     if(data.status==='no_data'){
       fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
-      if(wrap)wrap.innerHTML=fgsNoDataHTML();
-      return;
+      if(wrap)wrap.innerHTML=fgsNoDataHTML();return;
     }
-    // Data available (may be partial mid-pull)
-    FG.contracts.hitters =data.hitters ||{headers:[],rows:[]};
-    FG.contracts.pitchers=data.pitchers||{headers:[],rows:[]};
+    // Store in per-type cache
+    if(!FG.contracts.cache)FG.contracts.cache={};
+    FG.contracts.cache[cacheKey]={
+      headers: data.headers||[],
+      rows:    data.rows||[],
+      isPartial: !!data.is_partial,
+      pulledAt: data.pulled_at||''
+    };
     FG.contracts.isPartial=!!data.is_partial;
-    FG.contracts.pullPct=data.pull_pct||0;
-    FG.contracts.pullMsg=data.pull_msg||'';
-    FG.contracts.noIdFilter=!!(data.hitters&&data.hitters.no_id_filter);
-    if(data.pulled_at) FG.pulledAt=data.pulled_at;
-    // Show status bar
-    if(FG.contracts.noIdFilter){
-      fgSetStatus('fgs-status','⚠️ Fangraphs_Id column not found or empty in your sheet — showing all FG players. Add Fangraphs_Id values to filter to your contracts.',null);
-    }else if(data.is_partial){
-      fgSetStatus('fgs-status','Partial data: '+(data.pull_pct||0)+'% of types loaded — pull still running',null);
-      // Keep polling so data refreshes as more types complete
+    if(data.pulled_at)FG.pulledAt=data.pulled_at;
+
+    if(data.is_partial){
+      fgSetStatus('fgs-status','Partial data: '+(data.pull_pct||0)+'% loaded — pull still running',null);
       if(!FG.loading){FG.loading=true;fgStartPolling();}
     }else{
       var d=data.pulled_at?new Date(data.pulled_at):null;
@@ -3106,9 +3115,9 @@ function fgsLoadData(){
     fgsPopulateSeasons();
     fgsRender();
   },function(err){
-    fgSetStatus('fgs-status','Error loading contract data: '+err,'err');
+    fgSetStatus('fgs-status','Error: '+err,'err');
     if(wrap)wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">⚠️</div><div class="fg-no-title">Load Error</div><div class="fg-no-sub">'+err+'</div></div>';
-  });
+  },{side:side,typeKey:typeKey});
 }
 
 function fgsNoDataHTML(){
@@ -3142,29 +3151,32 @@ function fgsSetSide(s){
   FG.fgs.sortCol=0;FG.fgs.sortAsc=true;
   document.getElementById('fgs-side-h').classList.toggle('on',s==='h');
   document.getElementById('fgs-side-p').classList.toggle('on',s==='p');
-  fgsBuildTypeTabs();fgsPopulateSeasons();fgsRender();
+  fgsBuildTypeTabs();fgsPopulateSeasons();
+  fgsLoadData(); // fetch this side+type
 }
 
 function fgsSetType(t){
   FG.fgs.type=t;FG.fgs.sortCol=0;FG.fgs.sortAsc=true;
-  fgsBuildTypeTabs();fgsRender();
+  fgsBuildTypeTabs();
+  fgsLoadData(); // fetch new type (may already be cached)
 }
 
 function fgsPopulateSeasons(){
   var sel=document.getElementById('fgs-season');if(!sel)return;
-  var data=FG.fgs.side==='h'?FG.contracts.hitters:FG.contracts.pitchers;
-  if(!data||!data.headers||!data.rows){return;}
-  var seasonIdx=data.headers.indexOf('season');
+  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
+  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+  if(!cached||!cached.headers||!cached.rows)return;
+  var seasonIdx=cached.headers.indexOf('season');
   if(seasonIdx<0)return;
   var seasons={};
-  data.rows.forEach(function(r){var s=r[seasonIdx];if(s)seasons[s]=true;});
+  cached.rows.forEach(function(r){var s=r[seasonIdx];if(s)seasons[s]=true;});
   var sorted=Object.keys(seasons).map(Number).sort(function(a,b){return b-a;});
   var cur=sel.value;
   sel.innerHTML='<option value="all">All Seasons</option>';
   sorted.forEach(function(y){
     var o=document.createElement('option');o.value=String(y);o.textContent=String(y);sel.appendChild(o);
   });
-  sel.value=cur&&seasons[cur]?cur:'all';
+  sel.value=cur&&seasons[String(cur)]?cur:'all';
 }
 
 function fgsGetVisibleCols(headers,typeKey){
@@ -3188,66 +3200,50 @@ function fgsColLabel(h,typeKey){
 
 function fgsRender(){
   var wrap=document.getElementById('fgs-table-wrap');if(!wrap)return;
-  var data=FG.fgs.side==='h'?FG.contracts.hitters:FG.contracts.pitchers;
-  if(!data||!data.headers||!data.rows){
-    wrap.innerHTML=fgsNoDataHTML();return;
+  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
+  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+
+  if(!cached){
+    // Not in cache yet — trigger a load
+    fgsLoadData();return;
   }
 
-  // No headers at all — data loaded but completely empty (no matching IDs or no rows yet)
-  if(!data.headers.length){
-    var isPartial=FG.contracts.isPartial;
-    wrap.innerHTML='<div class="fg-no-data">'
-      +'<div class="fg-no-icon">'+(isPartial?'⏳':'⚠️')+'</div>'
-      +'<div class="fg-no-title">'+(isPartial?'Waiting for first type...':'No matching players')+'</div>'
-      +'<div class="fg-no-sub">'
-      +(isPartial
-        ?'The first leaderboard type is still downloading. Data will appear once it completes.'
-        :'No players in your contracts sheet have a <strong>Fangraphs_Id</strong> that matches FanGraphs data.<br>Make sure the Fangraphs_Id column is populated in your Google Sheet.')
-      +'</div></div>';
+  var headers=cached.headers;
+  var rows=cached.rows;
+
+  if(!headers||!headers.length){
+    wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">⏳</div>'
+      +'<div class="fg-no-title">Type not yet downloaded</div>'
+      +'<div class="fg-no-sub">This stat type will appear as the pull progresses.</div></div>';
     return;
   }
 
-  var headers=data.headers;
-  var visIdx=fgsGetVisibleCols(headers,FG.fgs.type);
-  console.log('fgsRender: typeKey='+FG.fgs.type+' headers count='+headers.length+' first 5='+JSON.stringify(headers.slice(0,5))+' sample prefixed='+JSON.stringify(headers.filter(function(h){return h.indexOf('_')>=0;}).slice(0,5)));
-  if(!visIdx.length){
-    var isPartial=FG.contracts.isPartial;
-    var sampleHeaders=headers.slice(0,8).join(', ');
-    wrap.innerHTML='<div class="fg-no-data">'
-      +'<div class="fg-no-icon">'+(isPartial?'⏳':'📋')+'</div>'
-      +'<div class="fg-no-title">'+(isPartial?'Type not yet downloaded':'No columns for this type')+'</div>'
-      +'<div class="fg-no-sub">'
-      +(isPartial
-        ?'This stat type hasn\'t been pulled yet — it will appear automatically as the pull progresses.'
-        :'This stat type has no data for the selected side. Try switching Hitters / Pitchers.')
-      +'<br><br><span style="font-size:9px;color:var(--dim)">Debug — looking for prefix: <strong>'+FG.fgs.type+'_</strong> | Available headers: '+sampleHeaders+'</span>'
-      +'</div></div>';
-    return;
-  }
+  // All columns are visible — no prefix filtering needed since each request is one type
+  // Just use all column indices
+  var visIdx=[];
+  for(var i=0;i<headers.length;i++)visIdx.push(i);
 
   // Season filter
   var seasonSel=document.getElementById('fgs-season');
   var seasonFilter=seasonSel?seasonSel.value:'all';
   var seasonIdx=headers.indexOf('season');
+  var nameIdx=headers.indexOf('PlayerName');
 
   // Search
   var searchEl=document.getElementById('fgs-search');
   var srch=searchEl?searchEl.value.toLowerCase():'';
 
-  // Filter rows
-  var nameIdx=headers.indexOf('PlayerName');
-  var rows=data.rows.filter(function(r){
-    if(seasonFilter!=='all'&&seasonIdx>=0&&r[seasonIdx]!==seasonFilter)return false;
+  var filteredRows=rows.filter(function(r){
+    if(seasonFilter!=='all'&&seasonIdx>=0&&String(r[seasonIdx])!==seasonFilter)return false;
     if(srch&&nameIdx>=0&&String(r[nameIdx]||'').toLowerCase().indexOf(srch)<0)return false;
     return true;
   });
 
   // Sort
   var sc=FG.fgs.sortCol,sa=FG.fgs.sortAsc;
-  if(sc>=0&&sc<visIdx.length){
-    var realIdx=visIdx[sc];
-    rows=rows.slice().sort(function(a,b){
-      var av=a[realIdx],bv=b[realIdx];
+  if(sc>=0&&sc<headers.length){
+    filteredRows=filteredRows.slice().sort(function(a,b){
+      var av=a[sc],bv=b[sc];
       var an=parseFloat(av),bn=parseFloat(bv);
       if(!isNaN(an)&&!isNaN(bn))return sa?an-bn:bn-an;
       return sa?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
@@ -3255,24 +3251,27 @@ function fgsRender(){
   }
 
   // KPIs
-  fgsRenderKpis(rows,headers,visIdx);
+  fgsRenderKpis(filteredRows,headers,visIdx);
 
-  // Build table
-  var colLabels=visIdx.map(function(i){return fgsColLabel(headers[i],FG.fgs.type);});
+  // Strip type prefix from column labels for display
+  var typePrefix=FG.fgs.type+'_';
+  var colLabels=headers.map(function(h){
+    return h.indexOf(typePrefix)===0?h.slice(typePrefix.length):h;
+  });
+
   var thHTML=colLabels.map(function(lbl,ci){
     var cls=ci===sc?(sa?'fg-asc':'fg-desc'):'';
     return '<th class="'+cls+'" onclick="fgsSortBy('+ci+')">'+lbl+'</th>';
   }).join('');
 
-  var tbHTML=rows.map(function(r){
-    return '<tr>'+visIdx.map(function(ri,ci){
-      var v=r[ri]!==undefined&&r[ri]!==''?r[ri]:'—';
-      var td='<td'+(ci===0?' class="fg-name"':'')+'>'+v+'</td>';
-      return td;
+  var tbHTML=filteredRows.map(function(r){
+    return '<tr>'+headers.map(function(h,ci){
+      var v=r[ci]!==undefined&&r[ci]!==''?r[ci]:'—';
+      return '<td'+(ci===0?' class="fg-name"':'')+'>'+v+'</td>';
     }).join('')+'</tr>';
   }).join('');
 
-  if(!rows.length)tbHTML='<tr><td colspan="'+visIdx.length+'" style="text-align:center;padding:40px;color:var(--dim)">No data matches current filters</td></tr>';
+  if(!filteredRows.length)tbHTML='<tr><td colspan="'+headers.length+'" style="text-align:center;padding:40px;color:var(--dim)">No data matches current filters</td></tr>';
 
   wrap.innerHTML='<table><thead><tr>'+thHTML+'</tr></thead><tbody>'+tbHTML+'</tbody></table>';
 }
@@ -3303,17 +3302,18 @@ function fgsSortBy(ci){
 }
 
 function fgsExportCSV(){
-  var data=FG.fgs.side==='h'?FG.contracts.hitters:FG.contracts.pitchers;
-  if(!data||!data.rows||!data.rows.length){toast('No data to export');return;}
-  var headers=data.headers;
-  var visIdx=fgsGetVisibleCols(headers,FG.fgs.type);
-  var colLabels=visIdx.map(function(i){return fgsColLabel(headers[i],FG.fgs.type);});
+  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
+  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+  if(!cached||!cached.rows||!cached.rows.length){toast('No data to export');return;}
+  var headers=cached.headers;
+  var typePrefix=FG.fgs.type+'_';
+  var colLabels=headers.map(function(h){return h.indexOf(typePrefix)===0?h.slice(typePrefix.length):h;});
   var seasonSel=document.getElementById('fgs-season');
   var seasonFilter=seasonSel?seasonSel.value:'all';
   var seasonIdx=headers.indexOf('season');
-  var rows=data.rows.filter(function(r){return seasonFilter==='all'||(seasonIdx>=0&&r[seasonIdx]===seasonFilter);});
+  var rows=cached.rows.filter(function(r){return seasonFilter==='all'||(seasonIdx>=0&&String(r[seasonIdx])===seasonFilter);});
   var csv=[colLabels.join(',')].concat(rows.map(function(r){
-    return visIdx.map(function(i){var v=String(r[i]||'');return v.indexOf(',')>=0?'"'+v+'"':v;}).join(',');
+    return r.map(function(v){v=String(v||'');return v.indexOf(',')>=0?'"'+v+'"':v;}).join(',');
   })).join('\n');
   var b=new Blob([csv],{type:'text/csv'});
   var a=document.createElement('a');
