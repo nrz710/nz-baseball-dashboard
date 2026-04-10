@@ -3090,11 +3090,12 @@ function fgsLoadData(){
     FG.contracts.isPartial=!!data.is_partial;
     FG.contracts.pullPct=data.pull_pct||0;
     FG.contracts.pullMsg=data.pull_msg||'';
-    if(data.pulled_at){
-      FG.pulledAt=data.pulled_at;
-    }
+    FG.contracts.noIdFilter=!!(data.hitters&&data.hitters.no_id_filter);
+    if(data.pulled_at) FG.pulledAt=data.pulled_at;
     // Show status bar
-    if(data.is_partial){
+    if(FG.contracts.noIdFilter){
+      fgSetStatus('fgs-status','⚠️ Fangraphs_Id column not found or empty in your sheet — showing all FG players. Add Fangraphs_Id values to filter to your contracts.',null);
+    }else if(data.is_partial){
       fgSetStatus('fgs-status','Partial data: '+(data.pull_pct||0)+'% of types loaded — pull still running',null);
       // Keep polling so data refreshes as more types complete
       if(!FG.loading){FG.loading=true;fgStartPolling();}
@@ -3192,10 +3193,35 @@ function fgsRender(){
     wrap.innerHTML=fgsNoDataHTML();return;
   }
 
+  // No headers at all — data loaded but completely empty (no matching IDs or no rows yet)
+  if(!data.headers.length){
+    var isPartial=FG.contracts.isPartial;
+    wrap.innerHTML='<div class="fg-no-data">'
+      +'<div class="fg-no-icon">'+(isPartial?'⏳':'⚠️')+'</div>'
+      +'<div class="fg-no-title">'+(isPartial?'Waiting for first type...':'No matching players')+'</div>'
+      +'<div class="fg-no-sub">'
+      +(isPartial
+        ?'The first leaderboard type is still downloading. Data will appear once it completes.'
+        :'No players in your contracts sheet have a <strong>Fangraphs_Id</strong> that matches FanGraphs data.<br>Make sure the Fangraphs_Id column is populated in your Google Sheet.')
+      +'</div></div>';
+    return;
+  }
+
   var headers=data.headers;
   var visIdx=fgsGetVisibleCols(headers,FG.fgs.type);
+  console.log('fgsRender: typeKey='+FG.fgs.type+' headers count='+headers.length+' first 5='+JSON.stringify(headers.slice(0,5))+' sample prefixed='+JSON.stringify(headers.filter(function(h){return h.indexOf('_')>=0;}).slice(0,5)));
   if(!visIdx.length){
-    wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">📋</div><div class="fg-no-title">No columns for this type</div><div class="fg-no-sub">This stat type may not have data for the selected side.</div></div>';
+    var isPartial=FG.contracts.isPartial;
+    var sampleHeaders=headers.slice(0,8).join(', ');
+    wrap.innerHTML='<div class="fg-no-data">'
+      +'<div class="fg-no-icon">'+(isPartial?'⏳':'📋')+'</div>'
+      +'<div class="fg-no-title">'+(isPartial?'Type not yet downloaded':'No columns for this type')+'</div>'
+      +'<div class="fg-no-sub">'
+      +(isPartial
+        ?'This stat type hasn\'t been pulled yet — it will appear automatically as the pull progresses.'
+        :'This stat type has no data for the selected side. Try switching Hitters / Pitchers.')
+      +'<br><br><span style="font-size:9px;color:var(--dim)">Debug — looking for prefix: <strong>'+FG.fgs.type+'_</strong> | Available headers: '+sampleHeaders+'</span>'
+      +'</div></div>';
     return;
   }
 
@@ -3329,6 +3355,7 @@ function fglLoadData(){
     }
     FG.live.hitters =data.hitters ||{headers:[],rows:[]};
     FG.live.pitchers=data.pitchers||{headers:[],rows:[]};
+    FG.live.isPartial=!!data.is_partial;
     if(data.is_partial){
       fgSetStatus('fgl-status','Partial data: '+(data.pull_pct||0)+'% loaded — pull still running',null);
       if(!FG.loading){FG.loading=true;fgStartPolling();}
@@ -3375,7 +3402,10 @@ function fglRender(){
   var headers=data.headers;
   var visIdx=fgsGetVisibleCols(headers,FG.fgl.type);
   if(!visIdx.length){
-    wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">📋</div><div class="fg-no-title">No columns for this type</div></div>';
+    var isPartial=!!(FG.live&&FG.live.isPartial);
+    wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">'+(isPartial?'⏳':'📋')+'</div>'
+      +'<div class="fg-no-title">'+(isPartial?'Type not yet downloaded':'No columns for this type')+'</div>'
+      +'<div class="fg-no-sub">'+(isPartial?'This stat type will appear as the pull progresses.':'Try switching Hitters / Pitchers.')+'</div></div>';
     return;
   }
 
