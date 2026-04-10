@@ -2969,14 +2969,17 @@ function fgPull(){
   });
 }
 
+var FG_POLL_COUNT=0;
+
 function fgStartPolling(){
   if(FG_POLL_TIMER)clearInterval(FG_POLL_TIMER);
+  FG_POLL_COUNT=0;
   FG_POLL_TIMER=setInterval(function(){fgPollStatus();},30000);
-  // First poll after 5s
   setTimeout(function(){fgPollStatus();},5000);
 }
 
 function fgPollStatus(){
+  FG_POLL_COUNT++;
   fgLoad('fg_status',function(meta){
     if(!meta)return;
     var ps=meta.pull_status||'idle';
@@ -2991,16 +2994,25 @@ function fgPollStatus(){
         var b=document.getElementById(id);
         if(b)b.textContent='Pulling… '+pct+'%';
       });
+      // Reload tab data every 2 polls (~60s) so new types appear as they complete
+      if(FG_POLL_COUNT%2===0){
+        FG.contracts={hitters:null,pitchers:null,isPartial:true};
+        FG.live={hitters:null,pitchers:null};
+        var activeTab=document.querySelector('.pnl.on');
+        if(activeTab){
+          if(activeTab.id==='p-fgstats')fgsLoadData();
+          else if(activeTab.id==='p-fglive')fglLoadData();
+        }
+      }
     }else if(ps==='complete'||meta.pulled_at){
-      // Pull finished
       clearInterval(FG_POLL_TIMER);FG_POLL_TIMER=null;
       FG.loading=false;
       FG.pulledAt=meta.pulled_at;
       var d=meta.pulled_at?new Date(meta.pulled_at):null;
       var ts=d?d.toLocaleDateString()+' '+d.toLocaleTimeString():'just now';
       var completeMsg='Pull complete: '+ts
-        +(meta.hitter_seasons?' · '+meta.hitter_seasons+' hitter-seasons':'')
-        +(meta.pitcher_seasons?' · '+meta.pitcher_seasons+' pitcher-seasons':'');
+        +(meta.hitter_seasons&&meta.hitter_seasons!=='0'?' · '+meta.hitter_seasons+' hitter-seasons':'')
+        +(meta.pitcher_seasons&&meta.pitcher_seasons!=='0'?' · '+meta.pitcher_seasons+' pitcher-seasons':'');
       fgSetStatus('fgs-status',completeMsg,'ok');
       fgSetStatus('fgl-status',completeMsg,'ok');
       ['fg-pull-btn','fgl-pull-btn'].forEach(function(id){
@@ -3013,7 +3025,6 @@ function fgPollStatus(){
       FG.live={hitters:null,pitchers:null};
       setTimeout(function(){fgsLoadData();fglLoadData();},1500);
     }else{
-      // idle — pull may have been cancelled or not started
       clearInterval(FG_POLL_TIMER);FG_POLL_TIMER=null;
       FG.loading=false;
       fgResetPullBtns();
@@ -3060,13 +3071,11 @@ function fgsLoadData(){
       if(wrap)wrap.innerHTML=fgsNoDataHTML();
       return;
     }
-    // Pull is in progress — show progress bar and start polling
+    // Nothing at all yet and pull running — show progress bar
     if(data.status==='pull_running'){
       var pct=data.pull_pct||0;
-      var msg='Pull in progress: '+pct+'% — '+( data.pull_msg||'');
-      fgSetStatus('fgs-status',msg,null);
+      fgSetStatus('fgs-status','Pull in progress: '+pct+'% — '+(data.pull_msg||''),null);
       if(wrap)wrap.innerHTML=fgsPullProgressHTML(pct,data.pull_msg||'');
-      // Auto-start polling so the page updates when done
       if(!FG.loading){FG.loading=true;fgStartPolling();}
       return;
     }
@@ -3075,13 +3084,23 @@ function fgsLoadData(){
       if(wrap)wrap.innerHTML=fgsNoDataHTML();
       return;
     }
-    // Data available
+    // Data available (may be partial mid-pull)
     FG.contracts.hitters =data.hitters ||{headers:[],rows:[]};
     FG.contracts.pitchers=data.pitchers||{headers:[],rows:[]};
+    FG.contracts.isPartial=!!data.is_partial;
+    FG.contracts.pullPct=data.pull_pct||0;
+    FG.contracts.pullMsg=data.pull_msg||'';
     if(data.pulled_at){
       FG.pulledAt=data.pulled_at;
-      var d=new Date(data.pulled_at);
-      fgSetStatus('fgs-status','Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString(),'ok');
+    }
+    // Show status bar
+    if(data.is_partial){
+      fgSetStatus('fgs-status','Partial data: '+(data.pull_pct||0)+'% of types loaded — pull still running',null);
+      // Keep polling so data refreshes as more types complete
+      if(!FG.loading){FG.loading=true;fgStartPolling();}
+    }else{
+      var d=data.pulled_at?new Date(data.pulled_at):null;
+      fgSetStatus('fgs-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
     }
     fgsPopulateSeasons();
     fgsRender();
@@ -3310,7 +3329,10 @@ function fglLoadData(){
     }
     FG.live.hitters =data.hitters ||{headers:[],rows:[]};
     FG.live.pitchers=data.pitchers||{headers:[],rows:[]};
-    if(data.pulled_at){
+    if(data.is_partial){
+      fgSetStatus('fgl-status','Partial data: '+(data.pull_pct||0)+'% loaded — pull still running',null);
+      if(!FG.loading){FG.loading=true;fgStartPolling();}
+    }else if(data.pulled_at){
       FG.pulledAt=data.pulled_at;
       var d=new Date(data.pulled_at);
       fgSetStatus('fgl-status','Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString(),'ok');
