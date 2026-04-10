@@ -2935,9 +2935,6 @@ function fgLoad(mode,onSuccess,onError){
 }
 
 // ── Pull FanGraphs data ──
-// The GAS pull now runs type-by-type via a 1-minute trigger chain.
-// fg_pull returns immediately with status:'started'.
-// We then poll fg_status every 30s to show progress until done.
 var FG_POLL_TIMER=null;
 
 function fgPull(){
@@ -2947,18 +2944,21 @@ function fgPull(){
     var b=document.getElementById(id);
     if(b){b.textContent='Starting pull...';b.className='fg-pull-btn pulling';}
   });
-  fgSetStatus('fgs-status','Starting FanGraphs pull — processing 21 leaderboard types in background...',null);
-  fgSetStatus('fgl-status','Pull started...', null);
+  fgSetStatus('fgs-status','Starting FanGraphs pull...',null);
+  fgSetStatus('fgl-status','Pull started...',null);
 
   fgLoad('fg_pull',function(data){
-    if(data&&(data.status==='started'||data.status==='ok')){
-      toast('FanGraphs pull started — background processing begun');
-      // Begin polling every 30s for progress
+    if(data&&(data.status==='started'||data.status==='ok'||data.status==='already_running')){
+      var msg=data.status==='already_running'
+        ?'Pull already running ('+data.pull_pct+'%) — monitoring progress...'
+        :'FanGraphs pull started — processing '+data.total_types+' types in background';
+      fgSetStatus('fgs-status',msg,null);
+      toast(data.status==='already_running'?'Pull already in progress — monitoring...':'FanGraphs pull started!');
       fgStartPolling();
     }else{
       FG.loading=false;
-      var msg=(data&&data.message)||'Pull failed to start — check Apps Script logs';
-      fgSetStatus('fgs-status',msg,'err');
+      var errMsg=(data&&data.message)||'Pull failed to start — check Apps Script logs';
+      fgSetStatus('fgs-status',errMsg,'err');
       fgResetPullBtns();
     }
   },function(err){
@@ -3052,27 +3052,37 @@ function initFgStats(){
 function fgsLoadData(){
   var wrap=document.getElementById('fgs-table-wrap');
   if(wrap)wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading contract FG stats...</div>';
-  fgSetStatus('fgs-status','Loading FanGraphs contract data....',null);
-
-  fgLoad('fg_status',function(meta){
-    if(meta&&meta.pulled_at){
-      FG.pulledAt=meta.pulled_at;
-      var d=new Date(meta.pulled_at);
-      fgSetStatus('fgs-status','Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString()+' · '+meta.hitter_seasons+' hitter-seasons · '+meta.pitcher_seasons+' pitcher-seasons','ok');
-    }else{
-      fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch all leaderboards.','err');
-    }
-  });
+  fgSetStatus('fgs-status','Checking FanGraphs data...',null);
 
   fgLoad('fg_contracts',function(data){
-    if(!data||data.status==='no_data'){
+    if(!data){
       fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
       if(wrap)wrap.innerHTML=fgsNoDataHTML();
       return;
     }
+    // Pull is in progress — show progress bar and start polling
+    if(data.status==='pull_running'){
+      var pct=data.pull_pct||0;
+      var msg='Pull in progress: '+pct+'% — '+( data.pull_msg||'');
+      fgSetStatus('fgs-status',msg,null);
+      if(wrap)wrap.innerHTML=fgsPullProgressHTML(pct,data.pull_msg||'');
+      // Auto-start polling so the page updates when done
+      if(!FG.loading){FG.loading=true;fgStartPolling();}
+      return;
+    }
+    if(data.status==='no_data'){
+      fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
+      if(wrap)wrap.innerHTML=fgsNoDataHTML();
+      return;
+    }
+    // Data available
     FG.contracts.hitters =data.hitters ||{headers:[],rows:[]};
     FG.contracts.pitchers=data.pitchers||{headers:[],rows:[]};
-    if(data.pulled_at)FG.pulledAt=data.pulled_at;
+    if(data.pulled_at){
+      FG.pulledAt=data.pulled_at;
+      var d=new Date(data.pulled_at);
+      fgSetStatus('fgs-status','Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString(),'ok');
+    }
     fgsPopulateSeasons();
     fgsRender();
   },function(err){
@@ -3086,7 +3096,17 @@ function fgsNoDataHTML(){
     +'<div class="fg-no-icon">📊</div>'
     +'<div class="fg-no-title">No FanGraphs Data</div>'
     +'<div class="fg-no-sub">Click <strong>Pull FanGraphs Data</strong> to fetch all leaderboards.<br>'
-    +'This runs once (5–8 min) and caches everything. Daily auto-refresh keeps it current.</div></div>';
+    +'Runs in the background (~20 min). Data appears automatically when complete.</div></div>';
+}
+
+function fgsPullProgressHTML(pct,msg){
+  return '<div class="fg-no-data">'
+    +'<div class="fg-no-icon">⏳</div>'
+    +'<div class="fg-no-title">Pull In Progress</div>'
+    +'<div class="fg-no-sub" style="margin-bottom:14px">'+pct+'% complete — '+(msg||'')+'<br>Data will appear automatically when the pull finishes.</div>'
+    +'<div style="background:var(--s3);border-radius:4px;height:6px;width:260px;margin:0 auto">'
+    +'<div style="background:var(--accent);border-radius:4px;height:6px;width:'+pct+'%;transition:width .5s"></div>'
+    +'</div></div>';
 }
 
 function fgsBuildTypeTabs(){
@@ -3279,6 +3299,13 @@ function fglLoadData(){
     if(!data||data.status==='no_data'){
       fgSetStatus('fgl-status','No data yet — click Pull FanGraphs Data','err');
       if(wrap)wrap.innerHTML=fgsNoDataHTML();
+      return;
+    }
+    if(data.status==='pull_running'){
+      var pct=data.pull_pct||0;
+      fgSetStatus('fgl-status','Pull in progress: '+pct+'%',null);
+      if(wrap)wrap.innerHTML=fgsPullProgressHTML(pct,data.pull_msg||'');
+      if(!FG.loading){FG.loading=true;fgStartPolling();}
       return;
     }
     FG.live.hitters =data.hitters ||{headers:[],rows:[]};
