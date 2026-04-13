@@ -1217,6 +1217,11 @@ function refreshAll(){
         DB.fullData=fullData;
         extractAllCols(fullData);
         mergeFullData();
+        // FIX (v5): Release DB.fullData immediately after merge — it's a full
+        // copy of the 217-col sheet (~1M cells) that's only needed once to
+        // populate _rawRow on each player. Keeping it around doubles memory
+        // usage and contributes to browser tab OOM when FG data also loads.
+        DB.fullData=null;
         renderAll();
         setGSStatus('on','Google Sheet');
         badge.textContent='All columns ready';badge.className='bg-badge done';
@@ -3096,7 +3101,10 @@ function fgsLoadData(){
       fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
       if(wrap)wrap.innerHTML=fgsNoDataHTML();return;
     }
-    // Store in per-type cache
+    // Store in per-type cache — cap at 3 entries to bound memory usage.
+    // FIX (v5): Each cached type can be ~300-600 rows × 150 cols. Caching all
+    // 9 hitter + 12 pitcher types would hold ~15MB of JS objects indefinitely.
+    // LRU eviction: drop the oldest entry when cache exceeds 3 types.
     if(!FG.contracts.cache)FG.contracts.cache={};
     FG.contracts.cache[cacheKey]={
       headers: data.headers||[],
@@ -3104,6 +3112,8 @@ function fgsLoadData(){
       isPartial: !!data.is_partial,
       pulledAt: data.pulled_at||''
     };
+    var cacheKeys=Object.keys(FG.contracts.cache);
+    if(cacheKeys.length>3){delete FG.contracts.cache[cacheKeys[0]];}
     console.log('fgsLoadData: stored cache['+cacheKey+'] headers='+( data.headers&&data.headers.length)+' rows='+(data.rows&&data.rows.length));
     FG.contracts.isPartial=!!data.is_partial;
     if(data.pulled_at)FG.pulledAt=data.pulled_at;
