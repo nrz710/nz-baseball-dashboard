@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2897,7 +2899,11 @@ var FG={
 };
 
 // ── Generic JSONP loader (same pattern as loadPass) ──
-function fgLoad(mode,onSuccess,onError){
+// FIX 5: extraParams promoted from implicit arguments[3] to a named 4th parameter.
+// Previously `arguments[3]` worked in all browsers but was invisible to code readers
+// and would silently break if any build tool normalized the argument list.
+// All callers that passed a 4th arg (fgsLoadData) are unaffected — call sites unchanged.
+function fgLoad(mode, onSuccess, onError, extraParams) {
   var urlEl=document.getElementById('s-gsurl');
   var base=(urlEl&&urlEl.value.trim())?urlEl.value.trim():SCRIPT_URL;
   base=base.replace(/\/+$/,'');
@@ -2928,7 +2934,7 @@ function fgLoad(mode,onSuccess,onError){
   };
 
   var sep=base.indexOf('?')>=0?'&':'?';
-  var extraParams=arguments[3]||{};
+  extraParams=extraParams||{};
   var paramStr=Object.keys(extraParams).map(function(k){return'&'+k+'='+encodeURIComponent(extraParams[k]);}).join('');
   script.src=base+sep+'mode='+mode+'&callback='+cbName+paramStr;
   document.head.appendChild(script);
@@ -3076,7 +3082,7 @@ function fgsLoadData(){
     return;
   }
 
-  fgLoad('fg_contracts',function(data){
+  fgLoad('fg_agg',function(data){
     if(!data){
       fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
       if(wrap)wrap.innerHTML=fgsNoDataHTML();return;
@@ -3100,6 +3106,7 @@ function fgsLoadData(){
       isPartial: !!data.is_partial,
       pulledAt: data.pulled_at||''
     };
+    console.log('fgsLoadData: stored cache['+cacheKey+'] headers='+( data.headers&&data.headers.length)+' rows='+(data.rows&&data.rows.length));
     FG.contracts.isPartial=!!data.is_partial;
     if(data.pulled_at)FG.pulledAt=data.pulled_at;
 
@@ -3208,6 +3215,9 @@ function fgsRender(){
 
   var headers=cached.headers;
   var rows=cached.rows;
+  var windows=cached.windows||['PY','PY-1','PY-2','L2','L3','CAR'];
+  var CONTRACT_COLS=['Player','pPos','SigTm','GUAR','GUAR AAV','PY','FY'];
+  var nContract=CONTRACT_COLS.length;
 
   if(!headers||!headers.length){
     wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">⏳</div>'
@@ -3216,24 +3226,11 @@ function fgsRender(){
     return;
   }
 
-  // All columns are visible — no prefix filtering needed since each request is one type
-  // Just use all column indices
-  var visIdx=[];
-  for(var i=0;i<headers.length;i++)visIdx.push(i);
-
-  // Season filter
-  var seasonSel=document.getElementById('fgs-season');
-  var seasonFilter=seasonSel?seasonSel.value:'all';
-  var seasonIdx=headers.indexOf('season');
-  var nameIdx=headers.indexOf('PlayerName');
-
   // Search
   var searchEl=document.getElementById('fgs-search');
   var srch=searchEl?searchEl.value.toLowerCase():'';
-
   var filteredRows=rows.filter(function(r){
-    if(seasonFilter!=='all'&&seasonIdx>=0&&String(r[seasonIdx])!==seasonFilter)return false;
-    if(srch&&nameIdx>=0&&String(r[nameIdx]||'').toLowerCase().indexOf(srch)<0)return false;
+    if(srch&&String(r[0]||'').toLowerCase().indexOf(srch)<0)return false;
     return true;
   });
 
@@ -3249,48 +3246,63 @@ function fgsRender(){
   }
 
   // KPIs
-  fgsRenderKpis(filteredRows,headers,visIdx);
+  fgsRenderKpis(filteredRows,headers,[0,1,2,3,4,5,6]);
 
-  // Strip type prefix from column labels for display
-  var typePrefix=FG.fgs.type+'_';
-  var colLabels=headers.map(function(h){
-    return h.indexOf(typePrefix)===0?h.slice(typePrefix.length):h;
+  // Build two-row header: window group row + stat col row
+  // Contract cols span 1 row each (rowspan=2), window groups span N stat cols
+  var statColCount=cached.stat_cols?cached.stat_cols.length:Math.floor((headers.length-nContract)/windows.length);
+  var WINDOW_COLORS={'PY':'var(--accent)','PY-1':'#6c9bd1','PY-2':'#8ab4f8','L2':'#f0a500','L3':'#e8842c','CAR':'#7cb87c'};
+
+  var th1=CONTRACT_COLS.map(function(lbl,ci){
+    return '<th rowspan="2" class="fg-ct-col'+(ci===FG.fgs.sortCol?(sa?' fg-asc':' fg-desc'):'')+'" onclick="fgsSortBy('+ci+')">'+lbl+'</th>';
+  }).join('');
+  windows.forEach(function(w,wi){
+    var startCol=nContract+wi*statColCount;
+    var color=WINDOW_COLORS[w]||'var(--dim)';
+    th1+='<th colspan="'+statColCount+'" style="background:'+color+';color:#fff;text-align:center;font-size:10px;letter-spacing:1px;padding:3px 6px">'+w+'</th>';
   });
 
-  var thHTML=colLabels.map(function(lbl,ci){
-    var cls=ci===sc?(sa?'fg-asc':'fg-desc'):'';
-    return '<th class="'+cls+'" onclick="fgsSortBy('+ci+')">'+lbl+'</th>';
-  }).join('');
+  var th2='';
+  windows.forEach(function(w,wi){
+    for(var s=0;s<statColCount;s++){
+      var ci=nContract+wi*statColCount+s;
+      var lbl=cached.stat_cols?cached.stat_cols[s]:(headers[ci]||'');
+      var cls=ci===sc?(sa?' fg-asc':' fg-desc'):'';
+      th2+='<th class="'+cls+'" onclick="fgsSortBy('+ci+')" style="font-size:9px;white-space:nowrap">'+lbl+'</th>';
+    }
+  });
 
   var tbHTML=filteredRows.map(function(r){
-    return '<tr>'+headers.map(function(h,ci){
-      var v=r[ci]!==undefined&&r[ci]!==''?r[ci]:'—';
-      return '<td'+(ci===0?' class="fg-name"':'')+'>'+v+'</td>';
+    return '<tr>'+r.map(function(v,ci){
+      var disp=v!==undefined&&v!==''?v:'—';
+      // Format numbers
+      if(ci>=nContract){
+        var n=parseFloat(v);
+        if(!isNaN(n)){
+          disp=n%1===0?String(Math.round(n)):(Math.abs(n)<10?n.toFixed(3):Math.abs(n)<100?n.toFixed(2):String(Math.round(n)));
+        }
+      }else if(ci===3||ci===4){
+        // GUAR / GUAR AAV — format as $M
+        var m=parseFloat(v);
+        if(!isNaN(m)&&m>0)disp='$'+(m/1e6).toFixed(1)+'M';
+      }
+      return '<td'+(ci===0?' class="fg-name"':'')+'>'+disp+'</td>';
     }).join('')+'</tr>';
   }).join('');
 
-  if(!filteredRows.length)tbHTML='<tr><td colspan="'+headers.length+'" style="text-align:center;padding:40px;color:var(--dim)">No data matches current filters</td></tr>';
+  if(!filteredRows.length)tbHTML='<tr><td colspan="'+headers.length+'" style="text-align:center;padding:40px;color:var(--dim)">No data matches search</td></tr>';
 
-  wrap.innerHTML='<table><thead><tr>'+thHTML+'</tr></thead><tbody>'+tbHTML+'</tbody></table>';
+  wrap.innerHTML='<div style="overflow-x:auto"><table class="fg-table"><thead>'
+    +'<tr>'+th1+'</tr>'
+    +'<tr>'+th2+'</tr>'
+    +'</thead><tbody>'+tbHTML+'</tbody></table></div>';
 }
 
 function fgsRenderKpis(rows,headers,visIdx){
   var el=document.getElementById('fgs-kpis');if(!el)return;
-  var seasonIdx=headers.indexOf('season');
-  var nameIdx=headers.indexOf('PlayerName');
-  var seasons=new Set?new Set():null;
-  var playerSet={};
-  rows.forEach(function(r){
-    if(seasons&&seasonIdx>=0)seasons.add(r[seasonIdx]);
-    if(nameIdx>=0)playerSet[r[nameIdx]]=true;
-  });
-  var numSeasons=seasons?seasons.size:0;
-  var numPlayers=Object.keys(playerSet).length;
+  var numPlayers=rows.length;
   el.innerHTML=
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Rows Shown</div><div class="fg-kpi-val">'+rows.length.toLocaleString()+'</div></div>'+
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Players</div><div class="fg-kpi-val">'+numPlayers+'</div></div>'+
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Seasons</div><div class="fg-kpi-val">'+numSeasons+'</div></div>'+
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Columns</div><div class="fg-kpi-val">'+visIdx.length+'</div></div>';
+    '<div class="fg-kpi"><div class="fg-kpi-lbl">Players</div><div class="fg-kpi-val">'+numPlayers.toLocaleString()+'</div></div>';
 }
 
 function fgsSortBy(ci){
@@ -3303,22 +3315,15 @@ function fgsExportCSV(){
   var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
   var cached=FG.contracts.cache[cacheKey];
   if(!cached||!cached.rows||!cached.rows.length){toast('No data to export');return;}
-  var headers=cached.headers;
-  var typePrefix=FG.fgs.type+'_';
-  var colLabels=headers.map(function(h){return h.indexOf(typePrefix)===0?h.slice(typePrefix.length):h;});
-  var seasonSel=document.getElementById('fgs-season');
-  var seasonFilter=seasonSel?seasonSel.value:'all';
-  var seasonIdx=headers.indexOf('season');
-  var rows=cached.rows.filter(function(r){return seasonFilter==='all'||(seasonIdx>=0&&String(r[seasonIdx])===seasonFilter);});
-  var csv=[colLabels.join(',')].concat(rows.map(function(r){
-    return r.map(function(v){v=String(v||'');return v.indexOf(',')>=0?'"'+v+'"':v;}).join(',');
+  var csv=[cached.headers.join(',')].concat(cached.rows.map(function(r){
+    return r.map(function(v){v=String(v||'');return v.indexOf(',')>=0||v.indexOf('"')>=0?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');
   })).join('\n');
   var b=new Blob([csv],{type:'text/csv'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(b);
-  a.download='fg_contract_stats_'+FG.fgs.side+'_'+FG.fgs.type.replace(/\s+/g,'_')+'.csv';
+  a.download='fg_agg_'+FG.fgs.side+'_'+FG.fgs.type.replace(/\s+/g,'_')+'.csv';
   a.click();
-  toast('Exported '+rows.length+' rows');
+  toast('Exported '+cached.rows.length+' players');
 }
 
 // ══════════════════════════════════════════
