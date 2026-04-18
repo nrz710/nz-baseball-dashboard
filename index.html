@@ -1,3 +1,8 @@
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -260,6 +265,9 @@ svg.ch{display:block}
 .fg-pull-btn.pulling{border-color:var(--accent);color:var(--accent);opacity:.6;cursor:not-allowed}
 .fg-pull-btn.done{border-color:var(--green);color:var(--green)}
 .fg-tw{overflow-x:auto;max-height:620px;overflow-y:auto}
+.fg-more-bar{padding:10px 16px;font-size:11px;color:var(--dim);display:flex;align-items:center;gap:10px;border-top:1px solid var(--border);background:var(--s1)}
+.fg-more-btn{background:var(--s2);border:1px solid var(--border);border-radius:4px;color:var(--accent);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1px;padding:4px 12px;white-space:nowrap}
+.fg-more-btn:hover{background:var(--s3);border-color:var(--accent)}
 .fg-tw::-webkit-scrollbar{width:4px;height:6px}
 .fg-tw::-webkit-scrollbar-thumb{background:var(--s3);border-radius:2px}
 .fg-tw table{width:100%;border-collapse:collapse;font-size:11px}
@@ -291,6 +299,28 @@ svg.ch{display:block}
 @keyframes fgspin{to{transform:rotate(360deg)}}
 .live-side-btn{background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--dim);cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1px;padding:5px 14px;text-transform:uppercase}
 .live-side-btn.on{background:var(--accent);border-color:var(--accent);color:#000}
+.fg-type-btn.custom{border-color:rgba(255,255,255,0.5);color:var(--text)}
+.fg-type-btn.custom.on{background:transparent;border-color:#fff;color:#fff}
+.fg-type-btn.custom:hover{border-color:#fff;color:#fff}
+.fgc-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center}
+.fgc-modal.open{display:flex}
+.fgc-box{background:var(--s1);border:1px solid rgba(255,255,255,0.15);border-radius:10px;width:min(720px,95vw);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
+.fgc-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.fgc-title{font-size:14px;font-weight:800;letter-spacing:1px;color:#fff}
+.fgc-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:20px;line-height:1;padding:0}
+.fgc-close:hover{color:var(--red)}
+.fgc-body{display:flex;flex:1;overflow:hidden;min-height:0}
+.fgc-types{width:130px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:6px 0}
+.fgc-type-btn{display:block;width:100%;background:none;border:none;color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1px;padding:7px 12px;text-align:left;text-transform:uppercase;transition:all .12s}
+.fgc-type-btn:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.fgc-type-btn.on{background:rgba(255,255,255,0.08);color:var(--accent);border-right:2px solid var(--accent)}
+.fgc-cols{flex:1;overflow-y:auto;padding:10px 14px}
+.fgc-cols-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:2px}
+.fgc-col-item{display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;border-radius:3px;font-size:11px;color:var(--mid);user-select:none}
+.fgc-col-item:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.fgc-col-item input[type=checkbox]{width:12px;height:12px;accent-color:var(--accent);flex-shrink:0}
+.fgc-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.fgc-sel-count{font-size:11px;color:var(--dim);flex:1}
 </style>
 </head>
 <body>
@@ -336,7 +366,9 @@ svg.ch{display:block}
     <button class="rbtn" id="refresh-btn" onclick="refreshAll()">Refresh Sheet</button>
   </div>
   <div class="nav">
-    <button class="nb on" data-p="overview" onclick="go('overview')">Contract Overview</button>
+    <button class="nb on" data-p="fgstats" onclick="go('fgstats')">CONTRACT OVERVIEW</button>
+    <button class="nb" data-p="fglive" onclick="go('fglive')">LIVE LEADERBOARDS</button>
+    <button class="nb" data-p="overview" onclick="go('overview')">STATIC OVERVIEW</button>
     <button class="nb" data-p="hitters" onclick="go('hitters')">Hitters</button>
     <button class="nb" data-p="pitchers" onclick="go('pitchers')">Pitchers</button>
     <button class="nb" data-p="stats" onclick="go('stats')">Platform Year Stats</button>
@@ -344,15 +376,13 @@ svg.ch{display:block}
     <button class="nb" data-p="value" onclick="go('value')">Contract Value</button>
     <button class="nb" data-p="comps" onclick="go('comps')">Comparables</button>
     <button class="nb" data-p="sources" onclick="go('sources')">Data Sources</button>
-    <button class="nb" data-p="fgstats" onclick="go('fgstats')">FG Contract Stats</button>
-    <button class="nb" data-p="fglive" onclick="go('fglive')">FG Leaderboards</button>
     <button class="nb" data-p="edit" onclick="go('edit')">Add / Edit</button>
     <button class="nb" data-p="settings" onclick="go('settings')">Settings</button>
   </div>
   <main>
 
-    <div class="pnl on" id="p-overview">
-      <div class="pgt">Contract Overview</div>
+    <div class="pnl" id="p-overview">
+      <div class="pgt">Static Overview</div>
       <div class="pgs">Filter and summarize contracts from Hitters &amp; Pitchers</div>
       <!-- KPI row 1 — compact summary stats -->
       <div class="kr" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
@@ -794,61 +824,131 @@ svg.ch{display:block}
       </div>
     </div>
     <!-- ═══ FG CONTRACT STATS ═══ -->
-    <div class="pnl" id="p-fgstats">
-      <div class="pgt">FanGraphs Contract Stats</div>
-      <div class="pgs">All available FanGraphs stats for every player in the contracts dataset &middot; matched by Fangraphs_Id</div>
+    <div class="pnl on" id="p-fgstats">
+      <div class="pgt">Contract Overview</div>
+      <div class="pgs">Contract info + FanGraphs stats by period &middot; matched by FanGraphs ID &middot; PY-anchored windows</div>
 
-      <!-- toolbar -->
-      <div class="fg-toolbar">
-        <div style="display:flex;gap:6px;align-items:center">
-          <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Side:</span>
-          <button class="live-side-btn on" id="fgs-side-h" onclick="fgsSetSide('h')">Hitters</button>
-          <button class="live-side-btn" id="fgs-side-p" onclick="fgsSetSide('p')">Pitchers</button>
+      <!-- ── Summary tiles (mirrors Static Overview) ── -->
+      <div class="kr" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px" id="fgs-summary-tiles">
+        <div class="kc" style="padding:10px 14px"><div class="kl">Players</div><div class="kv" style="font-size:20px" id="fgs-k-n">—</div></div>
+        <div class="kc b" style="padding:10px 14px"><div class="kl">Total Guar.</div><div class="kv" style="font-size:20px" id="fgs-k-guar">—</div></div>
+        <div class="kc b" style="padding:10px 14px"><div class="kl">Avg AAV</div><div class="kv" style="font-size:20px" id="fgs-k-aav">—</div></div>
+        <div class="kc g" style="padding:10px 14px"><div class="kl">Avg Term</div><div class="kv" style="font-size:20px" id="fgs-k-term">—</div></div>
+        <div class="kc p" style="padding:10px 14px"><div class="kl">Avg Age @ Sign</div><div class="kv" style="font-size:20px" id="fgs-k-age">—</div></div>
+      </div>
+
+      <!-- ── Position Breakdown + FG Correlations ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="cb" style="padding:10px 12px">
+          <div class="cbt" style="font-size:11px;margin-bottom:1px">Position Breakdown</div>
+          <div class="cbs" style="margin-bottom:7px">% of filtered contracts</div>
+          <div id="fgs-k-pos-chart"></div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-left:16px">
-          <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Season:</span>
-          <select class="fg-sel" id="fgs-season" onchange="fgsRender()">
-            <option value="all">All Seasons</option>
-          </select>
+        <div class="cb" style="padding:10px 12px">
+          <div class="cbt" style="font-size:11px;margin-bottom:6px">Salary Correlations <span style="font-size:9px;color:var(--dim);font-weight:400;letter-spacing:0;text-transform:none">(FanGraphs stats)</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+              <div class="cbs" style="margin-bottom:2px">top 10 stats</div>
+              <select class="sel" id="fgs-corr-metric" onchange="renderFgCorr()" style="font-size:10px;padding:2px 6px">
+                <option value="guar">Total Guaranteed</option>
+                <option value="aav">AAV</option>
+                <option value="guaraav">Guar AAV</option>
+                <option value="term">Term</option>
+              </select>
+              <select class="sel" id="fgs-corr-period" onchange="renderFgCorr()" style="font-size:10px;padding:2px 6px">
+                <option value="PY">PY</option>
+                <option value="PY-1">PY-1</option>
+                <option value="PY-2">PY-2</option>
+                <option value="L2">L2</option>
+                <option value="L3">L3</option>
+                <option value="CAR">Career</option>
+                <option value="all">All Periods</option>
+              </select>
+            </div>
+            <div id="fgs-corr-chart" style="flex-shrink:0;overflow:hidden"></div>
+          </div>
         </div>
-        <input class="fg-search" id="fgs-search" placeholder="Search player..." oninput="fgsRender()">
+      </div>
+
+      <!-- toolbar: Hitters/Pitchers + Periods + Columns/Pull/Export -->
+      <div class="view-bar" style="margin-bottom:10px">
+        <button class="live-side-btn on" id="fgs-side-h" onclick="fgsSetSide('h')">Hitters</button>
+        <button class="live-side-btn" id="fgs-side-p" onclick="fgsSetSide('p')">Pitchers</button>
+        <span style="width:1px;background:var(--border);height:20px;margin:0 4px"></span>
+        <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Periods:</span>
+        <button class="grp-btn on g-py"  id="fgs-grp-py"  onclick="fgsToggleGrp('py',this)">PY</button>
+        <button class="grp-btn g-py1" id="fgs-grp-py1" onclick="fgsToggleGrp('py1',this)">PY-1</button>
+        <button class="grp-btn g-py2" id="fgs-grp-py2" onclick="fgsToggleGrp('py2',this)">PY-2</button>
+        <button class="grp-btn g-l2"  id="fgs-grp-l2"  onclick="fgsToggleGrp('l2',this)">L2</button>
+        <button class="grp-btn g-l3"  id="fgs-grp-l3"  onclick="fgsToggleGrp('l3',this)">L3</button>
+        <button class="grp-btn g-car" id="fgs-grp-car" onclick="fgsToggleGrp('car',this)">Career</button>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <div class="col-toggle-wrap"><button class="col-toggle-btn" onclick="openColPanel('fg',this)">&#9776; Columns</button><div class="col-toggle-panel" id="col-panel-fg"></div></div>
           <button class="fg-pull-btn" id="fg-pull-btn" onclick="fgPull()">&#8635; Pull FanGraphs Data</button>
           <button class="btn bts bsm" onclick="fgsExportCSV()">Export CSV</button>
         </div>
       </div>
 
-      <!-- status -->
-      <div class="fg-status-bar" id="fgs-status">Checking FanGraphs data status...</div>
-
       <!-- stat-type tabs -->
       <div class="fg-type-tabs" id="fgs-type-tabs"></div>
 
-      <!-- kpis -->
-      <div class="fg-kpi-row" id="fgs-kpis"></div>
+      <!-- status -->
+      <div class="fg-status-bar" id="fgs-status">Checking FanGraphs data status...</div>
 
-      <!-- table -->
-      <div class="tw">
-        <div class="fg-tw" id="fgs-table-wrap">
-          <div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading FanGraphs data...</div>
+      <!-- filter bar — same component as h/p/ov views, view key = 'fg' -->
+      <div class="vf-bar" id="vf-bar-fg">
+        <div class="vf-top">
+          <div class="vf-chips" id="vf-chips-fg"></div>
+          <button class="vf-add" onclick="vfOpenBuilder('fg')">+ Filter</button>
+          <span class="vf-count" id="vf-count-fg"></span>
+          <button class="vf-clear" id="vf-clear-fg" onclick="vfClearFilters('fg')" style="display:none">Clear all</button>
+        </div>
+        <div class="vf-panel" id="vf-panel-fg">
+          <div class="vf-builder">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Column</span>
+              <select class="vf-sel" id="vf-col-fg" onchange="vfBuilderColChange('fg')">
+                <option value="">— pick column —</option>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:120px" id="vf-inputs-fg"></div>
+            <button class="btn bsm" onclick="vfApplyFilter('fg')">Add Filter</button>
+            <button class="btn bts bsm" onclick="vfCloseBuilder('fg')">Cancel</button>
+          </div>
         </div>
       </div>
+
+      <!-- search -->
+      <div style="margin-bottom:10px">
+        <input class="si2" id="fgs-search" placeholder="Search player..." oninput="vfSearch('fg',this.value)" style="width:220px">
+      </div>
+
+      <!-- table -->
+      <div class="big-ts" id="fgs-table-wrap">
+        <table id="t-fgs" style="border-collapse:collapse">
+          <thead id="fgs-head"></thead>
+          <tbody id="b-fgs"><tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">Loading FanGraphs data...</td></tr></tbody>
+        </table>
+      </div>
+      <div id="fgs-more-bar"></div>
     </div>
 
     <!-- ═══ FG LIVE LEADERBOARDS ═══ -->
     <div class="pnl" id="p-fglive">
-      <div class="pgt">FanGraphs Live Leaderboards</div>
+      <div class="pgt">Live Leaderboards</div>
       <div class="pgs">Full current-season leaderboards &middot; all players &middot; sortable &amp; filterable</div>
 
-      <div class="fg-toolbar">
-        <div style="display:flex;gap:6px;align-items:center">
-          <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Side:</span>
-          <button class="live-side-btn on" id="fgl-side-h" onclick="fglSetSide('h')">Hitters</button>
-          <button class="live-side-btn" id="fgl-side-p" onclick="fglSetSide('p')">Pitchers</button>
-        </div>
-        <input class="fg-search" id="fgl-search" placeholder="Search player..." oninput="fglRender()" style="margin-left:16px">
+      <!-- toolbar -->
+      <div class="view-bar" style="margin-bottom:10px">
+        <button class="live-side-btn on" id="fgl-side-h" onclick="fglSetSide('h')">Hitters</button>
+        <button class="live-side-btn" id="fgl-side-p" onclick="fglSetSide('p')">Pitchers</button>
+        <span style="width:1px;background:var(--border);height:20px;margin:0 4px"></span>
+        <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-right:4px">Season:</span>
+        <select class="sel" id="fgl-yr-from" onchange="fglYearChange()" style="font-size:10px;padding:3px 7px"></select>
+        <span style="font-size:10px;color:var(--dim)">to</span>
+        <select class="sel" id="fgl-yr-to" onchange="fglYearChange()" style="font-size:10px;padding:3px 7px"></select>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <span class="fg-status-bar" id="fgl-status" style="padding:0;margin:0"></span>
+          <div class="col-toggle-wrap"><button class="col-toggle-btn" onclick="openColPanel('fgl',this)">&#9776; Columns</button><div class="col-toggle-panel" id="col-panel-fgl"></div></div>
           <button class="fg-pull-btn" id="fgl-pull-btn" onclick="fgPull()">&#8635; Pull FanGraphs Data</button>
           <button class="btn bts bsm" onclick="fglExportCSV()">Export CSV</button>
         </div>
@@ -857,15 +957,56 @@ svg.ch{display:block}
       <!-- stat-type tabs -->
       <div class="fg-type-tabs" id="fgl-type-tabs"></div>
 
+      <!-- status -->
+      <div class="fg-status-bar" id="fgl-status">Checking FanGraphs data status...</div>
+
+      <!-- search + filter bar -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <input class="si2" id="fgl-search" placeholder="Search player..." oninput="fglRender()" style="width:200px">
+        <button class="vf-add" onclick="fglOpenFilterBuilder()">+ Filter</button>
+        <span class="vf-count" id="fgl-filter-count"></span>
+        <button class="vf-clear" id="fgl-filter-clear" onclick="fglClearFilters()" style="display:none">Clear all</button>
+      </div>
+      <div id="fgl-filter-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+      <!-- filter builder panel -->
+      <div class="vf-panel" id="fgl-filter-panel">
+        <div class="vf-builder">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Column</span>
+            <select class="vf-sel" id="fgl-filter-col" onchange="fglFilterColChange()" style="min-width:140px">
+              <option value="">— pick column —</option>
+            </select>
+          </div>
+          <div id="fgl-filter-num-inputs" style="display:flex;gap:8px">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Min</span>
+              <input class="vf-input" id="fgl-filter-min" type="number" placeholder="min" style="width:80px">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Max</span>
+              <input class="vf-input" id="fgl-filter-max" type="number" placeholder="max" style="width:80px">
+            </div>
+          </div>
+          <div id="fgl-filter-txt-input" style="display:none;flex-direction:column;gap:4px">
+            <span style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Contains</span>
+            <input class="vf-input" id="fgl-filter-txt" type="text" placeholder="e.g. DET" style="width:120px">
+          </div>
+          <button class="btn bsm" onclick="fglAddFilter()">Add</button>
+          <button class="btn bts bsm" onclick="fglCloseFilterBuilder()">Cancel</button>
+        </div>
+      </div>
+
       <!-- kpis -->
       <div class="fg-kpi-row" id="fgl-kpis"></div>
 
       <!-- table -->
-      <div class="tw">
-        <div class="fg-tw" id="fgl-table-wrap">
-          <div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading FanGraphs leaderboard...</div>
-        </div>
+      <div class="big-ts" id="fgl-table-wrap">
+        <table id="t-fgl" style="border-collapse:collapse">
+          <thead id="fgl-head"></thead>
+          <tbody id="b-fgl"><tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">Loading FanGraphs leaderboard...</td></tr></tbody>
+        </table>
       </div>
+      <div id="fgl-more-bar"></div>
     </div>
 
   </main>
@@ -906,6 +1047,14 @@ function loadUserState(user){
     if(s.hGrps)hGrps=Object.assign({py:true,py1:false,py2:false,l2:false,l3:false,car:false},s.hGrps);
     if(s.pGrps)pGrps=Object.assign({py:true,py1:false,py2:false,l2:false,l3:false,car:false},s.pGrps);
     if(s.ovState)ovState=Object.assign({tab:'h',search:'',highlightedNames:{}},s.ovState);
+    if(s.fgsGrps)fgsGrps=Object.assign({py:true,py1:false,py2:false,l2:false,l3:false,car:false},s.fgsGrps);
+    if(s.fgColHidden)fgColHidden=Object.assign({},s.fgColHidden);
+    if(s.fgsCustomCols)fgsCustomCols=Object.assign({h:[],p:[]},s.fgsCustomCols);
+    if(s.fglYearFrom)fglYearFrom=s.fglYearFrom;
+    if(s.fglYearTo)fglYearTo=s.fglYearTo;
+    if(s.fglColHidden)fglColHidden=Object.assign({},s.fglColHidden);
+    if(s.fglFilters)fglFilters=s.fglFilters.slice();
+    if(s.fglCustomCols)fglCustomCols=Object.assign({h:[],p:[]},s.fglCustomCols);
   }catch(e){console.error('loadUserState error',e);}
 }
 
@@ -924,7 +1073,15 @@ function saveUserState(){
       ovColHidden:ovColHidden,
       hGrps:hGrps,
       pGrps:pGrps,
-      ovState:{tab:ovState.tab,search:ovState.search,highlightedNames:ovState.highlightedNames||{}}
+      ovState:{tab:ovState.tab,search:ovState.search,highlightedNames:ovState.highlightedNames||{}},
+      fgsGrps:fgsGrps,
+      fgColHidden:fgColHidden,
+      fgsCustomCols:fgsCustomCols,
+      fglYearFrom:fglYearFrom,
+      fglYearTo:fglYearTo,
+      fglColHidden:fglColHidden,
+      fglFilters:fglFilters,
+      fglCustomCols:fglCustomCols
     };
     localStorage.setItem(userStateKey(currentUser.id),JSON.stringify(s));
   }catch(e){console.error('saveUserState error',e);}
@@ -2063,7 +2220,7 @@ function buildViewTable(tableType){
         });
       });
 
-      return'<tr>'+cells+'</tr>';
+      return'<tr>'+cells+'<td></td></tr>';
     }).join('');
   }
 
@@ -2113,7 +2270,8 @@ function exportViewCSV(type){
 var vfState={
   h:{filters:[],sortCol:-1,sortAsc:true,search:''},
   p:{filters:[],sortCol:-1,sortAsc:true,search:''},
-  ov:{filters:[],sortCol:-1,sortAsc:true,search:''}
+  ov:{filters:[],sortCol:-1,sortAsc:true,search:''},
+  fg:{filters:[],sortCol:-1,sortAsc:true,search:''}
 };
 
 function vfSearch(view,q){
@@ -2125,10 +2283,13 @@ function vfSearch(view,q){
 function vfColType(col){
   var dateCols=['SigDate'];
   var numericCols=['PY','FY','FY Age','SigAge','Term','AAV','GUAR AAV','GUAR','Pot IB','Pot OB','cPY','MLSsig','CAR MLS-PY',
-    'G','GS','PA','HR','AB/HR','RBI','SB','SB%','BB%','K%','AVG','OBP','SLG','OPS','ISO','OPS+','wRC+','wOBA',
-    'xAVG','xSLG','xwOBA','Brl%','HH%','LA','SwSp%','Max EV','AvgEV','DRS','OAA','rWAR','fWAR','aWAR','aWAR/650',
-    'QS%','GR','IP','IP/GS','gmLI','Sv','Hld','Sv%','SwStr%','HR%','GB%','oSLG','aEV','MPH(FF)','%(FF)',
-    'MPH(SI)','%(SI)','MPH(FC)','%(FC)','ERA','ERA+','FIP','xFIP'];
+    'G','GS','PA','HR','AB','H','R','RBI','SB','CS','BB','SO','AVG','OBP','SLG','OPS','ISO','wRC+','wOBA',
+    'BB%','K%','BABIP','UBR','wRAA','xBA','xSLG','xwOBA','EV','EV90','maxEV','LA','Barrels','Barrel%',
+    'HardHit','HardHit%','WPA','RE24','REW','WAR','RAR','Dollars','ERA','FIP','xFIP','SIERA','K/9','BB/9',
+    'IP','TBF','WHIP','ERA-','FIP-','xFIP-','SwStr%','CSW%','Stuff+','Location+','Pitching+',
+    'AB/HR','OPS+','DRS','OAA','rWAR','fWAR','aWAR','aWAR/650',
+    'QS%','GR','IP/GS','gmLI','Sv','Hld','Sv%','HR%','GB%','oSLG','aEV','MPH(FF)','%(FF)',
+    'MPH(SI)','%(SI)','MPH(FC)','%(FC)','ERA+'];
   if(dateCols.indexOf(col)>=0)return'date';
   if(numericCols.indexOf(col)>=0)return'numeric';
   return'categorical';
@@ -2265,49 +2426,99 @@ var vfBuilderType=null;
 
 function vfOpenBuilder(view){
   vfBuilderView=view;
-  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
+  var pfx=view==='ov'?'ov':(view==='fg'?'fg':(view==='h'?'h':'p'));
   var panel=document.getElementById('vf-panel-'+pfx);
   if(!panel)return;
   panel.classList.add('open');
   vfPopulateColSel(view);
 }
 function vfCloseBuilder(view){
-  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
+  var pfx=view==='ov'?'ov':(view==='fg'?'fg':(view==='h'?'h':'p'));
   var panel=document.getElementById('vf-panel-'+pfx);
   if(panel)panel.classList.remove('open');
 }
 
+function vfBuilderColChange(view){vfOnColChange(view);}
+
 function vfPopulateColSel(view){
-  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
+  var pfx=view==='ov'?'ov':(view==='fg'?'fg':(view==='h'?'h':'p'));
   var sel=document.getElementById('vf-col-'+pfx);
   if(!sel)return;
   sel.innerHTML='<option value="">Choose column...</option>';
-  var effectiveView=view==='ov'?ovState.tab:view;
-  // Grouped by section
+
+  // ── FG view: contract cols + FG stat cols for current type ───────────
+  if(view==='fg'){
+    var side=FG.fgs.side;
+    var typeKey=FG.fgs.type;
+    var contractCols=side==='h'?H_CONTRACT:P_CONTRACT;
+    var periods=FGS_PERIODS;
+    var periodLabels=FGS_PERIOD_LABELS;
+
+    var og=document.createElement('optgroup');
+    og.label='── Contract Info';
+    contractCols.forEach(function(col){
+      var o=document.createElement('option');o.value='contract|'+col;o.textContent=col;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+
+    if(typeKey===FGS_CUSTOM_KEY){
+      // Custom tab: group selected stats by their source type, one optgroup per type
+      var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+      types.forEach(function(t){
+        var typeCols=(fgsCustomCols[side]||[])
+          .filter(function(e){return e.indexOf(t.key+'|')===0;})
+          .map(function(e){return e.split('|')[1];})
+          .filter(Boolean);
+        if(!typeCols.length)return;
+        periods.forEach(function(per){
+          var og2=document.createElement('optgroup');
+          og2.label='── '+t.label+' · '+periodLabels[per];
+          typeCols.forEach(function(col){
+            var o=document.createElement('option');
+            o.value=per+'|'+col;
+            o.textContent=col;
+            og2.appendChild(o);
+          });
+          sel.appendChild(og2);
+        });
+      });
+    }else{
+      var specCols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+      periods.forEach(function(per){
+        var og2=document.createElement('optgroup');
+        og2.label='── Stats: '+periodLabels[per];
+        specCols.forEach(function(col){
+          var o=document.createElement('option');o.value=per+'|'+col;o.textContent=col;
+          og2.appendChild(o);
+        });
+        sel.appendChild(og2);
+      });
+    }
+
+    sel.onchange=function(){vfOnColChange(view);};
+    return;
+  }
+
+  // ── Standard h/p/ov views ────────────────────────────────────────────
   var contractCols=view==='h'?H_CONTRACT:P_CONTRACT;
   var statCols=view==='h'?H_STAT_COLS:P_STAT_COLS;
   var periods=H_PERIODS;
   var periodLabels={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'Career'};
 
-  // Contract group
   var og=document.createElement('optgroup');
   og.label='── Contract Info';
   contractCols.forEach(function(col){
-    var o=document.createElement('option');
-    o.value='contract|'+col;
-    o.textContent=col;
+    var o=document.createElement('option');o.value='contract|'+col;o.textContent=col;
     og.appendChild(o);
   });
   sel.appendChild(og);
 
-  // Stat groups by period
   periods.forEach(function(per){
     var og2=document.createElement('optgroup');
     og2.label='── Stats: '+periodLabels[per];
     statCols.forEach(function(col){
-      var o=document.createElement('option');
-      o.value=per+'|'+col;
-      o.textContent=col;
+      var o=document.createElement('option');o.value=per+'|'+col;o.textContent=col;
       og2.appendChild(o);
     });
     sel.appendChild(og2);
@@ -2325,7 +2536,7 @@ function vfFmtNum(n){
 }
 
 function vfOnColChange(view){
-  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
+  var pfx=view==='ov'?'ov':(view==='fg'?'fg':(view==='h'?'h':'p'));
   var sel=document.getElementById('vf-col-'+pfx);
   var inputArea=document.getElementById('vf-inputs-'+pfx);
   if(!sel||!inputArea)return;
@@ -2337,15 +2548,58 @@ function vfOnColChange(view){
   vfBuilderType=vfColType(vfBuilderCol);
   vfBuilderView=view;
 
-  var isHit=view==='ov'?(ovState.tab==='h'):(view==='h');
+  var isHit=view==='fg'?(FG.fgs.side==='h'):(view==='ov'?(ovState.tab==='h'):(view==='h'));
   var players=DB.merged.filter(function(p){
     if(!p.sheetTab)return false;
     return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
   });
   var per=vfBuilderPer==='contract'?'py':vfBuilderPer;
 
+  // For the fg view, FG stat columns are read from the agg cache, not _rawRow
+  var getVal;
+  if(view==='fg'&&vfBuilderPer!=='contract'){
+    var fgSide=FG.fgs.side;
+    var fgTypeKey=FG.fgs.type;
+    var winKey=FGS_WINDOW_MAP[per]||'PY';
+    // Build a quick agg lookup for this column
+    getVal=function(p){
+      // Determine which cache to use (Custom tab may use per-type caches)
+      var cacheKey=fgSide+'_'+fgTypeKey;
+      var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+      var col=vfBuilderCol;
+      if(!cached&&fgTypeKey===FGS_CUSTOM_KEY){
+        // Find the type that owns this col
+        var entry=(fgsCustomCols[fgSide]||[]).find(function(e){return e.split('|')[1]===col;});
+        if(entry){var tk=entry.split('|')[0];cached=FG.contracts.cache&&FG.contracts.cache[fgSide+'_'+tk];}
+      }
+      if(!cached||!cached.rows)return NaN;
+      var aggWindows=cached.windows||['PY','PY-1','PY-2','L2','L3','CAR'];
+      var wi=aggWindows.indexOf(winKey);
+      if(wi<0)return NaN;
+      var statCols=cached.stat_cols||[];
+      var si=statCols.indexOf(col);
+      if(si<0)return NaN;
+      var nAgg2=7,nStat=statCols.length;
+      var py=String(p.py||'').replace(/\.0+$/,'').trim();
+      var nm=normName(p.name);
+      var nmRev=normName(fgToLastFirst(p.name));
+      var aggRow=null;
+      (cached.rows).forEach(function(r){
+        if(aggRow)return;
+        var rPy=String(r[5]||'').replace(/\.0+$/,'').trim();
+        if(rPy!==py)return;
+        var rNm=normName(String(r[0]||''));
+        if(rNm===nm||rNm===nmRev)aggRow=r;
+      });
+      if(!aggRow)return NaN;
+      return parseFloat(aggRow[nAgg2+wi*nStat+si]);
+    };
+  }else{
+    getVal=function(p){return parseFloat(vfGetVal(p,vfBuilderCol,per));};
+  }
+
   if(vfBuilderType==='numeric'){
-    var nums=players.map(function(p){return parseFloat(vfGetVal(p,vfBuilderCol,per));}).filter(function(n){return!isNaN(n);});
+    var nums=players.map(getVal).filter(function(n){return!isNaN(n);});
     var mn=nums.length?Math.min.apply(null,nums):'';
     var mx=nums.length?Math.max.apply(null,nums):'';
     // Unique sorted display values
@@ -2390,7 +2644,7 @@ function vfToggleMitem(el){
 }
 
 function vfApplyFilter(view){
-  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
+  var pfx=view==='ov'?'ov':(view==='fg'?'fg':(view==='h'?'h':'p'));
   var sel=document.getElementById('vf-col-'+pfx);
   if(!sel||!sel.value)return;
   var filter={col:vfBuilderCol,per:vfBuilderPer,type:vfBuilderType};
@@ -2439,7 +2693,7 @@ function vfClearFilters(view){
 }
 
 function vfRenderChips(view){
-  var pfx=view==='ov'?'ov':(view==='h'?'h':'p');
+  var pfx=view==='ov'?'ov':(view==='fg'?'fg':(view==='h'?'h':'p'));
   var container=document.getElementById('vf-chips-'+pfx);
   var countEl=document.getElementById('vf-count-'+pfx);
   if(!container)return;
@@ -2457,6 +2711,7 @@ function vfRender(view){
   vfRenderChips(view);
   if(view==='h')renderHitters();
   else if(view==='p')renderPitchers();
+  else if(view==='fg')renderFgStats();
   else renderOverview();
 }
 
@@ -2548,8 +2803,8 @@ function renderCorr(){
       var xs=pairs.map(function(p){return p[0];});
       var ys=pairs.map(function(p){return p[1];});
       var r=pearsonR(xs,ys);
-      var label=period==='all'?col+' ('+per.toUpperCase()+')':col;
-      results.push({label:label,r:r,n:pairs.length});
+      // Store stat and period separately so we can render them on two lines
+      results.push({stat:col,per:per,r:r,n:pairs.length});
     });
   });
 
@@ -2559,10 +2814,11 @@ function renderCorr(){
 
   if(!top.length){el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">Not enough data for correlations</div>';return;}
 
+  var showPeriod=period==='all'; // only show period line when All Periods selected
 
   // ── Fixed-size compact vertical bars — stays small regardless of card width ──
   var N=top.length;
-  var bW=32,barGap=14,pt=14,pb=18,pl=2,pr=2;
+  var bW=32,barGap=14,pt=14,pb=showPeriod?26:18,pl=2,pr=2;
   var chartH=52;
   var W=pl+pr+(bW+barGap)*N+barGap;
   var H=pt+chartH+pb;
@@ -2579,15 +2835,365 @@ function renderCorr(){
     var y=pt+chartH-bH;
     var col=d.r>=0?'#66bb6a':'#ef5350';
     var rStr=d.r.toFixed(2);
-    var lbl=d.label.length>7?d.label.slice(0,6)+'…':d.label;
+    var statLbl=d.stat.length>7?d.stat.slice(0,6)+'…':d.stat;
     svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="1" opacity="0.85">'
-      +'<title>'+d.label+': r='+d.r.toFixed(3)+' (n='+d.n+')</title>'
+      +'<title>'+(showPeriod?d.stat+' ('+d.per.toUpperCase()+')':d.stat)+': r='+d.r.toFixed(3)+' (n='+d.n+')</title>'
       +'</rect>';
-   svg += '<text x="' + (x + bW/2) + '" y="' + (y - 2) + '" text-anchor="middle" font-size="12" fill="' + col + '">' + rStr + '</text>';
-svg += '<text x="' + (x + bW/2) + '" y="' + (pt + chartH + 11) + '" text-anchor="middle" font-size="10" fill="#5a6a8a">' + lbl + '</text>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(y-2)+'" text-anchor="middle" font-size="12" fill="'+col+'">'+rStr+'</text>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+11)+'" text-anchor="middle" font-size="10" fill="#5a6a8a">'+statLbl+'</text>';
+    if(showPeriod){
+      svg+='<text x="'+(x+bW/2)+'" y="'+(pt+chartH+22)+'" text-anchor="middle" font-size="9" fill="#3a4a6a">'+d.per.toUpperCase()+'</text>';
+    }
   });
   svg+='</svg>';
   el.innerHTML=svg;
+}
+
+// ─── CONTRACT OVERVIEW tab: Position Breakdown chart ─────────────────────────
+// Takes the already-filtered players array (same signature as renderPosChart)
+function renderFgsPosChart(players){
+  var el=document.getElementById('fgs-k-pos-chart');if(!el)return;
+  var map={};players.forEach(function(p){var pos=p.pPos||'?';map[pos]=(map[pos]||0)+1;});
+  var total=players.length||1;
+  var entries=Object.keys(map).sort(function(a,b){return map[b]-map[a];}).slice(0,12);
+  var cols=['#e8c547','#4fc3f7','#66bb6a','#ef5350','#ce93d8','#ff9800','#26c6da','#f06292','#aed581','#80cbc4','#ffb74d','#90caf9'];
+  if(!entries.length){el.innerHTML='<div style="font-size:10px;color:var(--dim)">No data</div>';return;}
+  var barHTML='<div style="display:flex;height:22px;border-radius:4px;overflow:hidden;width:100%">';
+  entries.forEach(function(pos,i){
+    var pct=(map[pos]/total)*100;
+    barHTML+='<div style="width:'+pct.toFixed(2)+'%;background:'+cols[i%cols.length]+';opacity:0.9;transition:width .3s" title="'+pos+': '+map[pos]+' ('+pct.toFixed(1)+'%)"></div>';
+  });
+  barHTML+='</div>';
+  var legHTML='<div style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px">';
+  entries.forEach(function(pos,i){
+    var pct=((map[pos]/total)*100).toFixed(1);
+    legHTML+='<div style="display:flex;align-items:center;gap:4px">'
+      +'<div style="width:9px;height:9px;border-radius:2px;background:'+cols[i%cols.length]+';opacity:0.9;flex-shrink:0"></div>'
+      +'<span style="font-size:10px;color:var(--mid)">'+pos+'</span>'
+      +'<span style="font-size:9px;color:var(--dim)">'+map[pos]+' ('+pct+'%)</span>'
+      +'</div>';
+  });
+  legHTML+='</div>';
+  el.innerHTML=barHTML+legHTML;
+}
+
+// ─── CONTRACT OVERVIEW tab: FanGraphs-sourced Salary Correlations ────────────
+// Only uses the stats shown in the currently active sub-tab (FG_COL_SPEC[side][typeKey]).
+// For the Custom tab, uses the user-selected custom columns.
+// Click the card to open a full sorted list modal.
+
+// Shared helper: builds aggByName lookup from a cached dataset
+function fgsCorrBuildLookup(cached){
+  // Key: normName(name)+'|'+PY so each (player, PY) gets its own row.
+  // PY is at agg row index 5 (CONTRACT_COLS = ['Player','pPos','SigTm','GUAR','GUAR AAV','PY','FY'])
+  var aggByName={};
+  (cached.rows||[]).forEach(function(r){
+    var raw=String(r[0]||'');
+    var py=String(r[5]||'').replace(/\.0+$/,'').trim();
+    var nm=normName(raw);
+    if(nm)aggByName[nm+'|'+py]=r;
+    var rev=normName(fgToLastFirst(raw));
+    if(rev&&rev!==nm)aggByName[rev+'|'+py]=r;
+    if(raw.indexOf(',')>=0){
+      var pts=raw.split(',');
+      var fl=normName((pts[1]||'').trim()+' '+(pts[0]||'').trim());
+      if(fl&&fl!==nm)aggByName[fl+'|'+py]=r;
+    }
+  });
+  return aggByName;
+}
+
+// Helper: look up a correlation agg row for a player using name + PY
+function fgsCorrGetRow(aggByName,p){
+  var py=String(p.py||'').replace(/\.0+$/,'').trim();
+  return aggByName[normName(p.name)+'|'+py]
+      ||aggByName[normName(fgToLastFirst(p.name))+'|'+py]
+      ||null;
+}
+
+// Shared helper: returns filtered players for the correlation calc
+function fgsCorrPlayers(side){
+  var isHit=side==='h';
+  var allPlayers=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
+  });
+  var activePer=Object.keys(fgsGrps).find(function(k){return fgsGrps[k];})||'py';
+  var players=allPlayers.filter(function(p){
+    return vfState['fg'].filters.every(function(f){
+      var contractCols=isHit?H_CONTRACT:P_CONTRACT;
+      if(contractCols.indexOf(f.col)>=0){
+        return vfTestFilter(f,vfGetVal(p,f.col,f.per||activePer));
+      }
+      return true;
+    });
+  });
+  var srch=(vfState['fg'].search||'').toLowerCase();
+  if(srch)players=players.filter(function(p){
+    return(p.name||'').toLowerCase().indexOf(srch)>=0||
+           (p.pPos||'').toLowerCase().indexOf(srch)>=0||
+           (p.sigTm||'').toLowerCase().indexOf(srch)>=0;
+  });
+  return players;
+}
+
+// Shared helper: get the stat columns to correlate for the current sub-tab
+// Stat columns that represent dollar values — excluded from correlation analysis
+// because they are derived from WAR × market rate and would trivially correlate
+// with salary metrics (both measure the same underlying dollar value).
+var CORR_EXCLUDE_COLS={Dollars:1};
+
+function fgsCorrStatCols(side,typeKey){
+  if(typeKey===FGS_CUSTOM_KEY){
+    var seen={};
+    return (fgsCustomCols[side]||[]).map(function(e){return e.split('|')[1];}).filter(function(c){
+      if(!c||seen[c]||CORR_EXCLUDE_COLS[c])return false; seen[c]=true; return true;
+    });
+  }
+  return ((FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[]).filter(function(c){
+    return!CORR_EXCLUDE_COLS[c];
+  });
+}
+
+// Core correlation computation — returns sorted results array
+// scope: 'top10' or 'all'
+function fgsCorrCompute(side,typeKey,metric,periodVal,scope){
+  var cacheKey=side+'_'+typeKey;
+  var cached=FG&&FG.contracts&&FG.contracts.cache&&FG.contracts.cache[cacheKey];
+  // For custom tab, try to find any type that has data
+  if((!cached||!cached.rows||!cached.rows.length)&&typeKey===FGS_CUSTOM_KEY){
+    var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+    for(var ti=0;ti<types.length;ti++){
+      var ck2=side+'_'+types[ti].key;
+      if(FG.contracts.cache&&FG.contracts.cache[ck2]&&FG.contracts.cache[ck2].rows&&FG.contracts.cache[ck2].rows.length){
+        cached=FG.contracts.cache[ck2];break;
+      }
+    }
+  }
+  if(!cached||!cached.rows||!cached.rows.length)return null;
+
+  var players=fgsCorrPlayers(side);
+  if(players.length<5)return null;
+
+  var displayCols=fgsCorrStatCols(side,typeKey);
+  if(!displayCols.length)return null;
+
+  var aggByName=fgsCorrBuildLookup(cached);
+  var aggWindows=cached.windows||['PY','PY-1','PY-2','L2','L3','CAR'];
+  var aggStatCols=cached.stat_cols||[];
+  var nAgg=7;
+  var nStatCols=aggStatCols.length;
+  var winIdxMap={};
+  aggWindows.forEach(function(w,i){winIdxMap[w]=i;});
+
+  var metricFn=function(p){
+    if(metric==='guar')return p.guar||0;
+    if(metric==='aav')return p.aav||0;
+    if(metric==='guaraav')return p.guarAav||0;
+    if(metric==='term')return p.term||0;
+    return 0;
+  };
+
+  var ALL_WINDOWS=['PY','PY-1','PY-2','L2','L3','CAR'];
+  var windowsToCheck=periodVal==='all'?ALL_WINDOWS:[periodVal];
+
+  // For custom tab, we may need per-type caches; build a multi-cache lookup
+  var multiCache=null;
+  if(typeKey===FGS_CUSTOM_KEY){
+    multiCache={};
+    (fgsCustomCols[side]||[]).forEach(function(entry){
+      var tk=entry.split('|')[0];
+      if(!multiCache[tk]){
+        var ck3=side+'_'+tk;
+        var tc=FG.contracts.cache&&FG.contracts.cache[ck3];
+        if(tc&&tc.rows&&tc.rows.length){
+          multiCache[tk]={
+            aggByName:fgsCorrBuildLookup(tc),
+            statCols:tc.stat_cols||[],
+            windows:tc.windows||ALL_WINDOWS,
+            nStatCols:(tc.stat_cols||[]).length
+          };
+          var wim={};(tc.windows||ALL_WINDOWS).forEach(function(w,i){wim[w]=i;});
+          multiCache[tk].winIdxMap=wim;
+        }
+      }
+    });
+  }
+
+  var results=[];
+  // Build a set of display cols for fast lookup
+  var displaySet={};
+  displayCols.forEach(function(c){displaySet[c]=true;});
+
+  windowsToCheck.forEach(function(win){
+    if(typeKey===FGS_CUSTOM_KEY){
+      // Custom: each col may come from a different type cache
+      var colTypeMap={};
+      (fgsCustomCols[side]||[]).forEach(function(entry){
+        var parts=entry.split('|');
+        var tk=parts[0],col=parts[1];
+        if(col&&!colTypeMap[col])colTypeMap[col]=tk;
+      });
+      displayCols.forEach(function(col){
+        var tk2=colTypeMap[col];
+        var mc=tk2?multiCache[tk2]:null;
+        if(!mc)return;
+        var wi=mc.winIdxMap[win];
+        var si=mc.statCols.indexOf(col);
+        if(wi===undefined||si<0)return;
+        var pairs=[];
+        players.forEach(function(p){
+          var aggRow=fgsCorrGetRow(mc.aggByName,p);
+          if(!aggRow)return;
+          var raw=aggRow[nAgg+wi*mc.nStatCols+si];
+          if(raw===undefined||raw===null||raw==='')return;
+          var v=parseFloat(raw),y=metricFn(p);
+          if(!isNaN(v)&&y>0)pairs.push([v,y]);
+        });
+        if(pairs.length<5)return;
+        var r=pearsonR(pairs.map(function(p){return p[0];}),pairs.map(function(p){return p[1];}));
+        if(!isNaN(r))results.push({stat:col,per:win,r:r,n:pairs.length});
+      });
+    } else {
+      var wi=winIdxMap[win];
+      if(wi===undefined)return;
+      displayCols.forEach(function(col){
+        var si=aggStatCols.indexOf(col);
+        if(si<0)return;
+        var pairs=[];
+        players.forEach(function(p){
+          var aggRow=fgsCorrGetRow(aggByName,p);
+          if(!aggRow)return;
+          var raw=aggRow[nAgg+wi*nStatCols+si];
+          if(raw===undefined||raw===null||raw==='')return;
+          var v=parseFloat(raw),y=metricFn(p);
+          if(!isNaN(v)&&y>0)pairs.push([v,y]);
+        });
+        if(pairs.length<5)return;
+        var r=pearsonR(pairs.map(function(p){return p[0];}),pairs.map(function(p){return p[1];}));
+        if(!isNaN(r))results.push({stat:col,per:win,r:r,n:pairs.length});
+      });
+    }
+  });
+
+  // De-duplicate: if same stat appears multiple times (all periods), keep highest |r|
+  if(periodVal==='all'){
+    var best={};
+    results.forEach(function(d){
+      var key=d.stat+'|'+d.per;
+      if(!best[key]||Math.abs(d.r)>Math.abs(best[key].r))best[key]=d;
+    });
+    results=Object.values(best);
+  }
+
+  results.sort(function(a,b){return Math.abs(b.r)-Math.abs(a.r);});
+  return scope==='top10'?results.slice(0,10):results;
+}
+
+function renderFgCorr(){
+  var el=document.getElementById('fgs-corr-chart');if(!el)return;
+  var metricSel=document.getElementById('fgs-corr-metric');
+  var periodSel=document.getElementById('fgs-corr-period');
+  var metric=metricSel?metricSel.value:'guar';
+  var periodVal=periodSel?periodSel.value:'PY';
+  var side=FG&&FG.fgs?FG.fgs.side:'h';
+  var typeKey=FG&&FG.fgs?FG.fgs.type:'';
+
+  var top=fgsCorrCompute(side,typeKey,metric,periodVal,'top10');
+
+  if(!top){
+    var cacheKey=side+'_'+typeKey;
+    var hasCached=FG&&FG.contracts&&FG.contracts.cache&&FG.contracts.cache[cacheKey];
+    el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">'+(hasCached?'Not enough matched data':'Pull FanGraphs data to see correlations')+'</div>';
+    return;
+  }
+  if(!top.length){
+    el.innerHTML='<div style="font-size:10px;color:var(--dim);padding:8px 0">Not enough matched data for correlations</div>';
+    return;
+  }
+
+  var showPeriod=periodVal==='all';
+  var N=top.length;
+  var bW=32,barGap=14,pt2=14,pb2=showPeriod?28:18,pl2=2,pr2=2;
+  var chartH2=52;
+  var W2=pl2+pr2+(bW+barGap)*N+barGap;
+  var H2=pt2+chartH2+pb2;
+  var maxR=Math.max.apply(null,top.map(function(d){return Math.abs(d.r);}));
+
+  var svg='<svg viewBox="0 0 '+W2+' '+H2+'" width="'+W2+'" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible">';
+  svg+='<line x1="'+pl2+'" x2="'+(W2-pr2)+'" y1="'+(pt2+chartH2)+'" y2="'+(pt2+chartH2)+'" stroke="rgba(255,255,255,0.12)"/>';
+  top.forEach(function(d,i){
+    var x=pl2+barGap+(bW+barGap)*i;
+    var bH=Math.max(2,Math.abs(d.r)/maxR*chartH2);
+    var y=pt2+chartH2-bH;
+    var col=d.r>=0?'#66bb6a':'#ef5350';
+    var rStr=d.r.toFixed(2);
+    var statLbl=d.stat.length>7?d.stat.slice(0,6)+'…':d.stat;
+    svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" fill="'+col+'" rx="1" opacity="0.85">'
+      +'<title>'+(showPeriod?d.stat+' ('+d.per+')':d.stat)+': r='+d.r.toFixed(3)+' (n='+d.n+')</title></rect>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(y-2)+'" text-anchor="middle" font-size="12" fill="'+col+'">'+rStr+'</text>';
+    svg+='<text x="'+(x+bW/2)+'" y="'+(pt2+chartH2+11)+'" text-anchor="middle" font-size="10" fill="#5a6a8a">'+statLbl+'</text>';
+    if(showPeriod)svg+='<text x="'+(x+bW/2)+'" y="'+(pt2+chartH2+22)+'" text-anchor="middle" font-size="9" fill="#3a4a6a">'+d.per+'</text>';
+  });
+  svg+='</svg>';
+  // Wrap in a clickable div with subtle hint
+  el.innerHTML='<div onclick="fgsCorrOpenModal()" style="cursor:pointer;position:relative" title="Click to see all correlations">'
+    +svg
+    +'<div style="position:absolute;bottom:0;right:0;font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;opacity:0.6">click to expand</div>'
+    +'</div>';
+}
+
+// ── Full correlations modal ──────────────────────────────────────────────────
+function fgsCorrOpenModal(){
+  var metricSel=document.getElementById('fgs-corr-metric');
+  var periodSel=document.getElementById('fgs-corr-period');
+  var metric=metricSel?metricSel.value:'guar';
+  var periodVal=periodSel?periodSel.value:'PY';
+  var side=FG&&FG.fgs?FG.fgs.side:'h';
+  var typeKey=FG&&FG.fgs?FG.fgs.type:'';
+
+  var all=fgsCorrCompute(side,typeKey,metric,periodVal,'all');
+
+  var metricLabels={guar:'Total Guaranteed',aav:'AAV',guaraav:'Guar AAV',term:'Term'};
+  var tabLabel=typeKey===FGS_CUSTOM_KEY?'Custom':(typeKey||'');
+  var periodLabel=periodVal==='all'?'All Periods':periodVal;
+
+  var modal=document.getElementById('fgs-corr-modal');
+  var body=document.getElementById('fgs-corr-modal-body');
+  var title=document.getElementById('fgs-corr-modal-title');
+  if(!modal||!body||!title)return;
+
+  title.textContent='Correlations — '+tabLabel+' · '+periodLabel+' → '+metricLabels[metric];
+
+  if(!all||!all.length){
+    body.innerHTML='<div style="text-align:center;padding:40px;color:var(--dim);font-size:12px">Not enough matched data</div>';
+  }else{
+    // Render full list: stat on left, colored coefficient on right
+    body.innerHTML='<table style="width:100%;border-collapse:collapse">'
+      +'<thead><tr>'
+      +'<th style="font-size:9px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;padding:6px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--s2)">Stat</th>'
+      +(periodVal==='all'?'<th style="font-size:9px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;padding:6px 12px;text-align:center;border-bottom:1px solid var(--border);background:var(--s2)">Period</th>':'')
+      +'<th style="font-size:9px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;padding:6px 12px;text-align:right;border-bottom:1px solid var(--border);background:var(--s2)">r</th>'
+      +'<th style="font-size:9px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);background:var(--s2)">n</th>'
+      +'</tr></thead><tbody>'
+      +all.map(function(d,i){
+        var col=d.r>=0?'var(--green)':'var(--red)';
+        var bg=i%2===0?'':'background:rgba(255,255,255,0.02)';
+        return '<tr style="'+bg+'">'
+          +'<td style="padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);border-bottom:1px solid rgba(255,255,255,0.04)">'+d.stat+'</td>'
+          +(periodVal==='all'?'<td style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:center;border-bottom:1px solid rgba(255,255,255,0.04)">'+d.per+'</td>':'')
+          +'<td style="padding:5px 12px;font-size:13px;font-weight:900;color:'+col+';text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid rgba(255,255,255,0.04)">'+d.r.toFixed(3)+'</td>'
+          +'<td style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:right;border-bottom:1px solid rgba(255,255,255,0.04)">'+d.n+'</td>'
+          +'</tr>';
+      }).join('')
+      +'</tbody></table>';
+  }
+  modal.classList.add('open');
+}
+
+function fgsCorrCloseModal(){
+  var modal=document.getElementById('fgs-corr-modal');
+  if(modal)modal.classList.remove('open');
 }
 
 // ═══ CONTRACT OVERVIEW ENGINE ═══
@@ -2783,15 +3389,19 @@ function ovUpdateHighlights(namesMap){
 var hColHidden={};  // {per_col: true} e.g. {'py_G': true}
 var pColHidden={};
 var ovColHidden={};
+var fgColHidden={};  // FG Contracts tab column visibility
 
 function colKey(per,col){return per+'_'+col;}
 
 function toggleCol(view,per,col,cb){
-  var state=view==='h'?hColHidden:(view==='p'?pColHidden:ovColHidden);
-  var k=colKey(per,col);
+  var state=view==='h'?hColHidden:(view==='p'?pColHidden:(view==='fg'?fgColHidden:ovColHidden));
+  // Contract info cols on fg tab use 'contract_' prefix key
+  var k=(view==='fg'&&per==='contract')?'contract_'+col:colKey(per,col);
   if(cb.checked)delete state[k]; else state[k]=true;
   if(view==='h')renderHitters();
   else if(view==='p')renderPitchers();
+  else if(view==='fg')renderFgStats();
+  else if(view==='fgl')fglRender();
   else renderOverview();
   try{saveUserState();}catch(e){}
 }
@@ -2815,27 +3425,116 @@ document.addEventListener('mousedown',function(e){
 });
 
 function buildColPanel(view,panel){
-  var isHit=view==='h'||(view==='ov'&&ovState.tab==='h');
-  var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
-  var state=view==='h'?hColHidden:(view==='p'?pColHidden:ovColHidden);
-  var periodLabels={'py':'PY','py1':'PY-1','py2':'PY-2','l2':'L2','l3':'L3','car':'Career'};
-  var html='';
-  H_PERIODS.forEach(function(per){
-    var allChecked=statCols.every(function(col){return!state[colKey(per,col)];});
-    html+='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">';
-    html+=periodLabels[per];
-    html+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allChecked?' checked':'')+' onchange="toggleAllPeriodCols(\''+view+'\',\''+per+'\',this)"> All</label>';
-    html+='</div>';
-    statCols.forEach(function(col){
-      var k=colKey(per,col);
-      var checked=!state[k]?' checked':'';
-      html+='<label class="col-item"><input type="checkbox"'+checked+' onchange="toggleCol(\''+view+'\',\''+per+'\',\''+col.replace(/'/g,"\\'")+'\',this)">'+col+'</label>\n';
+  // FG tab: cols come from FG_COL_SPEC for current side/type
+  if(view==='fg'){
+    var fgSide=FG.fgs.side;
+    var fgType=FG.fgs.type;
+    var specCols=(FG_COL_SPEC[fgSide]&&FG_COL_SPEC[fgSide][fgType])||[];
+    if(fgType===FGS_CUSTOM_KEY){
+      var ctCols2=fgSide==='h'?H_CONTRACT:P_CONTRACT;
+      var allCtChk2=ctCols2.every(function(col){return!fgColHidden['contract_'+col];});
+      var ph='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px;color:#66bb6a">Contract Info';
+      ph+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allCtChk2?' checked':'')+' onchange="toggleAllPeriodCols(\'fg\',\'contract\',this)"> All</label>';
+      ph+='</div>';
+      ctCols2.forEach(function(col){
+        var k='contract_'+col;
+        var chk=!fgColHidden[k]?' checked':'';
+        var sc=col.replace(/'/g,"\\\\'");
+        ph+='<label class="col-item"><input type="checkbox"'+chk+' onchange="toggleCol(\'fg\',\'contract\',\''+sc+'\',this)">'+col+'</label>\n';
+      });
+      var allTypes3=fgSide==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+      allTypes3.forEach(function(t){
+        var tCols=(FG_COL_SPEC[fgSide]&&FG_COL_SPEC[fgSide][t.key])||[];
+        var inCustom=tCols.filter(function(c2){return(fgsCustomCols[fgSide]||[]).some(function(e){return e===t.key+'|'+c2;});});
+        if(!inCustom.length)return;
+        var allTChk=inCustom.every(function(col){return!fgColHidden['custom_'+t.key+'_'+col];});
+        ph+='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">'+t.label;
+        ph+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allTChk?' checked':'')+' onchange="fgcToggleTypeVis(\''+fgSide+'\',\''+t.key+'\',this)"> All</label>';
+        ph+='</div>';
+        inCustom.forEach(function(col){
+          var k2='custom_'+t.key+'_'+col;
+          var chk2=!fgColHidden[k2]?' checked':'';
+          var sc2=col.replace(/'/g,"\\\\'");
+          ph+='<label class="col-item"><input type="checkbox"'+chk2+' onchange="fgcToggleColVis(\''+fgSide+'\',\''+t.key+'\',\''+sc2+'\',this)">'+col+'</label>\n';
+        });
+      });
+      ph+='<div style="padding:6px 4px;margin-top:4px;border-top:1px solid var(--border)">';
+      ph+='<button class="btn bts bsm" style="width:100%;margin:0" onclick="fgcOpenModal()">&#43; Add / Remove Stats</button>';
+      ph+='</div>';
+      panel.innerHTML=ph;
+      return;
+    }
+    var html2='';
+    FGS_PERIODS.forEach(function(per){
+      var allChk=specCols.every(function(col){return!fgColHidden[colKey(per,col)];});
+      html2+='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">';
+      html2+=FGS_PERIOD_LABELS[per];
+      html2+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allChk?' checked':'')+' onchange="toggleAllPeriodCols(\'fg\',\''+per+'\',this)"> All</label>';
+      html2+='</div>';
+      specCols.forEach(function(col){
+        var k=colKey(per,col);
+        var chk=!fgColHidden[k]?' checked':'';
+        var safeCol=col.replace(/'/g,"\\'");
+        html2+='<label class="col-item"><input type="checkbox"'+chk+' onchange="toggleCol(\'fg\',\''+per+'\',\''+safeCol+'\',this)">'+col+'</label>\n';
+      });
     });
-  });
-  panel.innerHTML=html;
-}
+    panel.innerHTML=html2;
+    return;
+  }
+  if(view==='fgl'){
+    var fglSide2=FG.fgl.side;
+    var fglType2=FG.fgl.type;
+    var html3='';
+    if(fglType2===FGL_CUSTOM_KEY){
+      var allTypes4=fglSide2==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+      allTypes4.forEach(function(t){
+        var tCols=(FG_COL_SPEC[fglSide2]&&FG_COL_SPEC[fglSide2][t.key])||[];
+        var inCustom=tCols.filter(function(col){return(fglCustomCols[fglSide2]||[]).some(function(e){return e===t.key+'|'+col;});});
+        if(!inCustom.length)return;
+        var allTChk=inCustom.every(function(col){return!fglColHidden['fgl_'+col];});
+        html3+='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">'+t.label;
+        html3+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allTChk?' checked':'')+' onchange="fglToggleTypeVisCustom(\''+fglSide2+'\',\''+t.key+'\',this)"> All</label>';
+        html3+='</div>';
+        inCustom.forEach(function(col){
+          var chk=!fglColHidden['fgl_'+col]?' checked':'';
+          var safeCol=col.replace(/'/g,"\\\\'");
+          html3+='<label class="col-item"><input type="checkbox"'+chk+' onchange="fglToggleCol(\''+safeCol+'\',this)">'+col+'</label>\n';
+        });
+      });
+      html3+='<div style="padding:6px 4px;margin-top:4px;border-top:1px solid var(--border)">';
+      html3+='<button class="btn bts bsm" style="width:100%;margin:0" onclick="fglOpenCustomModal()">&#43; Add / Remove Stats</button>';
+      html3+='</div>';
+    }else{
+      var specCols2=(FG_COL_SPEC[fglSide2]&&FG_COL_SPEC[fglSide2][fglType2])||[];
+      var allChkFgl=specCols2.every(function(col){return!fglColHidden['fgl_'+col];});
+      html3+='<div class="col-grp-lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">';
+      html3+=fglType2;
+      html3+='<label class="col-item" style="margin:0;padding:0;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim)"><input type="checkbox"'+(allChkFgl?' checked':'')+' onchange="fglToggleAllCols(this)"> All</label>';
+      html3+='</div>';
+      specCols2.forEach(function(col){
+        var chk=!fglColHidden['fgl_'+col]?' checked':'';
+        var safeCol=col.replace(/'/g,"\\\\'");
+        html3+='<label class="col-item"><input type="checkbox"'+chk+' onchange="fglToggleCol(\''+safeCol+'\',this)">'+col+'</label>\n';
+      });
+    }
+    panel.innerHTML=html3;
+    return;
+  }
 
-function toggleAllPeriodCols(view,per,cb){
+  if(view==='fg'){
+    var side=FG.fgs.side;
+    var typeKey=FG.fgs.type;
+    var specCols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+    specCols.forEach(function(col){
+      var k=colKey(per,col);
+      if(cb.checked)delete fgColHidden[k]; else fgColHidden[k]=true;
+    });
+    var panel=document.getElementById('col-panel-fg');
+    if(panel){panel.dataset.built='';buildColPanel('fg',panel);}
+    renderFgStats();
+    try{saveUserState();}catch(e){}
+    return;
+  }
   var state=view==='h'?hColHidden:(view==='p'?pColHidden:ovColHidden);
   var isHit=view==='h'||(view==='ov'&&ovState.tab==='h');
   var statCols=isHit?H_STAT_COLS:P_STAT_COLS;
@@ -2843,7 +3542,6 @@ function toggleAllPeriodCols(view,per,cb){
     var k=colKey(per,col);
     if(cb.checked)delete state[k]; else state[k]=true;
   });
-  // Rebuild panel to sync all individual checkboxes cleanly
   var panel=document.getElementById('col-panel-'+view);
   if(panel){panel.dataset.built='';buildColPanel(view,panel);}
   if(view==='h')renderHitters();
@@ -2877,29 +3575,58 @@ var FG_HITTER_TYPES=[
   {key:'Plate Disc ABS',label:'Plate Disc'}
 ];
 var FG_PITCHER_TYPES=[
-  {key:'Standard',   label:'Standard'},
-  {key:'Advanced',   label:'Advanced'},
-  {key:'Batted Ball',label:'Batted Ball'},
-  {key:'Win Probability',label:'Win Prob'},
-  {key:'Pitch Type', label:'Pitch Type'},
-  {key:'Plate Discipline',label:'Plate Disc'},
-  {key:'Value',      label:'Value'},
-  {key:'Pitch Values',label:'Pitch Values'},
-  {key:'Statcast Pitch Pct',label:'Pitch%'},
-  {key:'Statcast Velocity',label:'Velocity'},
-  {key:'Statcast',   label:'Statcast'},
-  {key:'Stuff Plus', label:'Stuff+'}
+  {key:'Standard',         label:'Standard'},
+  {key:'Advanced',         label:'Advanced'},
+  {key:'Batted Ball',      label:'Batted Ball'},
+  {key:'Win Probability',  label:'Win Prob'},
+  {key:'Pitch Type',       label:'Pitch Type'},
+  {key:'Plate Discipline', label:'Plate Disc'},
+  {key:'Value',            label:'Value'},
+  {key:'Pitch Values',     label:'Pitch Values'},
+  {key:'Statcast',         label:'Statcast'},
+  {key:'Stuff Plus',       label:'Stuff+'}
 ];
+
+// ── Column specs: exact FG API field names shown per type ─────────────────
+// These are the columns displayed after the type prefix is stripped.
+// Defined once here; used by both the FG Contracts tab and the Live tab.
+var FG_COL_SPEC = {
+  h: {
+    'Standard':         ['G','AB','PA','H','1B','2B','3B','HR','R','RBI','BB','IBB','SO','HBP','SF','SH','GDP','SB','CS','AVG'],
+    'Advanced':         ['PA','BB%','K%','BB/K','AVG','OBP','SLG','OPS','ISO','Spd','BABIP','UBR','wGDP','XBR','wSB','wRC','wRAA','wOBA','wRC+'],
+    'Batted Ball':      ['BABIP','GB/FB','LD%','GB%','FB%','IFFB%','HR/FB','IFH','IFH%','BUH','BUH%','Pull%','Cent%','Oppo%','Soft%','Med%','Hard%'],
+    'Win Probability':  ['WPA','-WPA','+WPA','RE24','REW','pLI','phLI','PH','WPA/LI','Clutch'],
+    'Value':            ['Batting','Base Running','Fielding','Positional','Offense','Defense','League','Replacement','RAR','WAR','Dollars'],
+    'Plus Stats':       ['PA','BB%+','K%+','AVG+','OBP+','SLG+','wRC+','ISO+','BABIP+','LD%+','GB%+','FB%+','Pull%+','Cent%+','Oppo%+'],
+    'Statcast':         ['PA','Events','EV','EV90','maxEV','LA','Barrels','Barrel%','HardHit','HardHit%','AVG','xBA','SLG','xSLG','wOBA','xwOBA'],
+    'Statcast Bat Track':['CompetitiveSwings','AvgBatSpeed','FastSwing%','SwingLength','SquaredUpSwing%','BlastSwing%','BlastContact%','Tilt','IdealAttackAngle%'],
+    'Plate Disc ABS':   ['PA','O-Swing%','Z-Swing%','Swing%','O-Contact%','Z-Contact%','Contact%','Zone%','Pace']
+  },
+  p: {
+    'Standard':         ['W','L','ERA','G','GS','QS','CG','ShO','SV','HLD','BS','IP','TBF','H','R','ER','HR','BB','IBB','HBP','WP','BK','SO'],
+    'Advanced':         ['K/9','BB/9','K/BB','HR/9','K%','BB%','K-BB%','AVG','WHIP','BABIP','LOB%','ERA-','FIP-','xFIP-','ERA','FIP','E-F','xFIP','SIERA'],
+    'Batted Ball':      ['BABIP','GB/FB','LD%','GB%','FB%','IFFB%','HR/FB','RS','RS/9','Balls','Strikes','Pitches','Pull%','Cent%','Oppo%','Soft%','Med%','Hard%'],
+    'Win Probability':  ['WPA','-WPA','+WPA','RE24','REW','pLI','inLI','gmLI','exLI','Pulls','WPA/LI','Clutch','SD','MD'],
+    'Pitch Type':       ['FB%','FBv','SL%','SLv','CT%','CTv','CB%','CBv','CH%','CHv','SF%','SFv','KN%','KNv','XX%'],
+    'Plate Discipline': ['O-Swing%','Z-Swing%','Swing%','O-Contact%','Z-Contact%','Contact%','Zone%','F-Strike%','SwStr%','CStr%','CSW%'],
+    'Value':            ['RA9-WAR','BIP-Wins','LOB-Wins','FDP-Wins','RAR','WAR','Dollars'],
+    'Pitch Values':     ['wFB','wSL','wCT','wCB','wCH','wSF','wKN','wFB/C','wSL/C','wCT/C','wCB/C','wCH/C','wSF/C','wKN/C'],
+    'Statcast':         ['IP','Events','EV','EV90','maxEV','LA','Barrels','Barrel%','HardHit','HardHit%','ERA','xERA'],
+    'Stuff Plus':       ['IP','sp_stuff','sp_location','sp_pitching','pb_stuff']
+  }
+};
 
 // ── Runtime state ──
 var FG={
   contracts:{hitters:null,pitchers:null,cache:{}},
-  live:{hitters:null,pitchers:null},
+  live:{hitters:null,pitchers:null,cache:{}},
   pulledAt:null,
   loading:false,
-  fgs:{side:'h',type:'Standard',season:'all',sortCol:0,sortAsc:true},
-  fgl:{side:'h',type:'Standard',sortCol:0,sortAsc:true}
+  fgs:{side:'h',type:'Standard',season:'all',sortCol:0,sortAsc:true,visibleCount:150},
+  fgl:{side:'h',type:'Standard',sortCol:0,sortAsc:true,visibleCount:150}
 };
+// Row page size for FG tables — keeps DOM small enough to scroll smoothly
+var FG_PAGE=150;
 
 // ── Generic JSONP loader (same pattern as loadPass) ──
 // FIX 5: extraParams promoted from implicit arguments[3] to a named 4th parameter.
@@ -2913,7 +3640,7 @@ function fgLoad(mode, onSuccess, onError, extraParams) {
   var cbName='fgCB_'+mode+'_'+Date.now();
   var script=document.createElement('script');
   var done=false;
-  var timeout=mode==='fg_pull'?600000:60000; // pull gets 10min, reads get 60s
+  var timeout=mode==='fg_pull'?600000:120000; // pull gets 10min, reads get 2min (GAS cold start)
 
   var timer=setTimeout(function(){
     if(done)return;done=true;cleanup();
@@ -3031,8 +3758,8 @@ function fgPollStatus(){
       });
       toast('FanGraphs pull complete! Loading data...');
       FG.contracts={hitters:null,pitchers:null,cache:{}};
-      FG.live={hitters:null,pitchers:null};
-      setTimeout(function(){fgsLoadData();fglLoadData();},1500);
+      FG.live={hitters:null,pitchers:null,cache:{}};
+      setTimeout(function(){fgsLoadData();fglLoadData();try{vfPopulateColSel('fg');}catch(e){}},1500);
     }else{
       clearInterval(FG_POLL_TIMER);FG_POLL_TIMER=null;
       FG.loading=false;
@@ -3057,445 +3784,1942 @@ function fgSetStatus(elId,msg,cls){
 
 // ══════════════════════════════════════════
 // FG CONTRACT STATS TAB (fgstats)
+// Mirrors Overview tab: contract cols left, FG stat cols right,
+// period group header row + stat name row, same filter/sort system.
 // ══════════════════════════════════════════
 
+// ── Period group visibility state (mirrors hGrps/pGrps/ovGrps) ──────────
+var fgsGrps={py:true,py1:false,py2:false,l2:false,l3:false,car:false};
+var fglYearFrom=new Date().getFullYear();
+var fglYearTo=new Date().getFullYear();
+var fglColHidden={};
+var fglFilters=[];  // [{col, min, max}]
+var fglCustomCols={h:[],p:[]};  // entries: 'TypeKey|colName'
+var FGL_CUSTOM_KEY='__custom_ldb__';
+var FGL_COL_LABELS={'sp_stuff':'fStuff+','sp_location':'fLoc+','sp_pitching':'fPitch+','pb_stuff':'botStuff+'};
+var FGL_QUAL_H=['PA','Team'];
+var FGL_QUAL_P=['G','GS','IP','Team'];
+var fgsCustomCols={h:[],p:[]};
+var FGS_CUSTOM_KEY='__custom__';
+var FGS_PERIODS=['py','py1','py2','l2','l3','car'];
+var FGS_PERIOD_LABELS={py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'Career'};
+var FGS_PERIOD_COLORS={py:'g-py',py1:'g-py1',py2:'g-py2',l2:'g-l2',l3:'g-l3',car:'g-car'};
+var FGS_WINDOW_MAP={py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'CAR'};
+
+function fgsToggleGrp(grp,btn){
+  fgsGrps[grp]=!fgsGrps[grp];
+  btn.classList.toggle('on',fgsGrps[grp]);
+  renderFgStats();
+  try{saveUserState();}catch(e){}
+}
+
+// ── Init / side / type controls ──────────────────────────────────────────
 function initFgStats(){
   fgsBuildTypeTabs();
-  fgsPopulateSeasons();
+  // Ensure vfState['fg'] exists
+  if(!vfState['fg'])vfState['fg']={filters:[],sortCol:-1,sortAsc:true,search:''};
+  vfPopulateColSel('fg');
   var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  if(FG.contracts.cache[cacheKey]){
-    fgsRender();
+  if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
+    renderFgStats();
   }else{
     fgsLoadData();
   }
 }
 
-function fgsLoadData(){
-  var wrap=document.getElementById('fgs-table-wrap');
-  if(wrap)wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading '+FG.fgs.type+'...</div>';
-  fgSetStatus('fgs-status','Loading '+FG.fgs.type+'...',null);
+function fgsSetSide(s){
+  FG.fgs.side=s;
+  if(FG.fgs.type!==FGS_CUSTOM_KEY)FG.fgs.type=(s==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES)[0].key;
+  FG.fgs.sortCol=-1;FG.fgs.sortAsc=true;FG.fgs.visibleCount=FG_PAGE;
+  document.getElementById('fgs-side-h').classList.toggle('on',s==='h');
+  document.getElementById('fgs-side-p').classList.toggle('on',s==='p');
+  fgsBuildTypeTabs();
+  vfPopulateColSel('fg');
+  rebuildColPanel('fg'); // cols change when side changes
+  fgsLoadData();
+  try{saveUserState();}catch(e){}
+}
 
-  var side=FG.fgs.side;
-  var typeKey=FG.fgs.type;
-  var cacheKey=side+'_'+typeKey;
-
-  // Check in-memory cache first
-  if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
-    fgsRender();
-    return;
-  }
-
-  fgLoad('fg_agg',function(data){
-    if(!data){
-      fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
-      if(wrap)wrap.innerHTML=fgsNoDataHTML();return;
-    }
-    if(data.status==='pull_running'){
-      var pct=data.pull_pct||0;
-      fgSetStatus('fgs-status','Pull in progress: '+pct+'% — this type not yet downloaded',null);
-      if(wrap)wrap.innerHTML=fgsPullProgressHTML(pct,data.pull_msg||'');
-      if(!FG.loading){FG.loading=true;fgStartPolling();}
-      return;
-    }
-    if(data.status==='no_data'){
-      fgSetStatus('fgs-status','No FanGraphs data yet. Click "Pull FanGraphs Data" to fetch.','err');
-      if(wrap)wrap.innerHTML=fgsNoDataHTML();return;
-    }
-    // Store in per-type cache — cap at 3 entries to bound memory usage.
-    // FIX (v5): Each cached type can be ~300-600 rows × 150 cols. Caching all
-    // 9 hitter + 12 pitcher types would hold ~15MB of JS objects indefinitely.
-    // LRU eviction: drop the oldest entry when cache exceeds 3 types.
-    if(!FG.contracts.cache)FG.contracts.cache={};
-    FG.contracts.cache[cacheKey]={
-      headers: data.headers||[],
-      rows:    data.rows||[],
-      isPartial: !!data.is_partial,
-      pulledAt: data.pulled_at||''
-    };
-    var cacheKeys=Object.keys(FG.contracts.cache);
-    if(cacheKeys.length>3){delete FG.contracts.cache[cacheKeys[0]];}
-    console.log('fgsLoadData: stored cache['+cacheKey+'] headers='+( data.headers&&data.headers.length)+' rows='+(data.rows&&data.rows.length));
-    FG.contracts.isPartial=!!data.is_partial;
-    if(data.pulled_at)FG.pulledAt=data.pulled_at;
-
-    if(data.is_partial){
-      fgSetStatus('fgs-status','Partial data: '+(data.pull_pct||0)+'% loaded — pull still running',null);
-      if(!FG.loading){FG.loading=true;fgStartPolling();}
+function fgsSetType(t){
+  FG.fgs.type=t;FG.fgs.sortCol=-1;FG.fgs.sortAsc=true;FG.fgs.visibleCount=FG_PAGE;
+  fgsBuildTypeTabs();
+  vfPopulateColSel('fg');
+  rebuildColPanel('fg');
+  if(t===FGS_CUSTOM_KEY){
+    renderFgStats(); // show contract cols immediately
+    fgsCustomEnsureData(function(){renderFgStats();}); // fill FG stats when ready
+  }else{
+    var cacheKey=FG.fgs.side+'_'+t;
+    if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
+      renderFgStats();
     }else{
-      var d=data.pulled_at?new Date(data.pulled_at):null;
-      fgSetStatus('fgs-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
+      fgsLoadData();
     }
-    fgsPopulateSeasons();
-    fgsRender();
-  },function(err){
-    fgSetStatus('fgs-status','Error: '+err,'err');
-    if(wrap)wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">⚠️</div><div class="fg-no-title">Load Error</div><div class="fg-no-sub">'+err+'</div></div>';
-  },{side:side,typeKey:typeKey});
-}
-
-function fgsNoDataHTML(){
-  return '<div class="fg-no-data">'
-    +'<div class="fg-no-icon">📊</div>'
-    +'<div class="fg-no-title">No FanGraphs Data</div>'
-    +'<div class="fg-no-sub">Click <strong>Pull FanGraphs Data</strong> to fetch all leaderboards.<br>'
-    +'Runs in the background (~20 min). Data appears automatically when complete.</div></div>';
-}
-
-function fgsPullProgressHTML(pct,msg){
-  return '<div class="fg-no-data">'
-    +'<div class="fg-no-icon">⏳</div>'
-    +'<div class="fg-no-title">Pull In Progress</div>'
-    +'<div class="fg-no-sub" style="margin-bottom:14px">'+pct+'% complete — '+(msg||'')+'<br>Data will appear automatically when the pull finishes.</div>'
-    +'<div style="background:var(--s3);border-radius:4px;height:6px;width:260px;margin:0 auto">'
-    +'<div style="background:var(--accent);border-radius:4px;height:6px;width:'+pct+'%;transition:width .5s"></div>'
-    +'</div></div>';
+  }
+  try{saveUserState();}catch(e){}
 }
 
 function fgsBuildTypeTabs(){
   var el=document.getElementById('fgs-type-tabs');if(!el)return;
   var types=FG.fgs.side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
-  el.innerHTML=types.map(function(t){
-    return '<button class="fg-type-btn'+(FG.fgs.type===t.key?' on':'')+'" onclick="fgsSetType(\''+t.key+'\')">'+t.label+'</button>';
+  var ck=FG.fgs.type===FGS_CUSTOM_KEY?' on':'';
+  var cb='<button class="fg-type-btn custom'+ck+'" onclick="fgsSetType(\''+FGS_CUSTOM_KEY+'\')">&#9733; Custom</button>';
+  el.innerHTML=cb+types.map(function(t){
+    return '<button class="fg-type-btn'+(FG.fgs.type===t.key?' on':'')
+      +'" onclick="fgsSetType(\''+t.key+'\')">'+t.label+'</button>';
   }).join('');
 }
 
-function fgsSetSide(s){
-  FG.fgs.side=s;FG.fgs.type=(s==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES)[0].key;
-  FG.fgs.sortCol=0;FG.fgs.sortAsc=true;
-  document.getElementById('fgs-side-h').classList.toggle('on',s==='h');
-  document.getElementById('fgs-side-p').classList.toggle('on',s==='p');
-  fgsBuildTypeTabs();fgsPopulateSeasons();
-  fgsLoadData(); // fetch this side+type
-}
+// ── Data loading ──────────────────────────────────────────────────────────
+// Always use fg_contracts (raw season data) + client-side fgsComputeAgg.
+// The GAS-built fg_agg file has one row per player (highest PY only) and cannot
+// correctly serve multi-contract players — so we skip it entirely.
+function fgsLoadData(){
+  var wrap=document.getElementById('b-fgs');
+  if(wrap)wrap.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)"><div class="fg-spinner" style="margin:0 auto 12px"></div>Loading '+FG.fgs.type+'...</td></tr>';
 
-function fgsSetType(t){
-  FG.fgs.type=t;FG.fgs.sortCol=0;FG.fgs.sortAsc=true;
-  fgsBuildTypeTabs();
-  fgsLoadData(); // fetch new type (may already be cached)
-}
+  var side=FG.fgs.side;
+  var typeKey=FG.fgs.type;
+  var cacheKey=side+'_'+typeKey;
 
-function fgsPopulateSeasons(){
-  var sel=document.getElementById('fgs-season');if(!sel)return;
-  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  var cached=FG.contracts.cache[cacheKey];
-  if(!cached||!cached.headers||!cached.rows)return;
-  var seasonIdx=cached.headers.indexOf('season');
-  if(seasonIdx<0)return;
-  var seasons={};
-  cached.rows.forEach(function(r){var s=r[seasonIdx];if(s)seasons[s]=true;});
-  var sorted=Object.keys(seasons).map(Number).sort(function(a,b){return b-a;});
-  var cur=sel.value;
-  sel.innerHTML='<option value="all">All Seasons</option>';
-  sorted.forEach(function(y){
-    var o=document.createElement('option');o.value=String(y);o.textContent=String(y);sel.appendChild(o);
-  });
-  sel.value=cur&&seasons[String(cur)]?cur:'all';
-}
-
-function fgsGetVisibleCols(headers,typeKey){
-  // Return indices of columns that belong to this type (prefixed) + always-show identity cols
-  var IDENTITY=['playerid','PlayerName','season','Team'];
-  var prefix=typeKey+'_';
-  var result=[];
-  var identityDone={};
-  headers.forEach(function(h,i){
-    if(IDENTITY.indexOf(h)>=0&&!identityDone[h]){result.push(i);identityDone[h]=true;}
-    else if(h.indexOf(prefix)===0){result.push(i);}
-  });
-  return result;
-}
-
-function fgsColLabel(h,typeKey){
-  var prefix=typeKey+'_';
-  if(h.indexOf(prefix)===0)return h.slice(prefix.length);
-  return h;
-}
-
-function fgsRender(){
-  var wrap=document.getElementById('fgs-table-wrap');if(!wrap)return;
-  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  var cached=FG.contracts.cache[cacheKey];
-
-  if(!cached){
-    wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading '+FG.fgs.type+'...</div>';
-    return;
+  if(FG.contracts.cache&&FG.contracts.cache[cacheKey]){
+    renderFgStats();return;
   }
 
-  var headers=cached.headers;
-  var rows=cached.rows;
-  var windows=cached.windows||['PY','PY-1','PY-2','L2','L3','CAR'];
+  fgSetStatus('fgs-status','Loading '+typeKey+'...',null);
+
+  // Always load from fg_contracts (raw per-season rows) so we can aggregate
+  // per (player, PY) pair correctly — the pre-built fg_agg is not used.
+  fgLoad('fg_contracts',function(ctData){
+    if(!ctData||ctData.status==='no_data'||!ctData.rows||!ctData.rows.length){
+      // fg_contracts empty — try fg_agg as last resort (accepts stale data)
+      fgLoad('fg_agg',function(aggData){
+        if(aggData&&aggData.status==='ok'&&aggData.rows&&aggData.rows.length){
+          fgsStoreAndRender(side,typeKey,aggData);
+        }else if(aggData&&aggData.status==='pull_running'){
+          var pct=aggData.pull_pct||0;
+          fgSetStatus('fgs-status','Pull in progress: '+pct+'%',null);
+          if(wrap)wrap.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px">'+fgsPullProgressHTML(pct,aggData.pull_msg||'')+'</td></tr>';
+          if(!FG.loading){FG.loading=true;fgStartPolling();}
+        }else{
+          fgSetStatus('fgs-status','No FanGraphs data — click Pull FanGraphs Data.','err');
+          if(wrap)wrap.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">'+fgsNoDataHTML()+'</td></tr>';
+        }
+      },function(err){
+        fgSetStatus('fgs-status','No FanGraphs data — click Pull FanGraphs Data.','err');
+        if(wrap)wrap.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">'+fgsNoDataHTML()+'</td></tr>';
+      },{side:side,typeKey:typeKey});
+      return;
+    }
+    if(ctData.status==='pull_running'){
+      var pct2=ctData.pull_pct||0;
+      fgSetStatus('fgs-status','Pull in progress: '+pct2+'%',null);
+      if(wrap)wrap.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px">'+fgsPullProgressHTML(pct2,'')+'</td></tr>';
+      if(!FG.loading){FG.loading=true;fgStartPolling();}
+      return;
+    }
+    // Compute aggregation client-side — one row per (player, PY) pair
+    var aggData=fgsComputeAgg(side,typeKey,ctData);
+    fgsStoreAndRender(side,typeKey,aggData);
+  },function(err){
+    fgSetStatus('fgs-status','Error: '+err,'err');
+    if(wrap)wrap.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--red)">Load error: '+err+'</td></tr>';
+  },{side:side,typeKey:typeKey});
+}
+
+function fgsStoreAndRender(side,typeKey,data){
+  var cacheKey=side+'_'+typeKey;
+  if(!FG.contracts.cache)FG.contracts.cache={};
+  FG.contracts.cache[cacheKey]={
+    headers:  data.headers||[],
+    rows:     data.rows||[],
+    windows:  data.windows||['PY','PY-1','PY-2','L2','L3','CAR'],
+    stat_cols:data.stat_cols||[],
+    isPartial:!!data.is_partial,
+    pulledAt: data.pulled_at||''
+  };
+  var cks=Object.keys(FG.contracts.cache);
+  if(cks.length>20)delete FG.contracts.cache[cks[0]];
+
+  FG.contracts.isPartial=!!data.is_partial;
+  if(data.pulled_at)FG.pulledAt=data.pulled_at;
+  if(data.is_partial){
+    fgSetStatus('fgs-status','Partial data: '+(data.pull_pct||0)+'% loaded — pull running',null);
+    if(!FG.loading){FG.loading=true;fgStartPolling();}
+  }else{
+    var d=data.pulled_at?new Date(data.pulled_at):null;
+    fgSetStatus('fgs-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
+  }
+  vfPopulateColSel('fg');
+  renderFgStats();
+}
+
+// ── Client-side aggregation from fg_contracts raw season data ─────────────
+// Mirrors _buildAggFile in GAS but runs in the browser.
+// ctData = {headers:[...], rows:[[...], ...]} — all seasons for contract players
+// Each row has headers like: playerid, season, PlayerName, Team, Standard_PA, ...
+function fgsComputeAgg(side,typeKey,ctData){
+  var WINDOWS=['PY','PY-1','PY-2','L2','L3','CAR'];
   var CONTRACT_COLS=['Player','pPos','SigTm','GUAR','GUAR AAV','PY','FY'];
-  var nContract=CONTRACT_COLS.length;
+  var headers=ctData.headers||[];
+  var rows=ctData.rows||[];
 
-  if(!headers||!headers.length){
-    wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">⏳</div>'
-      +'<div class="fg-no-title">Type not yet downloaded</div>'
-      +'<div class="fg-no-sub">This stat type will appear as the pull progresses.</div></div>';
+  // Column indices in raw data
+  var pidIdx=headers.indexOf('playerid');
+  var seasIdx=headers.indexOf('season');
+  var nameIdx=headers.indexOf('PlayerName');
+  if(pidIdx<0||seasIdx<0){
+    console.warn('fgsComputeAgg: missing playerid/season in headers',headers.slice(0,10));
+    return{headers:[],rows:[],windows:WINDOWS,stat_cols:[],status:'error'};
+  }
+
+  // Stat columns: prefixed with typeKey+'_', excluding identity cols
+  var IDENTITY={playerid:1,season:1,PlayerName:1,Team:1,xMLBAMID:1};
+  var prefix=typeKey+'_';
+  var statIdxs=[],statCols=[];
+  headers.forEach(function(h,i){
+    if(IDENTITY[h])return;
+    if(h.indexOf(prefix)===0){
+      statIdxs.push(i);
+      statCols.push(h.slice(prefix.length));
+    }
+  });
+
+  // Filter to spec cols
+  var spec=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||statCols;
+  var specSet={};spec.forEach(function(c){specSet[c]=1;});
+  var filtStatIdxs=[],filtStatCols=[];
+  statIdxs.forEach(function(si,ii){
+    if(specSet[statCols[ii]]){filtStatIdxs.push(si);filtStatCols.push(statCols[ii]);}
+  });
+  if(!filtStatIdxs.length){filtStatIdxs=statIdxs;filtStatCols=statCols;}
+
+  // Weight col: PA for hitters, TBF/IP for pitchers
+  var wgtCol=side==='h'
+    ?headers.indexOf(prefix+'PA')
+    :(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf(prefix+'IP'));
+
+  // Count stat suffixes
+  var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
+    '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
+    '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
+    '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
+    '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches',
+    '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard'];
+  function isCount(col){
+    for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;
+    return false;
+  }
+
+  // ── Build indexes: PY-first approach ─────────────────────────────────────
+  // Index 1: year → fgId → row  (primary: scope by season first, confirm by ID)
+  // Index 2: year → normName → row  (fallback: scope by season, match by name)
+  // Index 3: fgId → {year → row}  (secondary fallback: old behaviour, ID-first)
+  var seasonsByYearId={};   // [year][fgId] = row
+  var seasonsByYearName={}; // [year][normName] = row
+  var playerSeasons={};     // [fgId][year] = row  (kept as tertiary fallback)
+
+  rows.forEach(function(r){
+    var pid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+    var yr=parseInt(r[seasIdx])||0;
+    if(!pid||!yr)return;
+
+    // Index 3 (fgId-first, legacy)
+    if(!playerSeasons[pid])playerSeasons[pid]={};
+    playerSeasons[pid][yr]=r;
+
+    // Index 1 (year-first by fgId)
+    if(!seasonsByYearId[yr])seasonsByYearId[yr]={};
+    seasonsByYearId[yr][pid]=r;
+
+    // Index 2 (year-first by name)
+    if(nameIdx>=0){
+      var nm=normName(String(r[nameIdx]||''));
+      if(nm){
+        if(!seasonsByYearName[yr])seasonsByYearName[yr]={};
+        seasonsByYearName[yr][nm]=r;
+      }
+    }
+  });
+
+  console.log('fgsComputeAgg: '+Object.keys(playerSeasons).length+' unique playerids, '+filtStatCols.length+' stat cols for '+typeKey);
+
+  // Get contract players from DB.merged — one entry per (fgId, PY) pair
+  var isHit=side==='h';
+  var contractPlayers={};  // key: fgId+'|'+py → player object
+  DB.merged.forEach(function(p){
+    if(!p.sheetTab)return;
+    if(p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')<0)return;
+    var fgId=String((p._rawRow&&p._rawRow['Fangraphs_Id'])||p._rawRow&&p._rawRow['Fangraphs_Id_0']||'').replace(/\.0+$/,'').trim();
+    var py=parseInt(p.py)||0;
+    if(!py)return;
+    var key=(fgId||normName(p.name))+'|'+py;
+    if(!contractPlayers[key])contractPlayers[key]=p;
+  });
+
+  console.log('fgsComputeAgg: '+Object.keys(contractPlayers).length+' contract players');
+
+  // ── Helper: resolve season data for a contract player ─────────────────────
+  // Strategy (PY-first):
+  //   1. Look up year pool via PY, then confirm by FgID within that year
+  //   2. If FgID misses, match by normName within that year
+  //   3. Tertiary fallback: FgID-first across all years (old behavior)
+  function resolveSeasons(p, fgId){
+    var py=parseInt(p.py)||0;
+    var nm=normName(p.name);
+
+    // Build the seasons map for this player using PY-first resolution
+    // We need ALL years for the windows (PY, PY-1, PY-2, L2, L3, CAR)
+    // So we resolve per-year: for each year we need, find the right row.
+    // First, establish which playerid owns this contract by checking PY year.
+
+    // Step 1: Try PY year → FgID
+    var confirmedPid=null;
+    if(fgId&&seasonsByYearId[py]&&seasonsByYearId[py][fgId]){
+      confirmedPid=fgId;
+    }
+    // Step 2: Try PY year → normName
+    if(!confirmedPid&&seasonsByYearName[py]&&seasonsByYearName[py][nm]){
+      // Find what playerid this name belongs to in the PY year
+      var matchRow=seasonsByYearName[py][nm];
+      var matchPid=String(matchRow[pidIdx]||'').replace(/\.0+$/,'').trim();
+      if(matchPid)confirmedPid=matchPid;
+    }
+    // Step 3: Tertiary — FgID-first fallback (any year)
+    if(!confirmedPid&&fgId&&playerSeasons[fgId]){
+      confirmedPid=fgId;
+    }
+    // Step 4: Name-first fallback across all years
+    if(!confirmedPid){
+      Object.keys(seasonsByYearName).forEach(function(yr){
+        if(confirmedPid)return;
+        if(seasonsByYearName[yr][nm]){
+          var r2=seasonsByYearName[yr][nm];
+          var pid2=String(r2[pidIdx]||'').replace(/\.0+$/,'').trim();
+          if(pid2)confirmedPid=pid2;
+        }
+      });
+    }
+
+    return confirmedPid?playerSeasons[confirmedPid]:null;
+  }
+
+  // Build output headers
+  var outHeaders=CONTRACT_COLS.slice();
+  WINDOWS.forEach(function(w){filtStatCols.forEach(function(c){outHeaders.push(w+'_'+c);});});
+
+  var outRows=[];
+  Object.keys(contractPlayers).forEach(function(key){
+    var p=contractPlayers[key];
+    var keyParts=key.split('|');
+    var fgId=keyParts[0];
+
+    var seasons=resolveSeasons(p, fgId);
+    if(!seasons)return;
+
+    var py=parseInt(p.py)||0;
+    if(!py)return;
+
+    var windowYears={
+      'PY':[py],'PY-1':[py-1],'PY-2':[py-2],
+      'L2':[py,py-1],'L3':[py,py-1,py-2],'CAR':[]
+    };
+    Object.keys(seasons).forEach(function(yr){
+      if(parseInt(yr)<=py)windowYears['CAR'].push(parseInt(yr));
+    });
+
+    var row=[
+      p.name||'',p.pPos||'',p.sigTm||'',
+      p.guar||'',p.guarAav||'',p.py||'',p.fy||''
+    ];
+
+    WINDOWS.forEach(function(w){
+      var yrs=windowYears[w];
+      var validRows=yrs.map(function(y){return seasons[y];}).filter(Boolean);
+      filtStatIdxs.forEach(function(si,ii){
+        var col=filtStatCols[ii];
+        if(!validRows.length){row.push('');return;}
+        var fullCol=prefix+col;
+        if(isCount(fullCol)){
+          var sum=0,hasVal=false;
+          validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
+          row.push(hasVal&&validRows.length===yrs.length?String(Math.round(sum*1000)/1000):'');
+        }else{
+          if(wgtCol>=0){
+            var sw=0,sv2=0;
+            validRows.forEach(function(r){var w2=parseFloat(r[wgtCol]),v=parseFloat(r[si]);if(!isNaN(w2)&&!isNaN(v)){sw+=w2;sv2+=v*w2;}});
+            row.push(sw>0?String(Math.round((sv2/sw)*10000)/10000):'');
+          }else{
+            var vals=validRows.map(function(r){return parseFloat(r[si]);}).filter(function(v){return!isNaN(v);});
+            row.push(vals.length?String(Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10000)/10000):'');
+          }
+        }
+      });
+    });
+    outRows.push(row);
+  });
+
+  console.log('fgsComputeAgg: '+outRows.length+' output rows');
+
+  return{
+    headers:outHeaders,rows:outRows,
+    windows:WINDOWS,stat_cols:filtStatCols,
+    status:'ok',is_partial:false,pulled_at:FG.pulledAt||''
+  };
+}
+
+// ── Core render ───────────────────────────────────────────────────────────
+// Builds a table that mirrors the Overview tab:
+// • Left section: contract columns from DB.merged (same as Overview)
+// • Right section: FG stat columns per active period group
+// Join key: player.fgId (from sheet) → agg row's Player name (from fg_agg file)
+// The fg_agg file has CONTRACT_COLS=['Player','pPos','SigTm','GUAR','GUAR AAV','PY','FY']
+// as its first 7 columns, then window_stat columns.
+function renderFgStats(){
+  if(!vfState['fg'])vfState['fg']={filters:[],sortCol:-1,sortAsc:true,search:''};
+
+  var side=FG.fgs.side;
+  var typeKey=FG.fgs.type;
+  var cacheKey=side+'_'+typeKey;
+  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+
+  var headEl=document.getElementById('fgs-head');
+  var bodyEl=document.getElementById('b-fgs');
+  var moreEl=document.getElementById('fgs-more-bar');
+  if(!headEl||!bodyEl)return;
+
+  // Custom tab always renders contract cols — no FG data needed
+  if(typeKey!==FGS_CUSTOM_KEY&&(!cached||!cached.headers||!cached.headers.length)){
+    headEl.innerHTML='';
+    bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">'
+      +(FG.contracts.isPartial?'<div class="fg-spinner" style="margin:0 auto 12px"></div>Loading '+typeKey+'...'
+        :'No data — click Pull FanGraphs Data')+'</td></tr>';
     return;
   }
 
-  // Search
-  var searchEl=document.getElementById('fgs-search');
-  var srch=searchEl?searchEl.value.toLowerCase():'';
-  var filteredRows=rows.filter(function(r){
-    if(srch&&String(r[0]||'').toLowerCase().indexOf(srch)<0)return false;
-    return true;
+  // ── Map fg_agg data for fast lookup ──────────────────────────────────
+  // Key: normName(player)+'|'+PY  — ensures each (player, PY) pair gets its own row.
+  // PY is stored at agg row index 5 (CONTRACT_AGG = ['Player','pPos','SigTm','GUAR','GUAR AAV','PY','FY'])
+  var aggHeaders=cached?cached.headers:[];
+  var aggWindows=cached?(cached.windows||['PY','PY-1','PY-2','L2','L3','CAR']):['PY','PY-1','PY-2','L2','L3','CAR'];
+  var aggStatCols=cached?(cached.stat_cols||[]):[];
+  var CONTRACT_AGG=['Player','pPos','SigTm','GUAR','GUAR AAV','PY','FY'];
+  var nAgg=CONTRACT_AGG.length;
+  var nStatCols=aggStatCols.length;
+
+  var aggByName={};      // primary:   normName|PY → row  (for multi-contract players)
+  var aggByNameOnly={};  // secondary: normName    → row  (fallback for GAS-built fg_agg files
+                         //            where PY in the agg may not match the contract PY)
+  if(cached)(cached.rows||[]).forEach(function(r){
+    var raw=String(r[0]||'');
+    var py=String(r[5]||'').replace(/\.0+$/,'').trim();
+    var nm=normName(raw);
+    if(nm){
+      aggByName[nm+'|'+py]=r;
+      // Name-only: keep highest PY row (last write wins if same name, multiple PYs)
+      aggByNameOnly[nm]=r;
+    }
+    var rev=normName(fgToLastFirst(raw));
+    if(rev&&rev!==nm){
+      aggByName[rev+'|'+py]=r;
+      aggByNameOnly[rev]=r;
+    }
+    if(raw.indexOf(',')>=0){
+      var parts=raw.split(',');
+      var fl=normName((parts[1]||'').trim()+' '+(parts[0]||'').trim());
+      if(fl&&fl!==nm){
+        aggByName[fl+'|'+py]=r;
+        aggByNameOnly[fl]=r;
+      }
+    }
   });
 
-  // Sort
+  // Helper: look up an agg row for a contract player.
+  // Tries name|PY first (correct for multi-contract players after v8.32+),
+  // falls back to name-only for GAS-built fg_agg files (one row per player, PY may differ).
+  function getAggRow(p){
+    var py=String(p.py||'').replace(/\.0+$/,'').trim();
+    var nm=normName(p.name);
+    var nmRev=normName(fgToLastFirst(p.name));
+    return aggByName[nm+'|'+py]||aggByName[nmRev+'|'+py]
+        ||aggByNameOnly[nm]||aggByNameOnly[nmRev]
+        ||null;
+  }
+
+  // Log first few matches for diagnostics
+  var samplePlayers=DB.merged.filter(function(p){
+    return p.sheetTab&&p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
+  }).slice(0,3);
+  samplePlayers.forEach(function(p){
+    var nm=normName(p.name);var nm2=normName(fgToLastFirst(p.name));
+    console.log('Join check: "'+p.name+'" → found='+(!!aggByName[nm]||!!aggByName[nm2]));
+  });
+  console.log('aggByName keys (first 5):',Object.keys(aggByName).slice(0,5));
+  console.log('DB.merged sample normNames:',samplePlayers.map(function(p){return normName(p.name);}));
+
+  // ── Determine which FG columns to show for this type ─────────────────────
+  var statIdxMap={};  // colName -> index in its type cache
+  var statTypeMap={}; // colName -> typeKey
+  var visCols=[];
+  if(typeKey===FGS_CUSTOM_KEY){
+    var allTypes=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+    allTypes.forEach(function(t){
+      var ck2=side+'_'+t.key;
+      var tc=FG.contracts.cache&&FG.contracts.cache[ck2];
+      if(!tc||!tc.stat_cols)return;
+      tc.stat_cols.forEach(function(col,i){
+        if(statIdxMap[col]===undefined){statIdxMap[col]=i;statTypeMap[col]=t.key;}
+      });
+    });
+    var seen={};
+    (fgsCustomCols[side]||[]).forEach(function(entry){
+      var col=entry.split('|')[1];
+      if(col&&!seen[col]){seen[col]=true;visCols.push(col);}
+    });
+  }else{
+    var colSpec=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||aggStatCols;
+    aggStatCols.forEach(function(col,i){statIdxMap[col]=i;statTypeMap[col]=typeKey;});
+    visCols=colSpec.length?colSpec:aggStatCols.slice(0,20);
+  }
+
+  // Window index map: 'PY'→0, 'PY-1'→1, etc.
+  var winIdxMap={};
+  aggWindows.forEach(function(w,i){winIdxMap[w]=i;});
+
+  // ── Get contract players (same filter logic as buildViewTable) ────────
+  var isHit=side==='h';
+  var allPlayers=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
+  });
+
+  // All contract players shown — FG stat cells show '—' when no FG data available
+  var activePer=Object.keys(fgsGrps).find(function(k){return fgsGrps[k];})||'py';
+  var players=allPlayers;
+
+  // Apply vfState['fg'] filters — contract cols use DB.merged, FG cols use aggByName
+  players=players.filter(function(p){
+    return vfState['fg'].filters.every(function(f){
+      // Contract columns: use existing vfGetVal logic
+      var contractCols=isHit?H_CONTRACT:P_CONTRACT;
+      if(contractCols.indexOf(f.col)>=0){
+        var v=vfGetVal(p,f.col,f.per||activePer);
+        return vfTestFilter(f,v);
+      }
+      // FG stat columns: read from agg row
+      var aggRow=getAggRow(p);
+      if(!aggRow)return true;
+      var per=f.per||activePer;
+      var winKey=FGS_WINDOW_MAP[per]||'PY';
+      var wi=winIdxMap[winKey];
+      if(wi===undefined)return true;
+      var si=statIdxMap[f.col];
+      if(si===undefined)return true;
+      var cellIdx=nAgg+wi*nStatCols+si;
+      var val=aggRow[cellIdx];
+      return vfTestFilter(f,val);
+    });
+  });
+
+  // Apply search
+  var srch=vfState['fg'].search||'';
+  if(srch)players=players.filter(function(p){
+    return(p.name||'').toLowerCase().indexOf(srch)>=0||
+           (p.pPos||'').toLowerCase().indexOf(srch)>=0||
+           (p.sigTm||'').toLowerCase().indexOf(srch)>=0;
+  });
+
+  // Update count + filter chips
+  var countEl=document.getElementById('vf-count-fg');
+  if(countEl)countEl.textContent=players.length+' / '+allPlayers.length+' players';
+  var clearBtn=document.getElementById('vf-clear-fg');
+  if(clearBtn)clearBtn.style.display=vfState['fg'].filters.length?'':'none';
+  vfRenderChips('fg');
+
+  // ── Summary tiles (mirrors Static Overview) ──────────────────────────
+  (function(){
+    var totalGuar=players.reduce(function(a,p){return a+(p.guar||0);},0);
+    var totalAav=players.reduce(function(a,p){return a+(p.aav||0);},0);
+    var ages=players.map(function(p){return p.sigAge||0;}).filter(function(a){return a>0;});
+    var avgAge=ages.length?ages.reduce(function(a,b){return a+b;},0)/ages.length:0;
+    var terms=players.map(function(p){return p.term||0;}).filter(function(t){return t>0;});
+    var avgTerm=terms.length?terms.reduce(function(a,b){return a+b;},0)/terms.length:0;
+    var kn=document.getElementById('fgs-k-n');
+    var kg=document.getElementById('fgs-k-guar');
+    var ka=document.getElementById('fgs-k-aav');
+    var kt=document.getElementById('fgs-k-term');
+    var kag=document.getElementById('fgs-k-age');
+    if(kn)kn.textContent=players.length+(players.length!==allPlayers.length?' / '+allPlayers.length:'');
+    if(kg)kg.textContent='$'+(totalGuar>=1000?(totalGuar/1000).toFixed(1)+'B':totalGuar.toFixed(0)+'M');
+    if(ka)ka.textContent='$'+(players.length?(totalAav/players.length).toFixed(1):'0')+'M';
+    if(kt)kt.textContent=avgTerm?avgTerm.toFixed(1):'—';
+    if(kag)kag.textContent=avgAge?avgAge.toFixed(1):'—';
+    // Position breakdown
+    try{renderFgsPosChart(players);}catch(e){}
+    // FG Correlations
+    try{renderFgCorr();}catch(e){}
+  })();
+
+  // ── Build header rows (same 2-row pattern as Overview) ───────────────
+  var contractCols=isHit?H_CONTRACT:P_CONTRACT;
+  // On Custom tab: if no contract visibility prefs set yet, default to the standard subset
+  var FGS_CUSTOM_CONTRACT_DEFAULTS=['Player','PY','pPos','FY','FY Age','Term','GUAR AAV','GUAR','Code','CAR MLS-PY'];
+  if(typeKey===FGS_CUSTOM_KEY){
+    var hasAnyContractPref=contractCols.some(function(col){return('contract_'+col) in fgColHidden;});
+    if(!hasAnyContractPref){
+      contractCols.forEach(function(col){
+        if(FGS_CUSTOM_CONTRACT_DEFAULTS.indexOf(col)<0)fgColHidden['contract_'+col]=true;
+      });
+    }
+  }
+  var visContractCols=contractCols.filter(function(col){return!fgColHidden['contract_'+col];});
+  var row1='<tr>'+(visContractCols.length?'<th colspan="'+visContractCols.length+'" class="grp-hdr g-contract">Contract Info</th>':'');
+  var row2='<tr>';
+  visContractCols.forEach(function(col,ci){
+    var cls=ci===sc?(sa?'fg-asc':'fg-desc'):'';
+    row2+='<th class="'+cls+'" onclick="fgsSortByCol('+ci+')" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#66bb6a;padding:5px 8px;cursor:pointer;white-space:nowrap">'+col+'</th>';
+  });
+
+  var colOffset=visContractCols.length;
+  // Build flat list of visible (period, col) pairs for sort index tracking
+  var flatCols=[]; // [{per, col, colIdx}]
+  FGS_PERIODS.forEach(function(per){
+    if(!fgsGrps[per])return;
+    var cls=FGS_PERIOD_COLORS[per];
+    // Filter visCols by fgColHidden for this period
+    var visibleCols=visCols.filter(function(col){
+      if(typeKey===FGS_CUSTOM_KEY){
+        var ct=statTypeMap[col]||typeKey;
+        return!fgColHidden['custom_'+ct+'_'+col];
+      }
+      return!fgColHidden[colKey(per,col)];
+    });
+    if(!visibleCols.length)return;
+    row1+='<th colspan="'+visibleCols.length+'" class="grp-hdr '+cls+'">'+FGS_PERIOD_LABELS[per]+'</th>';
+    visibleCols.forEach(function(col,si){
+      var isFirst=si===0;
+      var ci2=colOffset+flatCols.length;
+      var sortCls=ci2===sc?(sa?'fg-asc':'fg-desc'):'';
+      var colLbl2=FGL_COL_LABELS[col]||col;
+      row2+='<th class="'+(isFirst?cls+' ':'')+sortCls+'" onclick="fgsSortByCol('+ci2+')" style="font-size:9px;white-space:nowrap;'+(isFirst?'border-left-width:2px':'')+'">'+colLbl2+'</th>';
+      flatCols.push({per:per,col:col});
+    });
+  });
+  row1+='<th></th></tr>';row2+='<th style="width:100%"></th></tr>';
+
+  // ── Sort ──────────────────────────────────────────────────────────────
   var sc=FG.fgs.sortCol,sa=FG.fgs.sortAsc;
-  if(sc>=0&&sc<headers.length){
-    filteredRows=filteredRows.slice().sort(function(a,b){
-      var av=a[sc],bv=b[sc];
+  if(sc>=0){
+    players=players.slice().sort(function(a,b){
+      var av=fgsGetSortVal(a,sc,isHit,visContractCols,aggByName,winIdxMap,nAgg,nStatCols,statIdxMap,aggWindows,fgsGrps,FGS_WINDOW_MAP,visCols);
+      var bv=fgsGetSortVal(b,sc,isHit,visContractCols,aggByName,winIdxMap,nAgg,nStatCols,statIdxMap,aggWindows,fgsGrps,FGS_WINDOW_MAP,visCols);
+      var aE=av===''||av===null||av===undefined||av==='—'||av==='-';
+      var bE=bv===''||bv===null||bv===undefined||bv==='—'||bv==='-';
+      if(aE&&bE)return 0; if(aE)return 1; if(bE)return -1;
       var an=parseFloat(av),bn=parseFloat(bv);
       if(!isNaN(an)&&!isNaN(bn))return sa?an-bn:bn-an;
       return sa?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
     });
   }
 
-  // KPIs
-  fgsRenderKpis(filteredRows,headers,[0,1,2,3,4,5,6]);
+  // ── Build body rows ────────────────────────────────────────────────────
+  var vc=FG.fgs.visibleCount||FG_PAGE;
+  var pagePlayers=players.slice(0,vc);
+  var dollarCols=['Pot IB','Pot OB'];
+  var statFmtCols=['MLSsig','CAR MLS-PY'];
 
-  // Build two-row header: window group row + stat col row
-  // Contract cols span 1 row each (rowspan=2), window groups span N stat cols
-  var statColCount=cached.stat_cols?cached.stat_cols.length:Math.floor((headers.length-nContract)/windows.length);
-  var WINDOW_COLORS={'PY':'var(--accent)','PY-1':'#6c9bd1','PY-2':'#8ab4f8','L2':'#f0a500','L3':'#e8842c','CAR':'#7cb87c'};
+  var tbody=pagePlayers.map(function(p){
+    var row=p._rawRow||{};
+    var aggRow=getAggRow(p);
+    var cells='';
 
-  var th1=CONTRACT_COLS.map(function(lbl,ci){
-    return '<th rowspan="2" class="fg-ct-col'+(ci===FG.fgs.sortCol?(sa?' fg-asc':' fg-desc'):'')+'" onclick="fgsSortBy('+ci+')">'+lbl+'</th>';
-  }).join('');
-  windows.forEach(function(w,wi){
-    var startCol=nContract+wi*statColCount;
-    var color=WINDOW_COLORS[w]||'var(--dim)';
-    th1+='<th colspan="'+statColCount+'" style="background:'+color+';color:#fff;text-align:center;font-size:10px;letter-spacing:1px;padding:3px 6px">'+w+'</th>';
-  });
+    // Contract cells — identical to buildOvTable
+    var cv={
+      'Player':p.purpleName?'<span style="color:#ce93d8">'+p.name+'</span>':p.name,
+      'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+      'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
+      'Term':p.term,'AAV':fDollar(p.aav),'GUAR AAV':fDollar(p.guarAav),'GUAR':fDollar(p.guar)
+    };
+    visContractCols.forEach(function(col){
+      var v=cv[col]!==undefined?cv[col]:(row[col+'_0']!==undefined&&row[col+'_0']!==''?row[col+'_0']:row[col]||'');
+      if(dollarCols.indexOf(col)>=0&&v!==''&&v!=='—')v=fDollarRaw(parseFloat(v));
+      if(statFmtCols.indexOf(col)>=0&&v!==''&&!isNaN(parseFloat(v)))v=fStat(parseFloat(v));
+      cells+='<td style="white-space:nowrap;padding:4px 8px;font-size:11px">'+(v!==null&&v!==undefined&&v!==''?v:'—')+'</td>';
+    });
 
-  var th2='';
-  windows.forEach(function(w,wi){
-    for(var s=0;s<statColCount;s++){
-      var ci=nContract+wi*statColCount+s;
-      var lbl=cached.stat_cols?cached.stat_cols[s]:(headers[ci]||'');
-      var cls=ci===sc?(sa?' fg-asc':' fg-desc'):'';
-      th2+='<th class="'+cls+'" onclick="fgsSortBy('+ci+')" style="font-size:9px;white-space:nowrap">'+lbl+'</th>';
-    }
-  });
-
-  var tbHTML=filteredRows.map(function(r){
-    return '<tr>'+r.map(function(v,ci){
-      var disp=v!==undefined&&v!==''?v:'—';
-      // Format numbers
-      if(ci>=nContract){
-        var n=parseFloat(v);
-        if(!isNaN(n)){
-          disp=n%1===0?String(Math.round(n)):(Math.abs(n)<10?n.toFixed(3):Math.abs(n)<100?n.toFixed(2):String(Math.round(n)));
+    // FG stat cells
+    flatCols.forEach(function(fc,fci){
+      var isFirst=fci===0||flatCols[fci-1].per!==fc.per;
+      var cls=FGS_PERIOD_COLORS[fc.per];
+      var v='—';
+      var winKey=FGS_WINDOW_MAP[fc.per];
+      var wi=winIdxMap[winKey];
+      var si=statIdxMap[fc.col];
+      if(wi!==undefined&&si!==undefined){
+        var raw;
+        if(typeKey===FGS_CUSTOM_KEY){
+          var colType=statTypeMap[fc.col];
+          var typeCk=side+'_'+colType;
+          var typeCache=FG.contracts.cache&&FG.contracts.cache[typeCk];
+          if(typeCache){
+            if(!typeCache._aggByName){
+              typeCache._aggByName={};
+              typeCache.rows.forEach(function(r){
+                var rName=normName(String(r[0]||''));
+                var rPy=String(r[5]||'').replace(/\.0+$/,'').trim();
+                var rKey=rName+'|'+rPy;
+                typeCache._aggByName[rKey]=r;
+                var rRev=normName(fgToLastFirst(String(r[0]||'')));
+                if(rRev&&rRev!==rName)typeCache._aggByName[rRev+'|'+rPy]=r;
+              });
+            }
+            var typePy=String(p.py||'').replace(/\.0+$/,'').trim();
+            var typeRow=typeCache._aggByName[normName(p.name)+'|'+typePy]
+              ||typeCache._aggByName[normName(fgToLastFirst(p.name))+'|'+typePy];
+            if(typeRow){
+              var typeWins=typeCache.windows||['PY','PY-1','PY-2','L2','L3','CAR'];
+              var typeWinIdx={};typeWins.forEach(function(w,i){typeWinIdx[w]=i;});
+              var twi=typeWinIdx[winKey];
+              var tsc=typeCache.stat_cols?typeCache.stat_cols.length:Math.round((typeRow.length-7)/typeWins.length);
+              var tsi=typeCache.stat_cols?typeCache.stat_cols.indexOf(fc.col):si;
+              if(twi!==undefined&&tsi>=0)raw=typeRow[7+twi*tsc+tsi];
+            }
+          }
+        }else if(aggRow){
+          raw=aggRow[nAgg+wi*nStatCols+si];
         }
-      }else if(ci===3||ci===4){
-        // GUAR / GUAR AAV — format as $M
-        var m=parseFloat(v);
-        if(!isNaN(m)&&m>0)disp='$'+(m/1e6).toFixed(1)+'M';
+        if(raw!==undefined&&raw!==null&&raw!=='')v=fgsFmtStat(fc.col,raw);
       }
-      return '<td'+(ci===0?' class="fg-name"':'')+'>'+disp+'</td>';
-    }).join('')+'</tr>';
+      var bdr=isFirst?'border-left:2px solid currentColor;':'';
+      cells+='<td class="'+(isFirst?cls:'')+'" style="text-align:right;'+bdr+'white-space:nowrap;padding:4px 8px;font-size:11px">'+v+'</td>';
+    });
+
+    return'<tr>'+cells+'</tr>';
   }).join('');
 
-  if(!filteredRows.length)tbHTML='<tr><td colspan="'+headers.length+'" style="text-align:center;padding:40px;color:var(--dim)">No data matches search</td></tr>';
+  if(!pagePlayers.length){
+    tbody='<tr><td colspan="'+(contractCols.length+flatCols.length+2)+'" style="text-align:center;padding:40px;color:var(--dim)">'+(allPlayers.length?'No players match filters — try adjusting above':'No data loaded')+'</td></tr>';
+  }
 
-  wrap.innerHTML='<div style="overflow-x:auto"><table class="fg-table"><thead>'
-    +'<tr>'+th1+'</tr>'
-    +'<tr>'+th2+'</tr>'
-    +'</thead><tbody>'+tbHTML+'</tbody></table></div>';
+  headEl.innerHTML=row1+row2;
+  bodyEl.innerHTML=tbody;
+
+  // ── Show more bar ──────────────────────────────────────────────────────
+  var hasMore=players.length>vc;
+  if(moreEl){
+    moreEl.innerHTML=hasMore
+      ?'<div class="fg-more-bar">Showing '+vc+' of '+players.length+' players'
+        +' <button class="fg-more-btn" onclick="fgsShowMore()">Show '+Math.min(FG_PAGE,players.length-vc)+' more</button>'
+        +' <button class="fg-more-btn" onclick="fgsShowAll2()">Show all</button></div>'
+      :(players.length>FG_PAGE?'<div class="fg-more-bar" style="color:var(--dim)">All '+players.length+' players shown</div>':'');
+  }
 }
 
-function fgsRenderKpis(rows,headers,visIdx){
-  var el=document.getElementById('fgs-kpis');if(!el)return;
-  var numPlayers=rows.length;
-  el.innerHTML=
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Players</div><div class="fg-kpi-val">'+numPlayers.toLocaleString()+'</div></div>';
+// ── Helper: get sort value for a player row ───────────────────────────────
+function fgsGetSortVal(p,colIdx,isHit,visContractCols,aggByName,winIdxMap,nAgg,nStatCols,statIdxMap,aggWindows,grps,winMap,visCols){
+  if(colIdx<visContractCols.length){
+    var col=visContractCols[colIdx];
+    var row=p._rawRow||{};
+    var cv={'Player':fgToLastFirst(p.name),'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'Term':p.term,
+      'AAV':p.aav,'GUAR AAV':p.guarAav,'GUAR':p.guar,'FY':p.fy,'SigAge':p.sigAge||0,
+      'FY Age':p.fyAge||'','SigDate':p.sigDate||'',
+      'Code':(p._rawRow&&(p._rawRow['Code_0']||p._rawRow['Code']))||''};
+    return cv[col]!==undefined?cv[col]:(row[col+'_0']||row[col]||'');
+  }
+  var aggRow=aggByName[normName(p.name)+'|'+String(p.py||'').replace(/\.0+$/,'').trim()]
+    ||aggByName[normName(fgToLastFirst(p.name))+'|'+String(p.py||'').replace(/\.0+$/,'').trim()];
+  if(!aggRow)return '';
+  var flatIdx=colIdx-visContractCols.length;
+  var count=0;
+  for(var pi=0;pi<FGS_PERIODS.length;pi++){
+    var per=FGS_PERIODS[pi];
+    if(!grps[per])continue;
+    for(var vi=0;vi<visCols.length;vi++){
+      if(count===flatIdx){
+        var winKey=winMap[per];
+        var wi=winIdxMap[winKey];
+        var si=statIdxMap[visCols[vi]];
+        if(wi===undefined||si===undefined)return '';
+        return aggRow[nAgg+wi*nStatCols+si]||'';
+      }
+      count++;
+    }
+  }
+  return '';
 }
 
-function fgsSortBy(ci){
-  if(FG.fgs.sortCol===ci)FG.fgs.sortAsc=!FG.fgs.sortAsc;
-  else{FG.fgs.sortCol=ci;FG.fgs.sortAsc=false;}
-  fgsRender();
+// ── Stat value formatting ─────────────────────────────────────────────────
+var FGS_PCT_COLS={
+  'BB%':1,'K%':1,'BB/K':0,'AVG':1,'OBP':1,'SLG':1,'OPS':1,'ISO':1,'BABIP':1,'wOBA':1,
+  'xBA':1,'xSLG':1,'xwOBA':1,'Barrel%':1,'HardHit%':1,'LD%':1,'GB%':1,'FB%':1,
+  'IFFB%':1,'HR/FB':1,'IFH%':1,'BUH%':1,'Pull%':1,'Cent%':1,'Oppo%':1,'Soft%':1,
+  'Med%':1,'Hard%':1,'LOB%':1,
+  'FastSwing%':1,'SquaredUpSwing%':1,'BlastSwing%':1,'BlastContact%':1,'IdealAttackAngle%':1,
+  'K-BB%':1,'BB%+':0,'K%+':0,
+  'O-Swing%':1,'Z-Swing%':1,'Swing%':1,'O-Contact%':1,'Z-Contact%':1,'Contact%':1,
+  'Zone%':1,'F-Strike%':1,'SwStr%':1,'CStr%':1,'CSW%':1,'SwgLng':0,
+  'FB%':1,'SL%':1,'CT%':1,'CB%':1,'CH%':1,'SF%':1,'KN%':1,'XX%':1,
+  'FastSw%':1,'SqUpCon%':1,'SqUpSw%':1,'BlastCon%':1,'BlastSw%':1,'IdealAtkAng%':1,
+  'ERA-':0,'FIP-':0,'xFIP-':0,'QS%':1,'Sv%':1
+};
+// ===================================================================
+// CUSTOM TAB HELPERS
+// ===================================================================
+
+function fgsCacheStore(side,tk,data){
+  // Store data in cache without triggering a render or status update
+  var cacheKey=side+'_'+tk;
+  if(!FG.contracts.cache)FG.contracts.cache={};
+  FG.contracts.cache[cacheKey]={
+    headers:  data.headers||[],
+    rows:     data.rows||[],
+    windows:  data.windows||['PY','PY-1','PY-2','L2','L3','CAR'],
+    stat_cols:data.stat_cols||[],
+    isPartial:!!data.is_partial,
+    pulledAt: data.pulled_at||''
+  };
+  var cks=Object.keys(FG.contracts.cache);
+  if(cks.length>20)delete FG.contracts.cache[cks[0]];
+  if(data.pulled_at)FG.pulledAt=data.pulled_at;
+}
+
+function fgsCustomEnsureData(cb){
+  var side=FG.fgs.side;
+  var entries=fgsCustomCols[side]||[];
+  var typesNeeded={};
+  entries.forEach(function(e){var t=e.split('|')[0];if(t)typesNeeded[t]=true;});
+  var typeKeys=Object.keys(typesNeeded);
+  var pending=typeKeys.length;
+  if(!pending){cb();return;}
+  function done(){pending--;if(pending<=0)cb();}
+  typeKeys.forEach(function(tk){
+    var ck=side+'_'+tk;
+    if(FG.contracts.cache&&FG.contracts.cache[ck]){done();return;}
+    // Always use fg_contracts for correct per-(player, PY) aggregation
+    fgLoad('fg_contracts',function(ctData){
+      if(ctData&&ctData.headers&&ctData.rows&&ctData.rows.length){
+        var agg=fgsComputeAgg(side,tk,ctData);
+        fgsCacheStore(side,tk,agg);
+      }
+      done();
+    },function(){done();},{side:side,typeKey:tk});
+  });
+}
+
+function fgcToggleColVis(side,typeKey,col,cb){
+  var k='custom_'+typeKey+'_'+col;
+  if(cb.checked)delete fgColHidden[k]; else fgColHidden[k]=true;
+  rebuildColPanel('fg');
+  if(FG.fgs.type===FGS_CUSTOM_KEY)renderFgStats();
+  try{saveUserState();}catch(e){}
+}
+function fgcToggleTypeVis(side,typeKey,cb){
+  var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  var inCustom=cols.filter(function(c2){
+    return(fgsCustomCols[side]||[]).some(function(e){return e===typeKey+'|'+c2;});
+  });
+  inCustom.forEach(function(col){
+    var k='custom_'+typeKey+'_'+col;
+    if(cb.checked)delete fgColHidden[k]; else fgColHidden[k]=true;
+  });
+  rebuildColPanel('fg');
+  if(FG.fgs.type===FGS_CUSTOM_KEY)renderFgStats();
+  try{saveUserState();}catch(e){}
+}
+
+var fgcModalType=null;
+
+function fgcOpenModal(){
+  var side=FG.fgs.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  if(!fgcModalType||(side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES).every(function(t){return t.key!==fgcModalType;})){
+    fgcModalType=types[0].key;
+  }
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+  document.getElementById('fgc-modal').classList.add('open');
+}
+function fgcCloseModal(){
+  var modal=document.getElementById('fgc-modal');
+  var ctx=modal?modal.dataset.ctx:'';
+  if(modal)modal.classList.remove('open');
+  if(ctx==='fgl'){
+    if(modal)modal.dataset.ctx='';
+    rebuildColPanel('fgl');
+    fglRender();
+    fglCustomEnsureData(function(){fglRender();});
+    try{saveUserState();}catch(e){}
+    return;
+  }
+  rebuildColPanel('fg');
+  if(FG.fgs.type===FGS_CUSTOM_KEY){
+    renderFgStats();
+    fgsCustomEnsureData(function(){renderFgStats();});
+  }
+  try{saveUserState();}catch(e){}
+}
+function fgcSelectModalType(tk){
+  fgcModalType=tk;
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+function fgcRenderModalTypes(){
+  var side=FG.fgs.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var el=document.getElementById('fgc-type-list');if(!el)return;
+  el.innerHTML=types.map(function(t){
+    var n=(fgsCustomCols[side]||[]).filter(function(e){return e.indexOf(t.key+'|')===0;}).length;
+    return '<button class="fgc-type-btn'+(fgcModalType===t.key?' on':'')
+      +'" onclick="fgcSelectModalType(\''+t.key+'\')">'+(t.label)+(n?' <span style="color:var(--accent);font-size:9px">('+n+')</span>':'')+' </button>';
+  }).join('');
+}
+function fgcRenderModalCols(){
+  var side=FG.fgs.side;
+  var tk=fgcModalType;
+  var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][tk])||[];
+  var custom=fgsCustomCols[side]||[];
+  var hdr=document.getElementById('fgc-col-header');
+  var grid=document.getElementById('fgc-col-grid');
+  var cnt=document.getElementById('fgc-sel-count');
+  var allSelected=cols.length>0&&cols.every(function(col){return custom.indexOf(tk+'|'+col)>=0;});
+  var safeTk=tk.replace(/'/g,"\\'");
+  if(hdr)hdr.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+    +'<span>'+tk+' &mdash; check to add to Custom tab</span>'
+    +'<div style="display:flex;gap:6px;flex-shrink:0">'
+    +'<button class="btn bts bsm" onclick="fgcSelectGroup(\''+safeTk+'\')" style="font-size:9px;padding:3px 8px;letter-spacing:1px">Select All</button>'
+    +'<button class="btn btd bsm" onclick="fgcClearGroup(\''+safeTk+'\')" style="font-size:9px;padding:3px 8px;letter-spacing:1px">Clear</button>'
+    +'</div>'
+    +'</div>';
+  if(grid){
+    grid.innerHTML=cols.map(function(col){
+      var entry=tk+'|'+col;
+      var chk=custom.indexOf(entry)>=0?' checked':'';
+      var safeCol=col.replace(/'/g,"\\'");
+      return '<label class="fgc-col-item"><input type="checkbox"'+chk
+        +' onchange="fgcToggleEntry(\''+safeTk+'\',\''+safeCol+'\',this)">'+col+'</label>';
+    }).join('');
+  }
+  if(cnt)cnt.textContent=custom.length+' stat'+(custom.length!==1?'s':'')+' selected across all types';
+}
+function fgcToggleEntry(typeKey,col,cb){
+  var side=FG.fgs.side;
+  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  var entry=typeKey+'|'+col;
+  var idx=fgsCustomCols[side].indexOf(entry);
+  if(cb.checked){if(idx<0)fgsCustomCols[side].push(entry);}
+  else{if(idx>=0)fgsCustomCols[side].splice(idx,1);}
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+function fgcClearAll(){
+  var modal=document.getElementById('fgc-modal');
+  if(modal&&modal.dataset.ctx==='fgl'){fglClearCustomAll();return;}
+  fgsCustomCols[FG.fgs.side]=[];
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+function fgcSelectAll(){
+  var modal=document.getElementById('fgc-modal');
+  if(modal&&modal.dataset.ctx==='fgl'){fglSelectCustomAll();return;}
+  var side=FG.fgs.side;
+  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  types.forEach(function(t){
+    var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][t.key])||[];
+    cols.forEach(function(col){
+      var entry=t.key+'|'+col;
+      if(fgsCustomCols[side].indexOf(entry)<0)fgsCustomCols[side].push(entry);
+    });
+  });
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+function fgcSelectGroup(typeKey){
+  var modal=document.getElementById('fgc-modal');
+  if(modal&&modal.dataset.ctx==='fgl'){fglSelectGroup(typeKey);return;}
+  var side=FG.fgs.side;
+  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  cols.forEach(function(col){
+    var entry=typeKey+'|'+col;
+    if(fgsCustomCols[side].indexOf(entry)<0)fgsCustomCols[side].push(entry);
+  });
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+function fgcClearGroup(typeKey){
+  var modal=document.getElementById('fgc-modal');
+  if(modal&&modal.dataset.ctx==='fgl'){fglClearGroup(typeKey);return;}
+  var side=FG.fgs.side;
+  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  fgsCustomCols[side]=fgsCustomCols[side].filter(function(e){return e.indexOf(typeKey+'|')!==0;});
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+
+// .NNN — batting average style, no leading zero
+var FGS_3DP={
+  'AVG':1,'OBP':1,'SLG':1,'OPS':1,'ISO':1,'BABIP':1,'wOBA':1,'xBA':1,'xSLG':1,'xwOBA':1,'E-F':1
+};
+// N.NN — ERA/FIP/WHIP style, no leading zero when value < 1
+var FGS_2DP={
+  'ERA':1,'FIP':1,'xFIP':1,'SIERA':1,'WHIP':1,'tERA':1,'kwERA':1,'cFIP':1
+};
+var FGS_1DP={
+  'K/9':1,'BB/9':1,'K/BB':1,'HR/9':1,'IP':1,'EV':1,'EV90':1,'maxEV':1,'LA':1,
+  'FBv':1,'SLv':1,'CTv':1,'CBv':1,'CHv':1,'SFv':1,'KNv':1,
+  'AvgBatSpeed':1,'SwingLength':1,'Tilt':1,'CompSw':1,'SwgLng':1,
+  'vFA':1,'vFT':1,'vFC':1,'vFS':1,'vFO':1,'vSI':1,'vSL':1,'vCU':1,'vKC':1,'vEP':1,'vCH':1,'vSC':1,'vKN':1,
+  'WPA':1,'-WPA':1,'+WPA':1,'RE24':1,'REW':1,'pLI':1,'phLI':1,'inLI':1,'gmLI':1,'exLI':1,'WPA/LI':1,'Clutch':1,
+  'Spd':1,'UBR':1,'wGDP':1,'XBR':1,'wSB':1,'wRC':1,'wRAA':1,'Dollars':1,'RAR':1,
+  'WAR':1,'RA9-WAR':1,'BIP-Wins':1,'LOB-Wins':1,'FDP-Wins':1,
+  'Batting':1,'Base Running':1,'Fielding':1,'Positional':1,'Offense':1,'Defense':1,'League':1,'Replacement':1
+};
+
+function fgsStripLeadZero(s){
+  return s.replace(/^(-?)0\./,'$1.');
+}
+
+// + / - index stats are always whole numbers (scaled to 100)
+function fgsIsPlusStat(col){
+  if(/\+$/.test(col))return true;                                             // wRC+, OPS+, ERA+, AVG+, BB%+, K%+, ISO+, …
+  if(/^Stf\+\s|^Stuff\+$|^Location\+$|^Pitching\+$/.test(col))return true;   // Stuff+ family
+  if(col==='sp_stuff'||col==='sp_location'||col==='sp_pitching'||col==='pb_stuff')return true; // Stuff+ API names
+  if(/\-$/.test(col))return true;                                             // ERA-, FIP-, xFIP-, SIERA-, …
+  return false;
+}
+
+function fgsFmtStat(col,raw){
+  var n=parseFloat(raw);
+  if(isNaN(n))return String(raw);
+  // + / index stats: rounded whole number, no decimals
+  if(fgsIsPlusStat(col))return String(Math.round(n));
+  // Check decimal-specific buckets first (before PCT which overlaps some cols)
+  if(FGS_3DP[col])return fgsStripLeadZero(n.toFixed(3));
+  if(FGS_2DP[col])return fgsStripLeadZero(n.toFixed(2));
+  if(FGS_1DP[col])return fgsStripLeadZero(n.toFixed(1));
+  // Percentage stats — arrive as fractions (0.234) or already-pct (23.4)
+  if(FGS_PCT_COLS[col]){
+    var pv=Math.abs(n)<=1?n*100:n;
+    return pv.toFixed(1)+'%';
+  }
+  // Integers
+  if(n%1===0)return String(Math.round(n));
+  // Default: 2dp, no leading zero
+  return fgsStripLeadZero(n.toFixed(2));
+}
+
+// ── Sort, show more, export ───────────────────────────────────────────────
+function fgsSortByCol(ci){
+  if(FG.fgs.sortCol===ci){FG.fgs.sortAsc=!FG.fgs.sortAsc;}
+  else{FG.fgs.sortCol=ci;FG.fgs.sortAsc=(ci===0);}
+  FG.fgs.visibleCount=FG_PAGE;
+  renderFgStats();
+}
+
+function fgsShowMore(){
+  FG.fgs.visibleCount=(FG.fgs.visibleCount||FG_PAGE)+FG_PAGE;
+  renderFgStats();
+}
+function fgsShowAll2(){
+  FG.fgs.visibleCount=99999;
+  renderFgStats();
 }
 
 function fgsExportCSV(){
-  var cacheKey=FG.fgs.side+'_'+FG.fgs.type;
-  var cached=FG.contracts.cache[cacheKey];
+  // Build CSV from current rendered state
+  var side=FG.fgs.side;
+  var typeKey=FG.fgs.type;
+  var cacheKey=side+'_'+typeKey;
+  var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
   if(!cached||!cached.rows||!cached.rows.length){toast('No data to export');return;}
-  var csv=[cached.headers.join(',')].concat(cached.rows.map(function(r){
-    return r.map(function(v){v=String(v||'');return v.indexOf(',')>=0||v.indexOf('"')>=0?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');
-  })).join('\n');
+  // Re-derive headers
+  var contractCols=side==='h'?H_CONTRACT:P_CONTRACT;
+  var aggStatCols=cached.stat_cols||[];
+  var colSpec=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||aggStatCols;
+  var statIdxMap={};aggStatCols.forEach(function(c,i){statIdxMap[c]=i;});
+  var visCols=colSpec.filter(function(c){return statIdxMap[c]!==undefined;});
+  var aggWindows=cached.windows||['PY','PY-1','PY-2','L2','L3','CAR'];
+  var winIdxMap={};aggWindows.forEach(function(w,i){winIdxMap[w]=i;});
+  var nAgg=7,nStatCols=aggStatCols.length;
+  var aggByName={};cached.rows.forEach(function(r){
+    var rName=normName(String(r[0]||'').trim());
+    var rPy=String(r[5]||'').replace(/\.0+$/,'').trim();
+    aggByName[rName+'|'+rPy]=r;
+    var rRev=normName(fgToLastFirst(String(r[0]||'')));
+    if(rRev&&rRev!==rName)aggByName[rRev+'|'+rPy]=r;
+  });
+
+  var isHit=side==='h';
+  var allPlayers=DB.merged.filter(function(p){
+    if(!p.sheetTab)return false;
+    return p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')>=0;
+  }).filter(function(p){
+    var py=String(p.py||'').replace(/\.0+$/,'').trim();
+    return aggByName[normName(p.name)+'|'+py]!==undefined
+        ||aggByName[normName(fgToLastFirst(p.name))+'|'+py]!==undefined;
+  });
+
+  var headers=contractCols.slice();
+  var activePeriods=FGS_PERIODS.filter(function(per){return fgsGrps[per];});
+  activePeriods.forEach(function(per){
+    visCols.forEach(function(col){headers.push(FGS_PERIOD_LABELS[per]+'_'+col);});
+  });
+
+  var rows=allPlayers.map(function(p){
+    var row=p._rawRow||{};
+    var aggRow=(function(){var py=String(p.py||'').replace(/\.0+$/,'').trim();return aggByName[normName(p.name)+'|'+py]||aggByName[normName(fgToLastFirst(p.name))+'|'+py]||null;})()
+    var cv={'Player':p.name,'PY':p.py,'pPos':p.pPos,'SigTm':p.sigTm,'SigDate':p.sigDate,
+      'FY':p.fy,'FY Age':p.fyAge?p.fyAge.toFixed(0):'','SigAge':p.sigAge||'',
+      'Term':p.term,'AAV':p.aav,'GUAR AAV':p.guarAav,'GUAR':p.guar};
+    var cells=contractCols.map(function(col){
+      var v=cv[col]!==undefined?cv[col]:(row[col+'_0']!==undefined?row[col+'_0']:row[col]||'');
+      return String(v||'').replace(/,/g,';');
+    });
+    activePeriods.forEach(function(per){
+      visCols.forEach(function(col){
+        var v='';
+        if(aggRow){
+          var winKey=FGS_WINDOW_MAP[per];
+          var wi=winIdxMap[winKey];
+          var si=statIdxMap[col];
+          if(wi!==undefined&&si!==undefined)v=aggRow[nAgg+wi*nStatCols+si]||'';
+        }
+        cells.push(String(v).replace(/,/g,';'));
+      });
+    });
+    return cells.join(',');
+  });
+
+  var csv=[headers.join(',')].concat(rows).join('\n');
   var b=new Blob([csv],{type:'text/csv'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(b);
-  a.download='fg_agg_'+FG.fgs.side+'_'+FG.fgs.type.replace(/\s+/g,'_')+'.csv';
+  a.download='fg_contracts_'+side+'_'+typeKey.replace(/\s+/g,'_')+'.csv';
   a.click();
-  toast('Exported '+cached.rows.length+' players');
+  toast('Exported '+allPlayers.length+' players');
 }
+
+// ── vfTestFilter helper (used above for FG filter logic) ─────────────────
+function vfTestFilter(f,val){
+  if(f.type==='numeric'){
+    var n=parseFloat(val);
+    if(isNaN(n)){
+      if((f.min!==''&&f.min!==null)||(f.vals&&f.vals.length>0))return false;
+      return true;
+    }
+    if(f.vals&&f.vals.length>0){
+      var vs=vfFmtNum(n);
+      if(f.vals.indexOf(vs)>=0)return true;
+      if(f.min===''&&f.max==='')return false;
+    }
+    if(f.min!==''&&f.min!==null&&!isNaN(parseFloat(f.min))&&n<parseFloat(f.min))return false;
+    if(f.max!==''&&f.max!==null&&!isNaN(parseFloat(f.max))&&n>parseFloat(f.max))return false;
+    return true;
+  }else if(f.type==='date'){
+    var d=new Date(val);
+    if(isNaN(d.getTime()))return f.min===''&&f.max==='';
+    if(f.min&&new Date(f.min)>d)return false;
+    if(f.max&&new Date(f.max)<d)return false;
+    return true;
+  }else{
+    if(!f.vals||f.vals.length===0)return true;
+    return f.vals.indexOf(String(val||''))>=0;
+  }
+}
+
+// Expose vfTestFilter so vfApply can use it for the fg view too
+// (vfApply will call its own path for h/p/ov; fg uses renderFgStats directly)
 
 // ══════════════════════════════════════════
 // FG LIVE LEADERBOARD TAB (fglive)
 // ══════════════════════════════════════════
 
+function fglPopulateYears(availYears){
+  var curYr=new Date().getFullYear();
+  var yrs=availYears&&availYears.length?availYears:[curYr];
+  yrs.sort(function(a,b){return b-a;}); // newest first
+  // If saved year isn't in available data, reset to most recent
+  if(yrs.indexOf(fglYearFrom)<0)fglYearFrom=yrs[0];
+  if(yrs.indexOf(fglYearTo)<0)fglYearTo=yrs[0];
+  ['fgl-yr-from','fgl-yr-to'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML='';
+    yrs.forEach(function(y){var o=document.createElement('option');o.value=y;o.textContent=y;el.appendChild(o);});
+  });
+  var fromEl=document.getElementById('fgl-yr-from');
+  var toEl=document.getElementById('fgl-yr-to');
+  if(fromEl)fromEl.value=String(fglYearFrom);
+  if(toEl)toEl.value=String(fglYearTo);
+}
+
+function fglYearChange(){
+  var fromEl=document.getElementById('fgl-yr-from');
+  var toEl=document.getElementById('fgl-yr-to');
+  if(!fromEl||!toEl)return;
+  fglYearFrom=parseInt(fromEl.value)||new Date().getFullYear();
+  fglYearTo=parseInt(toEl.value)||fglYearFrom;
+  // Ensure from <= to
+  if(fglYearFrom>fglYearTo){
+    fglYearTo=fglYearFrom;
+    toEl.value=String(fglYearTo);
+  }
+  fglRender();
+  try{saveUserState();}catch(e){}
+}
+
 function initFgLive(){
   fglBuildTypeTabs();
-  if(!FG.live.hitters&&!FG.live.pitchers){
-    fglLoadData();
-  }else{
+  var cacheKey='live_'+FG.fgl.side+'_'+FG.fgl.type;
+  if(FG.live.cache&&FG.live.cache[cacheKey]){
+    fglPopulateYears(FG.live.cache[cacheKey]._years||[]);
     fglRender();
+  }else{
+    fglLoadData();
   }
 }
 
+// FIX (v10): Live tab now reads fg_contracts filtered to current year.
+// fg_live endpoint and its large multi-type accumulated file are gone.
+// One call per side/type — same small file the Contract Stats tab uses,
+// just filtered server-side to the current season only.
 function fglLoadData(){
-  var wrap=document.getElementById('fgl-table-wrap');
-  if(wrap)wrap.innerHTML='<div class="fg-spinner-wrap"><div class="fg-spinner"></div>Loading current-season leaderboard...</div>';
-
-  fgLoad('fg_live',function(data){
+  var bodyEl=document.getElementById('b-fgl');
+  if(bodyEl)bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)"><div class="fg-spinner" style="margin:0 auto 12px"></div>Loading '+FG.fgl.type+'...</td></tr>';
+  var side=FG.fgl.side;
+  var typeKey=FG.fgl.type;
+  var cacheKey='live_'+side+'_'+typeKey;
+  if(FG.live.cache&&FG.live.cache[cacheKey]){
+    fglPopulateYears(FG.live.cache[cacheKey]._years||[]);
+    fglRender();return;
+  }
+  fgSetStatus('fgl-status','Loading '+typeKey+'...',null);
+  // Use leaderboard=1 param — Apps Script returns all FG players, not just contract players
+  fgLoad('fg_contracts',function(data){
     if(!data||data.status==='no_data'){
       fgSetStatus('fgl-status','No data yet — click Pull FanGraphs Data','err');
-      if(wrap)wrap.innerHTML=fgsNoDataHTML();
+      if(bodyEl)bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">No data — click Pull FanGraphs Data</td></tr>';
       return;
     }
     if(data.status==='pull_running'){
-      var pct=data.pull_pct||0;
-      fgSetStatus('fgl-status','Pull in progress: '+pct+'%',null);
-      if(wrap)wrap.innerHTML=fgsPullProgressHTML(pct,data.pull_msg||'');
+      fgSetStatus('fgl-status','Pull in progress: '+(data.pull_pct||0)+'%',null);
       if(!FG.loading){FG.loading=true;fgStartPolling();}
       return;
     }
-    FG.live.hitters =data.hitters ||{headers:[],rows:[]};
-    FG.live.pitchers=data.pitchers||{headers:[],rows:[]};
-    FG.live.isPartial=!!data.is_partial;
-    if(data.is_partial){
-      fgSetStatus('fgl-status','Partial data: '+(data.pull_pct||0)+'% loaded — pull still running',null);
-      if(!FG.loading){FG.loading=true;fgStartPolling();}
-    }else if(data.pulled_at){
-      FG.pulledAt=data.pulled_at;
-      var d=new Date(data.pulled_at);
-      fgSetStatus('fgl-status','Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString(),'ok');
-    }
+    var headers=data.headers||[];
+    var rows=data.rows||[];
+    // Extract available seasons
+    var seasIdx=headers.indexOf('season');
+    var yearsSet={};
+    if(seasIdx>=0)rows.forEach(function(r){var y=parseInt(r[seasIdx]);if(y)yearsSet[y]=true;});
+    var years=Object.keys(yearsSet).map(Number).sort(function(a,b){return b-a;});
+    if(!FG.live.cache)FG.live.cache={};
+    // Show ALL fields that contain bat-track-like keywords
+    FG.live.cache[cacheKey]={headers:headers,rows:rows,_years:years};
+    var lk=Object.keys(FG.live.cache);
+    if(lk.length>20)delete FG.live.cache[lk[0]];
+    if(data.pulled_at)FG.pulledAt=data.pulled_at;
+    var d=data.pulled_at?new Date(data.pulled_at):null;
+    fgSetStatus('fgl-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
+    fglPopulateYears(years);
     fglRender();
   },function(err){
     fgSetStatus('fgl-status','Error: '+err,'err');
-    if(wrap)wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">⚠️</div><div class="fg-no-title">Load Error</div><div class="fg-no-sub">'+err+'</div></div>';
+    if(bodyEl)bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">Error: '+err+'</td></tr>';
+  },{side:side,typeKey:typeKey,leaderboard:'1'});
+}
+
+function fglOpenFilterBuilder(){
+  var panel=document.getElementById('fgl-filter-panel');
+  if(panel)panel.classList.add('open');
+  fglPopulateFilterCols();
+}
+function fglCloseFilterBuilder(){
+  var panel=document.getElementById('fgl-filter-panel');
+  if(panel)panel.classList.remove('open');
+}
+function fglPopulateFilterCols(){
+  var sel=document.getElementById('fgl-filter-col');
+  if(!sel)return;
+  var side=FG.fgl.side;
+  var typeKey=FG.fgl.type;
+  var curVal=sel.value;
+  sel.innerHTML='<option value="">— pick column —</option>';
+  var qualCols=side==='h'?FGL_QUAL_H:FGL_QUAL_P;
+  var og0=document.createElement('optgroup');
+  og0.label='── Qualifier';
+  qualCols.forEach(function(col){var o=document.createElement('option');o.value=col;o.textContent=col;og0.appendChild(o);});
+  sel.appendChild(og0);
+  var typeCols=[];
+  if(typeKey===FGL_CUSTOM_KEY){
+    (fglCustomCols[side]||[]).forEach(function(e){var col=e.split('|')[1];if(col&&typeCols.indexOf(col)<0)typeCols.push(col);});
+  }else{
+    typeCols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  }
+  if(typeCols.length){
+    var og1=document.createElement('optgroup');
+    og1.label='── Stats';
+    typeCols.forEach(function(col){
+      if(qualCols.indexOf(col)>=0)return;
+      var o=document.createElement('option');o.value=col;o.textContent=col;og1.appendChild(o);
+    });
+    sel.appendChild(og1);
+  }
+  if(curVal)sel.value=curVal;
+}
+function fglFilterColChange(){
+  var col=document.getElementById('fgl-filter-col').value;
+  var isText=(col==='Team');
+  var nm=document.getElementById('fgl-filter-num-inputs');
+  var tm=document.getElementById('fgl-filter-txt-input');
+  if(nm)nm.style.display=isText?'none':'flex';
+  if(tm)tm.style.display=isText?'flex':'none';
+}
+function fglAddFilter(){
+  var col=document.getElementById('fgl-filter-col').value;
+  if(!col){alert('Choose a column first');return;}
+  var minVal=document.getElementById('fgl-filter-min').value.trim();
+  var maxVal=document.getElementById('fgl-filter-max').value.trim();
+  if(minVal===''&&maxVal===''){alert('Enter at least a min or max value');return;}
+  // Remove existing filter for same col
+  fglFilters=fglFilters.filter(function(f){return f.col!==col;});
+  var txtVal2=document.getElementById('fgl-filter-txt')?document.getElementById('fgl-filter-txt').value.trim():'';
+  var isTextF=(col==='Team');
+  if(isTextF){if(!txtVal2){alert('Enter a team abbreviation');return;}}
+  else{if(minVal===''&&maxVal===''){alert('Enter at least a min or max value');return;}}
+  fglFilters.push({col:col,min:minVal,max:maxVal,txt:txtVal2,isText:isTextF});
+  document.getElementById('fgl-filter-min').value='';
+  document.getElementById('fgl-filter-max').value='';
+  document.getElementById('fgl-filter-col').value='';
+  fglCloseFilterBuilder();
+  fglRender();
+  try{saveUserState();}catch(e){}
+}
+function fglRemoveFilter(idx){
+  fglFilters.splice(idx,1);
+  fglRender();
+  try{saveUserState();}catch(e){}
+}
+function fglClearFilters(){
+  fglFilters=[];
+  fglRender();
+  try{saveUserState();}catch(e){}
+}
+function fglRenderFilterChips(){
+  var chipsEl=document.getElementById('fgl-filter-chips');
+  var countEl=document.getElementById('fgl-filter-count');
+  var clearBtn=document.getElementById('fgl-filter-clear');
+  if(chipsEl){
+    chipsEl.innerHTML=fglFilters.map(function(f,fi){
+      return '<span class="vf-chip"><span class="vf-chip-col">'+f.col+'</span>'
+        +(f.isText&&f.txt?'<span class="vf-chip-val"> ⊃"'+f.txt+'"</span>':'')
+        +(!f.isText&&f.min!==''?'<span class="vf-chip-val"> ≥'+f.min+'</span>':'')
+        +(!f.isText&&f.max!==''?'<span class="vf-chip-val"> ≤'+f.max+'</span>':'')
+        +'<button class="vf-chip-rm" onclick="fglRemoveFilter('+fi+')">&#215;</button>'
+        +'</span>';
+    }).join('');
+  }
+  if(countEl)countEl.textContent=fglFilters.length?fglFilters.length+' filter'+(fglFilters.length>1?'s':''):'';
+  if(clearBtn)clearBtn.style.display=fglFilters.length?'':'none';
+}
+
+// ── Leaderboard Custom Tab helpers ──────────────────────────────────────
+var fglModalType=null;
+
+function fglCustomEnsureData(cb){
+  var side=FG.fgl.side;
+  var entries=fglCustomCols[side]||[];
+  var typesNeeded={};
+  entries.forEach(function(e){var t=e.split('|')[0];if(t)typesNeeded[t]=true;});
+  // Always ensure Standard loaded for qualifier cols
+  var std=(side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES)[0].key;
+  typesNeeded[std]=true;
+  var typeKeys=Object.keys(typesNeeded);
+  var pending=typeKeys.length;
+  if(!pending){cb();return;}
+  function done2(){pending--;if(pending<=0)cb();}
+  typeKeys.forEach(function(tk){
+    var ck='live_'+side+'_'+tk;
+    if(FG.live.cache&&FG.live.cache[ck]){done2();return;}
+    fgLoad('fg_contracts',function(data){
+      if(data&&data.headers){
+        if(!FG.live.cache)FG.live.cache={};
+        FG.live.cache[ck]={headers:data.headers||[],rows:data.rows||[],_years:[]};
+        var lk=Object.keys(FG.live.cache);if(lk.length>20)delete FG.live.cache[lk[0]];
+      }
+      done2();
+    },function(){done2();},{side:side,typeKey:tk,leaderboard:'1'});
   });
+}
+
+function fglToggleTypeVisCustom(side,typeKey,cb){
+  var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  var inCustom=cols.filter(function(col){return(fglCustomCols[side]||[]).some(function(e){return e===typeKey+'|'+col;});});
+  inCustom.forEach(function(col){var k='fgl_'+col;if(cb.checked)delete fglColHidden[k];else fglColHidden[k]=true;});
+  rebuildColPanel('fgl');fglRender();
+  try{saveUserState();}catch(e){}
+}
+
+function fglOpenCustomModal(){
+  var side=FG.fgl.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  if(!fglModalType||types.every(function(t){return t.key!==fglModalType;}))fglModalType=types[0].key;
+  fglRenderModalTypes();
+  fglRenderModalCols();
+  var modal=document.getElementById('fgc-modal');
+  if(modal){modal.dataset.ctx='fgl';modal.classList.add('open');}
+}
+
+function fglRenderModalTypes(){
+  var side=FG.fgl.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var el=document.getElementById('fgc-type-list');if(!el)return;
+  el.innerHTML=types.map(function(t){
+    var n=(fglCustomCols[side]||[]).filter(function(e){return e.indexOf(t.key+'|')===0;}).length;
+    return '<button class="fgc-type-btn'+(fglModalType===t.key?' on':'')
+      +'" onclick="fglSelectModalType(\''+t.key+'\')">'+(t.label)+(n?' <span style="color:var(--accent);font-size:9px">('+n+')</span>':'')+' </button>';
+  }).join('');
+}
+
+function fglSelectModalType(tk){fglModalType=tk;fglRenderModalTypes();fglRenderModalCols();}
+
+function fglRenderModalCols(){
+  var side=FG.fgl.side;
+  var tk=fglModalType;
+  var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][tk])||[];
+  var custom=fglCustomCols[side]||[];
+  var hdr=document.getElementById('fgc-col-header');
+  var grid=document.getElementById('fgc-col-grid');
+  var cnt=document.getElementById('fgc-sel-count');
+  var safeTk=tk.replace(/'/g,"\\'");
+  if(hdr)hdr.innerHTML=
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+    +'<span>'+tk+' &mdash; check to add to Custom tab</span>'
+    +'<div style="display:flex;gap:6px;flex-shrink:0">'
+    +'<button class="btn bts bsm" onclick="fglSelectGroup(\''+safeTk+'\')" style="font-size:9px;padding:3px 8px;letter-spacing:1px">Select All</button>'
+    +'<button class="btn btd bsm" onclick="fglClearGroup(\''+safeTk+'\')" style="font-size:9px;padding:3px 8px;letter-spacing:1px">Clear</button>'
+    +'</div>'
+    +'</div>';
+  if(grid){
+    grid.innerHTML=cols.map(function(col){
+      var entry=tk+'|'+col;
+      var chk=custom.indexOf(entry)>=0?' checked':'';
+      var safeCol=col.replace(/'/g,"\\'");
+      return '<label class="fgc-col-item"><input type="checkbox"'+chk
+        +' onchange="fglToggleEntry(\''+safeTk+'\',\''+safeCol+'\',this)">'+col+'</label>';
+    }).join('');
+  }
+  if(cnt)cnt.textContent=custom.length+' stat'+(custom.length!==1?'s':'')+' selected';
+}
+
+function fglToggleEntry(typeKey,col,cb){
+  var side=FG.fgl.side;
+  if(!fglCustomCols[side])fglCustomCols[side]=[];
+  var entry=typeKey+'|'+col;
+  var idx=fglCustomCols[side].indexOf(entry);
+  if(cb.checked){if(idx<0)fglCustomCols[side].push(entry);}
+  else{if(idx>=0)fglCustomCols[side].splice(idx,1);}
+  fglRenderModalTypes();fglRenderModalCols();
+}
+
+function fglClearCustomAll(){
+  fglCustomCols[FG.fgl.side]=[];
+  fglRenderModalTypes();fglRenderModalCols();
+}
+function fglSelectCustomAll(){
+  var side=FG.fgl.side;
+  if(!fglCustomCols[side])fglCustomCols[side]=[];
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  types.forEach(function(t){
+    var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][t.key])||[];
+    cols.forEach(function(col){
+      var entry=t.key+'|'+col;
+      if(fglCustomCols[side].indexOf(entry)<0)fglCustomCols[side].push(entry);
+    });
+  });
+  fglRenderModalTypes();fglRenderModalCols();
+}
+function fglSelectGroup(typeKey){
+  var side=FG.fgl.side;
+  if(!fglCustomCols[side])fglCustomCols[side]=[];
+  var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  cols.forEach(function(col){
+    var entry=typeKey+'|'+col;
+    if(fglCustomCols[side].indexOf(entry)<0)fglCustomCols[side].push(entry);
+  });
+  fglRenderModalTypes();fglRenderModalCols();
+}
+function fglClearGroup(typeKey){
+  var side=FG.fgl.side;
+  if(!fglCustomCols[side])fglCustomCols[side]=[];
+  fglCustomCols[side]=fglCustomCols[side].filter(function(e){return e.indexOf(typeKey+'|')!==0;});
+  fglRenderModalTypes();fglRenderModalCols();
+}
+
+function fglToggleCol(col,cb){
+  var k='fgl_'+col;
+  if(cb.checked)delete fglColHidden[k]; else fglColHidden[k]=true;
+  rebuildColPanel('fgl');
+  fglRender();
+  try{saveUserState();}catch(e){}
+}
+function fglToggleAllCols(cb){
+  var specCols=(FG_COL_SPEC[FG.fgl.side]&&FG_COL_SPEC[FG.fgl.side][FG.fgl.type])||[];
+  specCols.forEach(function(col){
+    var k='fgl_'+col;
+    if(cb.checked)delete fglColHidden[k]; else fglColHidden[k]=true;
+  });
+  rebuildColPanel('fgl');
+  fglRender();
+  try{saveUserState();}catch(e){}
 }
 
 function fglBuildTypeTabs(){
   var el=document.getElementById('fgl-type-tabs');if(!el)return;
   var types=FG.fgl.side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
-  el.innerHTML=types.map(function(t){
-    return '<button class="fg-type-btn'+(FG.fgl.type===t.key?' on':'')+'" onclick="fglSetType(\''+t.key+'\')">'+t.label+'</button>';
+  var ck=FG.fgl.type===FGL_CUSTOM_KEY?' on':'';
+  var customBtn='<button class="fg-type-btn custom'+ck+'" onclick="fglSetType(\''+FGL_CUSTOM_KEY+'\')">★ Custom</button>';
+  el.innerHTML=customBtn+types.map(function(t){
+    return '<button class="fg-type-btn'+(FG.fgl.type===t.key?' on':'')
+      +'" onclick="fglSetType(\''+t.key+'\')">'+(t.label)+'</button>';
   }).join('');
 }
 
 function fglSetSide(s){
-  FG.fgl.side=s;FG.fgl.type=(s==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES)[0].key;
-  FG.fgl.sortCol=0;FG.fgl.sortAsc=true;
+  FG.fgl.side=s;
+  if(FG.fgl.type!==FGL_CUSTOM_KEY)FG.fgl.type=(s==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES)[0].key;
+  FG.fgl.sortCol=0;FG.fgl.sortAsc=true;FG.fgl.visibleCount=FG_PAGE;
+  fglFilters=[];
   document.getElementById('fgl-side-h').classList.toggle('on',s==='h');
   document.getElementById('fgl-side-p').classList.toggle('on',s==='p');
-  fglBuildTypeTabs();fglRender();
+  fglBuildTypeTabs();rebuildColPanel('fgl');fglLoadData();
 }
 
 function fglSetType(t){
-  FG.fgl.type=t;FG.fgl.sortCol=0;FG.fgl.sortAsc=true;
-  fglBuildTypeTabs();fglRender();
+  FG.fgl.type=t;FG.fgl.sortCol=0;FG.fgl.sortAsc=true;FG.fgl.visibleCount=FG_PAGE;
+  fglBuildTypeTabs();rebuildColPanel('fgl');
+  if(t===FGL_CUSTOM_KEY){
+    fglRender();
+    fglCustomEnsureData(function(){fglRender();});
+  }else{
+    var cacheKey='live_'+FG.fgl.side+'_'+t;
+    if(FG.live.cache&&FG.live.cache[cacheKey]){fglRender();}else{fglLoadData();}
+  }
 }
 
+function fglToLastFirst(name){
+  if(!name)return name;
+  var clean=String(name).replace(/<[^>]*>/g,'').trim();
+  if(clean.indexOf(',')>=0)return clean;
+  var parts=clean.split(' ');
+  if(parts.length<2)return clean;
+  var SUFX=['Jr.','Sr.','II','III','IV','V','Jr','Sr'];
+  var suffix='',last=parts[parts.length-1];
+  if(SUFX.indexOf(last)>=0&&parts.length>=3){suffix=' '+last;parts=parts.slice(0,parts.length-1);}
+  return parts[parts.length-1]+suffix+', '+parts.slice(0,parts.length-1).join(' ');
+}
+function fgToLastFirst(name){return fglToLastFirst(name);}
+
 function fglRender(){
-  var wrap=document.getElementById('fgl-table-wrap');if(!wrap)return;
-  var data=FG.fgl.side==='h'?FG.live.hitters:FG.live.pitchers;
-  if(!data||!data.headers||!data.headers.length){
-    wrap.innerHTML=fgsNoDataHTML();return;
+  var headEl=document.getElementById('fgl-head');
+  var bodyEl=document.getElementById('b-fgl');
+  var moreEl=document.getElementById('fgl-more-bar');
+  if(!headEl||!bodyEl)return;
+
+  var side=FG.fgl.side;
+  var typeKey=FG.fgl.type;
+  var isCustom2=typeKey===FGL_CUSTOM_KEY;
+
+  // For custom tab, find any loaded cache entry to get headers/rows from
+  // (custom doesn't have its own cache key — it merges across type caches)
+  var cached;
+  if(isCustom2){
+    // Use Standard (first type) as the primary row source; we'll also
+    // look across all types when building colHeaderIdx below
+    var stdKey='live_'+side+'_'+(side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES)[0].key;
+    cached=FG.live.cache&&FG.live.cache[stdKey];
+    if(!cached||!cached.headers||!cached.headers.length){
+      headEl.innerHTML='';
+      bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">Loading custom data… please wait</td></tr>';
+      fglCustomEnsureData(function(){fglRender();});
+      return;
+    }
+  }else{
+    var cacheKey='live_'+side+'_'+typeKey;
+    cached=FG.live.cache&&FG.live.cache[cacheKey];
+    if(!cached||!cached.headers||!cached.headers.length){
+      headEl.innerHTML='';
+      bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">No data — click Pull FanGraphs Data</td></tr>';
+      return;
+    }
   }
 
-  var headers=data.headers;
-  var visIdx=fgsGetVisibleCols(headers,FG.fgl.type);
-  if(!visIdx.length){
-    var isPartial=!!(FG.live&&FG.live.isPartial);
-    wrap.innerHTML='<div class="fg-no-data"><div class="fg-no-icon">'+(isPartial?'⏳':'📋')+'</div>'
-      +'<div class="fg-no-title">'+(isPartial?'Type not yet downloaded':'No columns for this type')+'</div>'
-      +'<div class="fg-no-sub">'+(isPartial?'This stat type will appear as the pull progresses.':'Try switching Hitters / Pitchers.')+'</div></div>';
-    return;
+  var headers=cached.headers;
+  var rows=cached.rows||[];
+  var prefix=typeKey+'_';
+  var IDENTITY={playerid:1,season:1,PlayerName:1,Team:1,xMLBAMID:1};
+
+  // For custom: merge rows from all loaded type caches into a combined
+  // lookup: pid+season -> merged row (combining all type-prefixed cols)
+  var customMergedRows=null; // pid_season -> {pid,season,name,team,cols...}
+  if(isCustom){
+    var allTypesM=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+    var mergedByKey={}; // 'pid_yr' -> {pid,season,name,team,stats:{col:val}}
+    allTypesM.forEach(function(t){
+      var ck2='live_'+side+'_'+t.key;
+      var tc=FG.live.cache&&FG.live.cache[ck2];
+      if(!tc||!tc.headers)return;
+      var ph=tc.headers.indexOf('playerid');
+      var sh=tc.headers.indexOf('season');
+      var nh=tc.headers.indexOf('PlayerName');
+      var th2=tc.headers.indexOf('Team');
+      var pfx2=t.key+'_';
+      (tc.rows||[]).forEach(function(r){
+        var pid2=String(r[ph]||'').replace(/\.0+$/,'').trim();
+        var yr2=parseInt(r[sh]||0);
+        if(!pid2||!yr2)return;
+        var key=pid2+'_'+yr2;
+        if(!mergedByKey[key])mergedByKey[key]={pid:pid2,season:yr2,name:String(r[nh]||'').replace(/<[^>]*>/g,'').trim(),team:String(r[th2]||'').replace(/<[^>]*>/g,'').trim(),cols:{}};
+        tc.headers.forEach(function(h,i){
+          if(h.indexOf(pfx2)===0)mergedByKey[key].cols[h]=r[i];
+        });
+        if(yr2>=(mergedByKey[key]._lastYr||0)){mergedByKey[key]._lastYr=yr2;mergedByKey[key].team=String(r[th2]||'').replace(/<[^>]*>/g,'').trim();}
+      });
+    });
+    customMergedRows=mergedByKey;
+  }
+
+  // Stat columns — always include qualifier cols for filter use
+  var qualCols2=side==='h'?FGL_QUAL_H:FGL_QUAL_P;
+  var isCustom=isCustom2; // set above
+  var colSpec;
+  if(isCustom){
+    var seen2={};colSpec=[];
+    (fglCustomCols[side]||[]).forEach(function(e){var col=e.split('|')[1];if(col&&!seen2[col]){seen2[col]=true;colSpec.push(col);}});
+  }else{
+    colSpec=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  }
+  var specSet={};colSpec.forEach(function(col){specSet[col]=1;});
+  var allNeeded=colSpec.slice();
+  qualCols2.forEach(function(qc){if(!specSet[qc])allNeeded.push(qc);});
+  var allNeededSet={};allNeeded.forEach(function(col){allNeededSet[col]=1;});
+
+  // Build colName -> headerIndex map, searching all type prefixes for custom
+  var colHeaderIdx={};
+  var allTypesL=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  allTypesL.forEach(function(t){
+    var pfx2=t.key+'_';
+    headers.forEach(function(h,i){
+      if(h.indexOf(pfx2)===0){
+        var col=h.slice(pfx2.length);
+        if(allNeededSet[col]&&colHeaderIdx[col]===undefined)colHeaderIdx[col]=i;
+      }
+    });
+  });
+  var statIdxs=[],statCols=[];
+  allNeeded.forEach(function(col){
+    var idx2=colHeaderIdx[col];
+    statIdxs.push(idx2!==undefined?idx2:-1); // -1 = not in data, show —
+    statCols.push(col);
+  });
+
+  // Year range
+  var yrFrom=fglYearFrom||new Date().getFullYear();
+  var yrTo=Math.max(yrFrom,fglYearTo||yrFrom);
+
+  // Identity col indices
+  var pidIdx=headers.indexOf('playerid');
+  var seasIdx=headers.indexOf('season');
+  var nameIdx=headers.indexOf('PlayerName');
+  var teamIdx=headers.indexOf('Team');
+
+  // Weight col — search across all type prefixes
+  var wgtIdx=-1;
+  var wgtCols=side==='h'?['PA']:['TBF','IP'];
+  outerW: for(var wi=0;wi<wgtCols.length;wi++){
+    if(colHeaderIdx[wgtCols[wi]]!==undefined){wgtIdx=colHeaderIdx[wgtCols[wi]];break;}
+    for(var ti=0;ti<allTypesL.length;ti++){
+      var wIdx2=headers.indexOf(allTypesL[ti].key+'_'+wgtCols[wi]);
+      if(wIdx2>=0){wgtIdx=wIdx2;break outerW;}
+    }
+  }
+
+  // Count stat detection (reuse existing logic)
+  var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
+    '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
+    '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
+    '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
+    '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches'];
+  function isCount(col){
+    for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;
+    return false;
+  }
+
+  // Group rows by player, filtered to year range
+  var aggPlayers=[];
+  if(isCustom&&customMergedRows){
+    // Custom: group merged rows by pid, filter by year range, then aggregate
+    var custByPid={};
+    Object.keys(customMergedRows).forEach(function(key){
+      var mr=customMergedRows[key];
+      if(mr.season<yrFrom||mr.season>yrTo)return;
+      if(!custByPid[mr.pid])custByPid[mr.pid]={name:mr.name,team:mr.team,_lastYr:0,entries:[]};
+      custByPid[mr.pid].entries.push(mr);
+      if(mr.season>=(custByPid[mr.pid]._lastYr||0)){custByPid[mr.pid]._lastYr=mr.season;custByPid[mr.pid].team=mr.team;}
+    });
+    Object.keys(custByPid).forEach(function(pid){
+      var pd=custByPid[pid];
+      if(!pd.entries.length)return;
+      var stats={};
+      statCols.forEach(function(col){
+        var fullCol='Standard_'+col;
+        var vals=pd.entries.map(function(e){return parseFloat(e.cols[colHeaderIdx[col]!==undefined?headers[colHeaderIdx[col]]:null]||'');}).filter(function(v){return!isNaN(v);});
+        // Get values directly from merged cols map
+        var rawVals=pd.entries.map(function(e){
+          // find the value in the merged cols by searching all type prefixes
+          var allT=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+          for(var ti=0;ti<allT.length;ti++){
+            var v2=e.cols[allT[ti].key+'_'+col];
+            if(v2!==undefined&&v2!=='')return parseFloat(v2);
+          }
+          return NaN;
+        }).filter(function(v){return!isNaN(v);});
+        if(!rawVals.length){stats[col]='';return;}
+        if(isCount(fullCol)){
+          stats[col]=String(Math.round(rawVals.reduce(function(a,b){return a+b;},0)*1000)/1000);
+        }else{
+          // Weight by PA/TBF/IP
+          var wgtCol2=side==='h'?'PA':'IP';
+          var allT2=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+          var sw=0,sv2=0;
+          pd.entries.forEach(function(e){
+            var wv=NaN;
+            for(var ti=0;ti<allT2.length;ti++){var wc=allT2[ti].key+'_'+wgtCol2;if(e.cols[wc]!==undefined){wv=parseFloat(e.cols[wc]);break;}}
+            var dv=NaN;
+            for(var ti2=0;ti2<allT2.length;ti2++){var dc=allT2[ti2].key+'_'+col;if(e.cols[dc]!==undefined){dv=parseFloat(e.cols[dc]);break;}}
+            if(!isNaN(wv)&&!isNaN(dv)){sw+=wv;sv2+=dv*wv;}
+          });
+          stats[col]=sw>0?String(Math.round((sv2/sw)*10000)/10000):String(Math.round(rawVals.reduce(function(a,b){return a+b;},0)/rawVals.length*10000)/10000);
+        }
+      });
+      aggPlayers.push({pid:pid,name:pd.name,team:pd.team,stats:stats});
+    });
+  }else{
+    // Standard type: existing row-based aggregation
+    var playerData={};
+    rows.forEach(function(r){
+      var yr=parseInt(r[seasIdx]||0);
+      if(yr<yrFrom||yr>yrTo)return;
+      var pid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+      if(!pid)return;
+      if(!playerData[pid])playerData[pid]={name:String(r[nameIdx]||'').replace(/<[^>]*>/g,'').trim(),team:String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim(),rows:[],_lastYr:0};
+      playerData[pid].rows.push(r);
+      if(yr>=playerData[pid]._lastYr){playerData[pid]._lastYr=yr;playerData[pid].team=String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim();}
+    });
+    Object.keys(playerData).forEach(function(pid){
+      var pd=playerData[pid];
+      if(!pd.rows.length)return;
+      var stats={};
+      statIdxs.forEach(function(si,ii){
+        var col=statCols[ii];
+        if(si<0){stats[col]='';return;}
+        var fullCol='Standard_'+col;
+        if(isCount(fullCol)){
+          var sum=0,hasVal=false;
+          pd.rows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
+          stats[col]=hasVal?String(Math.round(sum*1000)/1000):'';
+        }else{
+          if(wgtIdx>=0){
+            var sw=0,sv=0;
+            pd.rows.forEach(function(r){var w=parseFloat(r[wgtIdx]),v=parseFloat(r[si]);if(!isNaN(w)&&!isNaN(v)){sw+=w;sv+=v*w;}});
+            stats[col]=sw>0?String(Math.round((sv/sw)*10000)/10000):'';
+          }else{
+            var vals=pd.rows.map(function(r){return parseFloat(r[si]);}).filter(function(v){return!isNaN(v);});
+            stats[col]=vals.length?String(Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10000)/10000):'';
+          }
+        }
+      });
+      aggPlayers.push({pid:pid,name:pd.name,team:pd.team,stats:stats});
+    });
   }
 
   // Search
-  var searchEl=document.getElementById('fgl-search');
-  var srch=searchEl?searchEl.value.toLowerCase():'';
-  var nameIdx=headers.indexOf('PlayerName');
+  var srch=((document.getElementById('fgl-search')||{}).value||'').toLowerCase();
+  var players=srch?aggPlayers.filter(function(p){
+    return p.name.toLowerCase().indexOf(srch)>=0||p.team.toLowerCase().indexOf(srch)>=0;
+  }):aggPlayers;
 
-  var rows=data.rows.filter(function(r){
-    if(srch&&nameIdx>=0&&String(r[nameIdx]||'').toLowerCase().indexOf(srch)<0)return false;
+  // Visible stat cols (respecting fglColHidden)
+  var visStatCols=statCols.filter(function(col){
+    if(fglColHidden['fgl_'+col])return false;
+    // Don't show qualifier-only cols unless they're in the explicit spec
+    if(qualCols2.indexOf(col)>=0&&!specSet[col])return false;
     return true;
   });
 
+  // KPIs
+  var kpiEl=document.getElementById('fgl-kpis');
+  if(kpiEl){
+    var yrLabel=yrFrom===yrTo?String(yrFrom):yrFrom+'–'+yrTo;
+    kpiEl.innerHTML=
+      '<div class="fg-kpi"><div class="fg-kpi-lbl">Players</div><div class="fg-kpi-val">'+players.length+'</div></div>'+
+      '<div class="fg-kpi"><div class="fg-kpi-lbl">Season</div><div class="fg-kpi-val" style="font-size:15px">'+yrLabel+'</div></div>'+
+      '<div class="fg-kpi"><div class="fg-kpi-lbl">Type</div><div class="fg-kpi-val" style="font-size:13px">'+(typeKey===FGL_CUSTOM_KEY?'Custom Selection':typeKey)+'</div></div>'+
+      (FG.pulledAt?'<div class="fg-kpi"><div class="fg-kpi-lbl">Last Pull</div><div class="fg-kpi-val" style="font-size:11px">'+new Date(FG.pulledAt).toLocaleDateString()+'</div></div>':'');
+  }
+
+  // Apply stat filters
+  if(fglFilters.length){
+    players=players.filter(function(p){
+      return fglFilters.every(function(f){
+        if(f.isText){var sv2=f.col==='Team'?p.team:(p.name||'');return sv2.toLowerCase().indexOf((f.txt||'').toLowerCase())>=0;}
+        var v=parseFloat(p.stats[f.col]);
+        if(isNaN(v))return false;
+        if(f.min!==''&&f.min!==null&&!isNaN(parseFloat(f.min))&&v<parseFloat(f.min))return false;
+        if(f.max!==''&&f.max!==null&&!isNaN(parseFloat(f.max))&&v>parseFloat(f.max))return false;
+        return true;
+      });
+    });
+  }
+
+  // Render filter chips + count
+  fglRenderFilterChips();
+
   // Sort
   var sc=FG.fgl.sortCol,sa=FG.fgl.sortAsc;
-  if(sc>=0&&sc<visIdx.length){
-    var realIdx=visIdx[sc];
-    rows=rows.slice().sort(function(a,b){
-      var av=a[realIdx],bv=b[realIdx];
+  if(sc>=0){
+    players=players.slice().sort(function(a,b){
+      var av,bv;
+      if(sc===0){av=fgToLastFirst(a.name);bv=fgToLastFirst(b.name);}
+      else if(sc===1){av=a.team;bv=b.team;}
+      else{var col=visStatCols[sc-2];av=col?a.stats[col]:'';bv=col?b.stats[col]:'';}
+      var aE=av===''||av===null||av===undefined||av==='—'||av==='-';
+      var bE=bv===''||bv===null||bv===undefined||bv==='—'||bv==='-';
+      if(aE&&bE)return 0; if(aE)return 1; if(bE)return -1;
       var an=parseFloat(av),bn=parseFloat(bv);
       if(!isNaN(an)&&!isNaN(bn))return sa?an-bn:bn-an;
       return sa?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
     });
   }
 
-  // KPIs
-  fglRenderKpis(rows,headers,visIdx);
+  // Build header
+  var thHTML=
+    '<th onclick="fglSortBy(0)" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#66bb6a;padding:5px 8px;white-space:nowrap;cursor:pointer"'+(0===sc?(sa?' class="fg-asc"':' class="fg-desc"'):'')+'>Player</th>'+
+    '<th onclick="fglSortBy(1)" style="font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:5px 8px;white-space:nowrap;cursor:pointer"'+(1===sc?(sa?' class="fg-asc"':' class="fg-desc"'):'')+'>Team</th>'+
+    visStatCols.map(function(col,i){
+      var ci=i+2;
+      var cls=ci===sc?(sa?'fg-asc':'fg-desc'):'';
+      var colLbl=FGL_COL_LABELS[col]||col;
+      return '<th class="'+cls+'" onclick="fglSortBy('+ci+')" style="font-size:9px;white-space:nowrap;cursor:pointer;text-align:right;padding:5px 8px">'+colLbl+'</th>';
+    }).join('')+
+    '<th style="width:100%"></th>';
 
-  var colLabels=visIdx.map(function(i){return fgsColLabel(headers[i],FG.fgl.type);});
-  var thHTML=colLabels.map(function(lbl,ci){
-    var cls=ci===sc?(sa?'fg-asc':'fg-desc'):'';
-    return '<th class="'+cls+'" onclick="fglSortBy('+ci+')">'+lbl+'</th>';
+  // Paginate
+  var vc=FG.fgl.visibleCount||FG_PAGE;
+  var pagePlayers=players.slice(0,vc);
+
+  var tbody=pagePlayers.map(function(p){
+    var cells=
+      '<td style="white-space:nowrap;padding:4px 8px;font-size:11px;font-weight:700">'+fglToLastFirst(p.name)+'</td>'+
+      '<td style="white-space:nowrap;padding:4px 8px;font-size:11px">'+p.team+'</td>'+
+      visStatCols.map(function(col){
+        var v=p.stats[col];
+        var fmt=(v!==undefined&&v!=='')?fgsFmtStat(col,v):'—';
+        return '<td style="text-align:right;white-space:nowrap;padding:4px 8px;font-size:11px">'+fmt+'</td>';
+      }).join('')+
+      '<td></td>';
+    return '<tr>'+cells+'</tr>';
   }).join('');
 
-  var tbHTML=rows.map(function(r){
-    return '<tr>'+visIdx.map(function(ri,ci){
-      var v=r[ri]!==undefined&&r[ri]!==''?r[ri]:'—';
-      return '<td'+(ci===0?' class="fg-name"':'')+'>'+v+'</td>';
-    }).join('')+'</tr>';
-  }).join('');
+  if(!pagePlayers.length)
+    tbody='<tr><td colspan="'+(visStatCols.length+3)+'" style="text-align:center;padding:40px;color:var(--dim)">'+(aggPlayers.length?'No players match search':'No data for selected years')+'</td></tr>';
 
-  if(!rows.length)tbHTML='<tr><td colspan="'+visIdx.length+'" style="text-align:center;padding:40px;color:var(--dim)">No players match search</td></tr>';
+  headEl.innerHTML='<tr>'+thHTML+'</tr>';
+  bodyEl.innerHTML=tbody;
 
-  wrap.innerHTML='<table><thead><tr>'+thHTML+'</tr></thead><tbody>'+tbHTML+'</tbody></table>';
+  var hasMore=players.length>vc;
+  if(moreEl){
+    moreEl.innerHTML=hasMore
+      ?'<div class="fg-more-bar">Showing '+vc+' of '+players.length+' players'
+        +' <button class="fg-more-btn" onclick="fglShowMore()">Show '+Math.min(FG_PAGE,players.length-vc)+' more</button>'
+        +' <button class="fg-more-btn" onclick="fglShowAll()">Show all '+players.length+'</button></div>'
+      :(players.length>FG_PAGE?'<div class="fg-more-bar" style="color:var(--dim)">All '+players.length+' players shown</div>':'');
+  }
 }
 
-function fglRenderKpis(rows,headers,visIdx){
-  var el=document.getElementById('fgl-kpis');if(!el)return;
-  var nameIdx=headers.indexOf('PlayerName');
-  var players={};
-  rows.forEach(function(r){if(nameIdx>=0)players[r[nameIdx]]=true;});
-  el.innerHTML=
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Total Rows</div><div class="fg-kpi-val">'+rows.length.toLocaleString()+'</div></div>'+
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Players</div><div class="fg-kpi-val">'+Object.keys(players).length.toLocaleString()+'</div></div>'+
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Columns</div><div class="fg-kpi-val">'+visIdx.length+'</div></div>'+
-    '<div class="fg-kpi"><div class="fg-kpi-lbl">Last Pull</div><div class="fg-kpi-val" style="font-size:12px">'+(FG.pulledAt?new Date(FG.pulledAt).toLocaleDateString():'—')+'</div></div>';
+
+function fglShowMore(){
+  FG.fgl.visibleCount=(FG.fgl.visibleCount||FG_PAGE)+FG_PAGE;
+  fglRender();
 }
+function fglShowAll(){
+  var ck='live_'+FG.fgl.side+'_'+FG.fgl.type;
+  var data=FG.live.cache&&FG.live.cache[ck]?FG.live.cache[ck]:null;
+  FG.fgl.visibleCount=data?data.rows.length:99999;
+  fglRender();
+}
+
 
 function fglSortBy(ci){
-  if(FG.fgl.sortCol===ci)FG.fgl.sortAsc=!FG.fgl.sortAsc;
-  else{FG.fgl.sortCol=ci;FG.fgl.sortAsc=false;}
+  if(FG.fgl.sortCol===ci){FG.fgl.sortAsc=!FG.fgl.sortAsc;}
+  else{FG.fgl.sortCol=ci;FG.fgl.sortAsc=(ci===0||ci===1);}
+  FG.fgl.visibleCount=FG_PAGE;
   fglRender();
 }
 
 function fglExportCSV(){
-  var data=FG.fgl.side==='h'?FG.live.hitters:FG.live.pitchers;
-  if(!data||!data.rows||!data.rows.length){toast('No data to export');return;}
-  var headers=data.headers;
-  var visIdx=fgsGetVisibleCols(headers,FG.fgl.type);
-  var colLabels=visIdx.map(function(i){return fgsColLabel(headers[i],FG.fgl.type);});
-  var csv=[colLabels.join(',')].concat(data.rows.map(function(r){
-    return visIdx.map(function(i){var v=String(r[i]||'');return v.indexOf(',')>=0?'"'+v+'"':v;}).join(',');
-  })).join('\n');
+  var cacheKey='live_'+FG.fgl.side+'_'+FG.fgl.type;
+  var cached=FG.live.cache&&FG.live.cache[cacheKey];
+  if(!cached||!cached.rows||!cached.rows.length){toast('No data to export');return;}
+  // Re-run the same aggregation logic as fglRender
+  var headers=cached.headers;
+  var rows=cached.rows;
+  var prefix=FG.fgl.type+'_';
+  var colSpec=(FG_COL_SPEC[FG.fgl.side]&&FG_COL_SPEC[FG.fgl.side][FG.fgl.type])||[];
+  var specSet={};colSpec.forEach(function(c){specSet[c]=1;});
+  var statIdxs=[],statCols=[];
+  headers.forEach(function(h,i){
+    if({playerid:1,season:1,PlayerName:1,Team:1,xMLBAMID:1}[h])return;
+    if(h.indexOf(prefix)===0){var col=h.slice(prefix.length);if(!colSpec.length||specSet[col]){statIdxs.push(i);statCols.push(col);}}
+  });
+  var visStatCols=statCols.filter(function(col){return!fglColHidden['fgl_'+col];});
+  var pidIdx=headers.indexOf('playerid'),seasIdx=headers.indexOf('season');
+  var nameIdx=headers.indexOf('PlayerName'),teamIdx=headers.indexOf('Team');
+  var wgtIdx=FG.fgl.side==='h'?headers.indexOf(prefix+'PA'):(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf(prefix+'IP'));
+  var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI','_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L','_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC'];
+  function isCount2(col){for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;return false;}
+  var yrFrom=fglYearFrom||new Date().getFullYear();
+  var yrTo=Math.max(yrFrom,fglYearTo||yrFrom);
+  var playerData={};
+  rows.forEach(function(r){
+    var yr=parseInt(r[seasIdx]||0);if(yr<yrFrom||yr>yrTo)return;
+    var pid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();if(!pid)return;
+    if(!playerData[pid])playerData[pid]={name:String(r[nameIdx]||'').replace(/<[^>]*>/g,'').trim(),team:String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim(),rows:[],_lastYr:0};
+    playerData[pid].rows.push(r);
+    if(yr>=playerData[pid]._lastYr){playerData[pid]._lastYr=yr;playerData[pid].team=String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim();}
+  });
+  var hdrs=['Player','Team'].concat(visStatCols);
+  var exportRows=Object.keys(playerData).map(function(pid){
+    var pd=playerData[pid];
+    var cells=[fglToLastFirst(pd.name).replace(/,/g,';'),pd.team];
+    visStatCols.forEach(function(col,ii){
+      var si=statIdxs[statCols.indexOf(col)];
+      var fullCol=prefix+col;
+      var v='';
+      if(isCount2(fullCol)){var sum=0,has=false;pd.rows.forEach(function(r){var n=parseFloat(r[si]);if(!isNaN(n)){sum+=n;has=true;}});v=has?String(Math.round(sum*1000)/1000):'';}
+      else if(wgtIdx>=0){var sw=0,sv=0;pd.rows.forEach(function(r){var w=parseFloat(r[wgtIdx]),n=parseFloat(r[si]);if(!isNaN(w)&&!isNaN(n)){sw+=w;sv+=n*w;}});v=sw>0?String(Math.round((sv/sw)*10000)/10000):'';}
+      else{var vals=pd.rows.map(function(r){return parseFloat(r[si]);}).filter(function(n){return!isNaN(n);});v=vals.length?String(Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10000)/10000):'';}
+      cells.push(v.replace(/,/g,';'));
+    });
+    return cells.join(',');
+  });
+  var csv=[hdrs.join(',')].concat(exportRows).join('\n');
   var b=new Blob([csv],{type:'text/csv'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(b);
-  a.download='fg_live_leaderboard_'+FG.fgl.side+'_'+FG.fgl.type.replace(/\s+/g,'_')+'.csv';
-  a.click();
-  toast('Exported '+data.rows.length+' rows');
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='fg_leaderboard_'+FG.fgl.side+'_'+FG.fgl.type+'_'+yrFrom+(yrTo!==yrFrom?'-'+yrTo:'')+'.csv';
+  a.click();toast('Exported '+exportRows.length+' rows');
 }
 
 // ── Auto-check FG status on dashboard load (non-blocking) ──
@@ -3532,5 +5756,38 @@ function fglExportCSV(){
   },3000);
 })();
 </script>
+<!-- CORRELATIONS FULL LIST MODAL -->
+<div class="fgc-modal" id="fgs-corr-modal" onclick="if(event.target===this)fgsCorrCloseModal()">
+  <div class="fgc-box" style="width:min(520px,95vw);max-height:80vh">
+    <div class="fgc-head">
+      <span class="fgc-title" id="fgs-corr-modal-title">Salary Correlations</span>
+      <button class="fgc-close" onclick="fgsCorrCloseModal()">&#215;</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;min-height:0" id="fgs-corr-modal-body"></div>
+  </div>
+</div>
+
+<!-- CUSTOM TAB STAT PICKER MODAL -->
+<div class="fgc-modal" id="fgc-modal">
+  <div class="fgc-box">
+    <div class="fgc-head">
+      <span class="fgc-title">&#9733; Custom Tab &#8212; Add / Remove Stats</span>
+      <button class="fgc-close" onclick="fgcCloseModal()">&#215;</button>
+    </div>
+    <div class="fgc-body">
+      <div class="fgc-types" id="fgc-type-list"></div>
+      <div class="fgc-cols">
+        <div id="fgc-col-header" style="font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)"></div>
+        <div class="fgc-cols-grid" id="fgc-col-grid"></div>
+      </div>
+    </div>
+    <div class="fgc-foot">
+      <span class="fgc-sel-count" id="fgc-sel-count"></span>
+      <button class="btn btd bsm" onclick="fgcClearAll()">Clear All</button>
+      <button class="btn bts bsm" onclick="fgcSelectAll()">Select All</button>
+      <button class="btn bts bsm" onclick="fgcCloseModal()">Done</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
