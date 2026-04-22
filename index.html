@@ -2115,8 +2115,8 @@ function fgPrewarmContractsCache(){
           };
         }catch(e){}
       }
-      setTimeout(warmNext,500);
-    },function(){setTimeout(warmNext,500);},{side:item.side,typeKey:item.typeKey});
+      setTimeout(warmNext,3000);
+    },function(){setTimeout(warmNext,3000);},{side:item.side,typeKey:item.typeKey});
   }
   setTimeout(warmNext,0);
 }
@@ -5418,6 +5418,12 @@ function fglLoadData(){
     var lk=Object.keys(FG.live.cache);
     if(lk.length>20)delete FG.live.cache[lk[0]];
     if(data.pulled_at)FG.pulledAt=data.pulled_at;
+    // Fix: if current year range has no data, reset to latest available year
+    if(years.length){
+      var latestYr=years[0];
+      if(years.indexOf(fglYearFrom)<0){fglYearFrom=latestYr;}
+      if(years.indexOf(fglYearTo)<0){fglYearTo=latestYr;}
+    }
     var d=data.pulled_at?new Date(data.pulled_at):null;
     fgSetStatus('fgl-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
     fglPopulateYears(years);
@@ -6286,6 +6292,19 @@ function cgBuildLdbIndex(side, cb){
       var yearsSet2={};
       if(seasIdx2>=0)rows.forEach(function(r){var y=parseInt(r[seasIdx2]);if(y)yearsSet2[y]=true;});
       FG.live.cache[liveKey]={headers:headers,rows:rows,_years:Object.keys(yearsSet2).map(Number)};
+    }
+    // Pre-populate FG.contracts.cache from the leaderboard data so H2H
+    // stats render immediately on fresh devices without extra fetches
+    var stdCk=side+'_Standard';
+    if(data&&data.headers&&data.rows&&data.rows.length&&
+       (!FG.contracts.cache||!FG.contracts.cache[stdCk]||!FG.contracts.cache[stdCk].rows||!FG.contracts.cache[stdCk].rows.length)){
+      try{
+        var stdAgg=fgsComputeAgg(side,'Standard',data);
+        if(!FG.contracts.cache)FG.contracts.cache={};
+        FG.contracts.cache[stdCk]={headers:stdAgg.headers||[],rows:stdAgg.rows||[],
+          windows:stdAgg.windows||CG_WINDOWS,stat_cols:stdAgg.stat_cols||[],
+          isPartial:false,pulledAt:stdAgg.pulled_at||''};
+      }catch(e){}
     }
     cgSetStatus('','ok');
     cgShowLdbCount(CG.ldbIndex.length);
@@ -8721,6 +8740,20 @@ document.addEventListener('click',function(e){
             +(meta.pitcher_seasons&&meta.pitcher_seasons!=='0'?' · '+meta.pitcher_seasons+' pitcher-seasons':'');
           fgSetStatus('fgs-status',statusMsg,'ok');
           fgSetStatus('fgl-status',ts,'ok');
+          // Trigger FG data load once sheet is ready
+          if(SHEET_READY){
+            var _ap=document.querySelector('.pnl.on');
+            if(_ap&&_ap.id==='p-fgstats')initFgStats();
+            else if(_ap&&_ap.id==='p-fglive')initFgLive();
+          }else{
+            var _fgST=setInterval(function(){
+              if(!SHEET_READY)return;
+              clearInterval(_fgST);
+              var _ap2=document.querySelector('.pnl.on');
+              if(_ap2&&_ap2.id==='p-fgstats')initFgStats();
+              else if(_ap2&&_ap2.id==='p-fglive')initFgLive();
+            },500);
+          }
         }else{
           fgSetStatus('fgs-status','No FanGraphs data yet — click "Pull FanGraphs Data" to fetch','err');
         }
