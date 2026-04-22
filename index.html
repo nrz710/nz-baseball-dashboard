@@ -6876,7 +6876,7 @@ function cgBuildCompStats(){
     var mlsRaw=m._rawRow&&(m._rawRow['MLSsig_0']||m._rawRow['MLSsig']);
     return{name:m.name,py:entry.py,pPos:m.pPos||'',sigTm:m.sigTm||'',
            guar:m.guar||0,guarAav:m.guarAav||0,aav:m.aav||0,
-           fy:m.fy||'',term:m.term||0,sigAge:m.sigAge||0,
+           fy:m.fy||'',fyAge:m.fyAge||null,term:m.term||0,sigAge:m.sigAge||0,
            code:m.code||'',mlsSig:mlsRaw!==undefined&&mlsRaw!==''?parseFloat(mlsRaw)||0:null,
            stats:stats};
   });
@@ -7505,6 +7505,11 @@ function cgOpenCodeDropdown(){
   list.style.display=cgCodeFilterOpen?'block':'none';
   var btn=document.getElementById('cg-code-btn');
   if(btn)btn.classList.toggle('active',cgCodeFilterOpen);
+  // Ensure list stays within viewport vertically
+  if(cgCodeFilterOpen&&list){
+    var r=list.getBoundingClientRect();
+    if(r.bottom>window.innerHeight)list.style.top='auto';
+  }
 }
 
 function cgClearCodeFilter(){
@@ -7516,6 +7521,19 @@ function cgClearCodeFilter(){
   if(list){list.style.display='none';list.querySelectorAll('input').forEach(function(cb){cb.checked=false;});}
   cgRenderCompsBody();
 }
+
+function cgBuildPosDropdown(){
+  // Build position list from current scored cache
+  var positions=[];
+  var seen={};
+  cgScoredCache.forEach(function(s){
+    var pos=(s.cp.pPos||'').trim();
+    if(pos&&!seen[pos]){seen[pos]=true;positions.push(pos);}
+  });
+  positions.sort();
+  var selected=cgCompFilter.pPos||'';
+  return '<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'    +'<select id="cg-pos-sel" onchange="cgApplyCompFilter(\'pPos\',this.value)" '    +'style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 4px;width:58px;cursor:pointer;outline:none">'    +'<option value="">All</option>'    +positions.map(function(pos){      return '<option value="'+pos+'"'+(selected===pos?' selected':'')+'>'+pos+'</option>';    }).join('')    +'</select></td>';}
+
 
 // Build the code dropdown (called once when header is built)
 function cgBuildCodeDropdown(){
@@ -7530,9 +7548,9 @@ function cgBuildCodeDropdown(){
   var btnLabel=selected.length?selected.join(', '):'Any';
 
   return '<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'
-    +'<div style="position:relative">'
+    +'<div style="position:relative;display:inline-block">'
     +'<button id="cg-code-btn" onclick="cgOpenCodeDropdown()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 6px;cursor:pointer;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:80px;text-align:left">'+btnLabel+'</button>'
-    +'<div id="cg-code-list" style="display:none;position:fixed;z-index:9999;background:var(--s2);border:1px solid rgba(255,255,255,0.15);border-radius:5px;box-shadow:0 6px 20px rgba(0,0,0,0.7);padding:4px 0;max-height:200px;overflow-y:auto;min-width:110px">'
+    +'<div id="cg-code-list" style="display:none;position:absolute;top:100%;left:0;z-index:9999;background:var(--s2);border:1px solid rgba(255,255,255,0.15);border-radius:5px;box-shadow:0 6px 20px rgba(0,0,0,0.7);padding:4px 0;max-height:200px;overflow-y:auto;min-width:110px">'
     +(codes.length?
         '<div onclick="cgClearCodeFilter()" style="padding:5px 10px;font-size:10px;color:var(--accent);cursor:pointer;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.07)">Clear</div>'
         +codes.map(function(c){
@@ -7796,6 +7814,7 @@ function cgRenderCompsTable(activeTypes,activeTFs,useCorr){
     +th('FY','fy','center')
     +th('Term','term')
     +th('Age@Sign','sigAge')
+    +th('FY Age','fyAge')
     +th('GUAR AAV','guarAav')
     +th('GUAR Total','guar')
     +th('Code','code','center')
@@ -7805,13 +7824,14 @@ function cgRenderCompsTable(activeTypes,activeTFs,useCorr){
     +fempty()
     +ft('name','name…','100px')
     +fr('pyMin','pyMax','from','to','40px')
-    +ft('pPos','pos…','38px')
+    +cgBuildPosDropdown()
     +ft('sigTm','team…','42px')
     +fr('pctMin','pctMax','≥%','≤%','34px')
     +fr('statMin','statMax','≥','≤','32px')
     +fr('fyMin','fyMax','from','to','36px')
     +fr('termMin','termMax','≥yr','≤yr','32px')
     +fr('ageMin','ageMax','≥','≤','32px')
+    +fr('fyAgeMin','fyAgeMax','≥','≤','32px')
     +fr('guarAavMin','guarAavMax','≥$M','≤$M','36px')
     +fr('guarMin','guarMax','≥$M','≤$M','36px')
     +cgBuildCodeDropdown()
@@ -7819,12 +7839,7 @@ function cgRenderCompsTable(activeTypes,activeTFs,useCorr){
     +'</tr>';
   headEl.innerHTML=head;
 
-  // Position code dropdown below its button after DOM insertion
-  setTimeout(function(){
-    var btn=document.getElementById('cg-code-btn');
-    var list=document.getElementById('cg-code-list');
-    if(btn&&list){var r=btn.getBoundingClientRect();list.style.top=(r.bottom+2)+'px';list.style.left=r.left+'px';}
-  },0);
+  // (code dropdown now uses position:absolute — no manual positioning needed)
 
   _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr);
 }
@@ -7856,7 +7871,8 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
     if(!inRange(s.statCount,'statMin','statMax')) return false;
     if(!inRange(cp.fy,      'fyMin','fyMax'))     return false;
     if(!inRange(cp.term,    'termMin','termMax')) return false;
-    if(!inRange(cp.sigAge,  'ageMin','ageMax'))   return false;
+    if(!inRange(cp.sigAge,  'ageMin','ageMax'))     return false;
+    if(!inRange(cp.fyAge,   'fyAgeMin','fyAgeMax')) return false;
     if(!inRange(cp.guarAav, 'guarAavMin','guarAavMax'))return false;
     if(!inRange(cp.guar,    'guarMin','guarMax')) return false;
     var selCodes=cgCompFilter.codes;
@@ -7869,7 +7885,7 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
   var getV=function(s){
     var cp=s.cp;
     var map={pctMatch:s.pctMatch,name:cp.name,py:cp.py,pPos:cp.pPos,sigTm:cp.sigTm,
-             statCount:s.statCount,fy:cp.fy,term:cp.term,sigAge:cp.sigAge,
+             statCount:s.statCount,fy:cp.fy,term:cp.term,sigAge:cp.sigAge,fyAge:cp.fyAge,
              guarAav:cp.guarAav,guar:cp.guar,code:cp.code,mlsSig:cp.mlsSig};
     return map[sc]!==undefined?map[sc]:s.pctMatch;
   };
@@ -7947,6 +7963,7 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
       +td(cp.fy||'—','center')
       +td(cp.term?cp.term+'yr':'—')
       +td(cp.sigAge?cp.sigAge.toFixed(1):'—')
+      +td(cp.fyAge?cp.fyAge.toFixed(0):'—')
       +td(cp.guarAav?'$'+cp.guarAav.toFixed(1)+'M':'')
       +td(cp.guar?'$'+cp.guar.toFixed(0)+'M':'')
       +td(cp.code||'—','center')
