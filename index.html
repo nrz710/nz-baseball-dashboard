@@ -3,6 +3,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -135,7 +136,26 @@ svg.ch{display:block}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
-@media(max-width:600px){.fg{grid-template-columns:1fr 1fr}.cr{grid-template-columns:1fr}}
+/* ── Comp Generator ── */
+.cg-stat-table{width:100%;border-collapse:collapse;font-size:11px}
+.cg-stat-table th{font-size:9px;letter-spacing:1.2px;color:var(--dim);text-transform:uppercase;padding:5px 10px;text-align:right;cursor:default;white-space:nowrap;border-bottom:1px solid var(--border);background:var(--s2)}
+.cg-stat-table th:first-child{text-align:left}
+.cg-stat-table td{padding:4px 10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:right;white-space:nowrap;color:var(--text)}
+.cg-stat-table td:first-child{text-align:left;font-weight:700;color:var(--accent)}
+.cg-stat-table tr:hover td{background:rgba(255,255,255,0.025)}
+.cg-tf-hdr{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;text-align:center;white-space:nowrap}
+.cg-comp-rank{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0}
+.cg-comp-bar{height:4px;border-radius:2px;background:var(--s3);overflow:hidden;margin-top:2px}
+.cg-comp-bar-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .3s}
+.cg-type-btn{background:var(--s1);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 8px;text-transform:uppercase;white-space:nowrap;transition:all .15s}
+.cg-type-btn.on{background:var(--s3);color:var(--text);border-color:rgba(255,255,255,0.2)}
+.cg-type-btn:hover{color:var(--text)}
+.cg-player-dd-item{padding:8px 12px;font-size:12px;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.cg-player-dd-item:hover{background:rgba(255,255,255,0.06)}
+.cg-player-dd-item:last-child{border-bottom:none}
+.cg-player-dd-meta{font-size:10px;color:var(--dim);white-space:nowrap}
+.cg-corr-pill{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.5px}
+
 .filter-bar{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;overflow:visible}
 .filter-chip{display:flex;align-items:center;gap:4px;background:var(--s3);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:11px;position:relative;overflow:visible}
 .filter-chip label{color:var(--dim);font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
@@ -368,6 +388,8 @@ svg.ch{display:block}
   <div class="nav">
     <button class="nb on" data-p="fgstats" onclick="go('fgstats')">CONTRACT OVERVIEW</button>
     <button class="nb" data-p="fglive" onclick="go('fglive')">LIVE LEADERBOARDS</button>
+    <button class="nb" data-p="compgen" onclick="go('compgen')">COMP GENERATOR</button>
+    <button class="nb" data-p="h2hcomp" onclick="go('h2hcomp')">H2H COMPARISON</button>
     <button class="nb" data-p="overview" onclick="go('overview')">STATIC OVERVIEW</button>
     <button class="nb" data-p="hitters" onclick="go('hitters')">Hitters</button>
     <button class="nb" data-p="pitchers" onclick="go('pitchers')">Pitchers</button>
@@ -573,8 +595,199 @@ svg.ch{display:block}
       <div class="cb" style="margin-top:16px"><div class="cbt">Contract Value Map</div><div class="cbs">All players — AAV vs aWAR</div><div class="ca" id="c-cmp"></div></div>
     </div>
 
-    <div class="pnl" id="p-sources">
-      <div class="pgt">Data Sources</div>
+    <!-- ═══════════════════════════════════════════════════════════════
+         COMP GENERATOR PANEL — Diamond Dollars v9.1
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="pnl" id="p-compgen">
+      <div class="pgt">Comp Generator</div>
+      <div class="pgs">Compare live leaderboard stats to contract comps — find the 25 closest matches</div>
+
+      <!-- ── WINDOW 1: Player Selector ──────────────────────────────── -->
+      <div class="tw" id="cg-win1" style="margin-bottom:14px">
+        <div class="th">
+          <div class="tt" style="display:flex;align-items:center;gap:8px">
+            <span style="background:var(--accent);color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">1</span>
+            Select Player &amp; Platform Year
+          </div>
+          <div class="tc" style="flex-wrap:wrap;gap:8px">
+            <span id="cg-status" style="font-size:10px;color:var(--dim);letter-spacing:1px"></span>
+          </div>
+        </div>
+        <div style="padding:14px 18px;background:rgba(232,197,71,0.03);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase">Player Type:</span>
+          <button class="grp-btn g-py on" id="cg-side-h" onclick="cgSetSide('h',this)">Hitters</button>
+          <button class="grp-btn g-py1" id="cg-side-p" onclick="cgSetSide('p',this)">Pitchers</button>
+          <span style="margin-left:12px;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase">Search from:</span>
+          <span style="font-size:10px;color:var(--dim)" id="cg-ldb-note">Live FanGraphs leaderboard — all players, not just contract holders</span>
+          <span id="cg-ldb-count" style="font-size:10px;color:var(--green);margin-left:4px"></span>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+          <!-- Player search -->
+          <div style="display:flex;flex-direction:column;gap:5px;min-width:260px;flex:1">
+            <label class="fl">Player Name or FanGraphs ID</label>
+            <div style="position:relative">
+              <input class="si2" id="cg-player-search" placeholder="Type to search leaderboard..." oninput="cgPlayerSearch(this.value)" autocomplete="off" style="width:100%;padding-right:28px">
+              <button onclick="cgClearPlayer()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0" title="Clear">&#215;</button>
+            </div>
+            <div id="cg-player-dropdown" style="display:none;position:fixed;z-index:99999;background:var(--s2);border:1px solid rgba(255,255,255,0.12);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,0.7);min-width:320px;max-height:260px;overflow-y:auto"></div>
+          </div>
+          <!-- Season picker — populated from leaderboard years for selected player -->
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <label class="fl">Platform Year (PY)</label>
+            <select class="sel" id="cg-py-sel" onchange="cgPyChange()" style="min-width:110px">
+              <option value="">Select player first</option>
+            </select>
+          </div>
+          <!-- Go button -->
+          <button class="btn" onclick="cgLoadPlayer()" style="align-self:flex-end;height:34px">Load Stats &amp; Generate Comps</button>
+        </div>
+        <!-- Selected player card — shows leaderboard identity, no contract info -->
+        <div id="cg-player-card" style="display:none;margin:0 18px 16px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:160px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                <div id="cg-card-name" style="font-size:18px;font-weight:900;letter-spacing:1px;color:var(--accent)"></div>
+                <div id="cg-card-side-pill" style="font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:2px 7px;border-radius:3px;font-weight:800"></div>
+              </div>
+              <div id="cg-card-meta" style="font-size:10px;color:var(--dim);letter-spacing:1px"></div>
+              <div style="font-size:9px;color:var(--dim);margin-top:4px;font-style:italic">Leaderboard player — comps drawn from contract database</div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap" id="cg-card-stats"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── WINDOW 2: Stats + Timeframe Picker ────────────────────── -->
+      <div class="tw" id="cg-win2" style="margin-bottom:14px;display:none">
+        <div class="th">
+          <div class="tt" style="display:flex;align-items:center;gap:8px">
+            <span style="background:var(--accent);color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">2</span>
+            Player Stats by Timeframe
+          </div>
+          <div class="tc" style="gap:6px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Timeframes:</span>
+            <button class="grp-btn g-py on" id="cg-tf-py"  onclick="cgToggleTF('py',this)">PY</button>
+            <button class="grp-btn g-py1" id="cg-tf-py1" onclick="cgToggleTF('py1',this)">PY-1</button>
+            <button class="grp-btn g-py2" id="cg-tf-py2" onclick="cgToggleTF('py2',this)">PY-2</button>
+            <button class="grp-btn g-l2"  id="cg-tf-l2"  onclick="cgToggleTF('l2',this)">L2</button>
+            <button class="grp-btn g-l3"  id="cg-tf-l3"  onclick="cgToggleTF('l3',this)">L3</button>
+            <button class="grp-btn g-car" id="cg-tf-car" onclick="cgToggleTF('car',this)">Career</button>
+            <span style="margin-left:8px;font-size:10px;color:var(--dim)">Stats:</span>
+            <button class="cg-type-btn on" id="cg-custom-btn" onclick="cgOpenCustomPicker()" style="background:rgba(232,197,71,0.12);border-color:rgba(232,197,71,0.35);color:var(--accent)">&#9733; Custom</button>
+            <div id="cg-type-toggles" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+        <div id="cg-stats-body" style="padding:14px 18px;overflow-x:auto">
+          <div class="emp"><div class="fg-spinner" style="margin:0 auto 12px"></div><div style="font-size:12px;color:var(--dim)">Loading stats...</div></div>
+        </div>
+      </div>
+
+      <!-- ── WINDOW 2.5: Same-PY Leaderboard Peers ─────────────────── -->
+      <div class="tw" id="cg-win-peers" style="margin-bottom:14px;display:none">
+        <div class="th">
+          <div class="tt" style="display:flex;align-items:center;gap:8px">
+            <span style="background:var(--blue);color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">&#9670;</span>
+            Same-Season Leaderboard Peers
+          </div>
+          <div class="tc" style="gap:8px">
+            <span id="cg-peers-meta" style="font-size:10px;color:var(--dim)"></span>
+          </div>
+        </div>
+        <div style="padding:10px 18px 6px;font-size:10px;color:var(--dim);border-bottom:1px solid var(--border)">
+          Top leaderboard players in the same season with the closest statistical profile — useful for identifying cohort comparisons before contract comps are applied.
+        </div>
+        <div id="cg-peers-body" style="padding:14px 18px"></div>
+      </div>
+
+      <!-- ── WINDOW 3: Top 25 Comparables ──────────────────────────── -->
+      <div class="tw" id="cg-win3" style="display:none">
+        <div class="th">
+          <div class="tt" style="display:flex;align-items:center;gap:8px">
+            <span style="background:var(--accent);color:#000;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">3</span>
+            Top 25 Comparable Contract Players
+          </div>
+          <div class="tc" style="gap:10px;align-items:center;flex-wrap:wrap">
+            <!-- Correlation weighting toggle -->
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--dim);user-select:none" title="Weight stats by their historical correlation to salary — stats that correlate more strongly to contract value get a slightly higher weight in comparability scoring">
+              <input type="checkbox" id="cg-use-corr" onchange="cgRunComps()" style="accent-color:var(--accent);cursor:pointer;width:13px;height:13px">
+              <span>Correlation Weighting</span>
+              <span style="background:rgba(232,197,71,0.12);border:1px solid rgba(232,197,71,0.25);border-radius:3px;padding:1px 5px;font-size:9px;letter-spacing:1px;color:var(--accent);text-transform:uppercase">Beta</span>
+            </label>
+            <button class="btn bts bsm" onclick="cgRunComps()">&#8635; Recalculate</button>
+            <button class="btn bts bsm" onclick="cgExportComps()">Export CSV</button>
+          </div>
+        </div>
+        <div id="cg-comps-status" style="display:none;padding:8px 18px;font-size:11px;color:var(--dim);background:rgba(232,197,71,0.04);border-bottom:1px solid var(--border)"></div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead id="cg-comps-head"></thead>
+            <tbody id="cg-comps-body"><tr><td colspan="20" style="text-align:center;padding:50px;color:var(--dim)">Load a player above to generate comps</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- end p-compgen -->
+    <!-- ═══════════════════════════════════════════ H2H COMPARISON PANEL ══ -->
+    <div class="pnl" id="p-h2hcomp">
+      <div class="pgt">H2H Comparison</div>
+      <div class="pgs">Select any number of leaderboard players across seasons and compare their stats side-by-side</div>
+
+      <!-- Player selector -->
+      <div class="tw" style="margin-bottom:14px">
+        <div class="th">
+          <div class="tt">Add Players</div>
+          <div class="tc" style="gap:8px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--dim)">Player type:</span>
+            <button class="grp-btn g-py on" id="h2h-side-h" onclick="h2hSetSide('h',this)">Hitters</button>
+            <button class="grp-btn g-py1" id="h2h-side-p" onclick="h2hSetSide('p',this)">Pitchers</button>
+            <span id="h2h-ldb-count" style="font-size:10px;color:var(--green)"></span>
+          </div>
+        </div>
+        <div style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:220px;position:relative">
+            <label class="fl">Player Name or FanGraphs ID</label>
+            <div style="position:relative">
+              <input class="si2" id="h2h-search" placeholder="Type to search leaderboard..." oninput="h2hSearch(this.value)" autocomplete="off" style="width:100%;padding-right:28px">
+              <button onclick="h2hClearSearch()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;line-height:1;padding:0">&#215;</button>
+            </div>
+            <div id="h2h-search-dd" style="display:none;position:fixed;z-index:99999;background:var(--s2);border:1px solid rgba(255,255,255,0.12);border-radius:6px;box-shadow:0 8px 28px rgba(0,0,0,0.7);min-width:300px;max-height:240px;overflow-y:auto"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <label class="fl">Season (PY)</label>
+            <select class="sel" id="h2h-py-sel" style="min-width:100px"><option value="">Select player first</option></select>
+          </div>
+          <button class="btn" onclick="h2hAddPlayer()" style="align-self:flex-end;height:34px">+ Add Player</button>
+        </div>
+      </div>
+
+      <!-- Selected players list -->
+      <div class="tw" id="h2h-roster-wrap" style="margin-bottom:14px;display:none">
+        <div class="th">
+          <div class="tt">Selected Players</div>
+          <div class="tc" style="gap:8px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--dim)">Timeframes:</span>
+            <button class="grp-btn g-py on"  id="h2h-tf-py"  onclick="h2hToggleTF('py',this)">PY</button>
+            <button class="grp-btn g-py1"    id="h2h-tf-py1" onclick="h2hToggleTF('py1',this)">PY-1</button>
+            <button class="grp-btn g-py2"    id="h2h-tf-py2" onclick="h2hToggleTF('py2',this)">PY-2</button>
+            <button class="grp-btn g-l2"     id="h2h-tf-l2"  onclick="h2hToggleTF('l2',this)">L2</button>
+            <button class="grp-btn g-l3"     id="h2h-tf-l3"  onclick="h2hToggleTF('l3',this)">L3</button>
+            <button class="grp-btn g-car"    id="h2h-tf-car" onclick="h2hToggleTF('car',this)">Career</button>
+            <button id="h2h-custom-btn" class="btn bts bsm" style="margin-left:8px" onclick="h2hOpenCustomPicker()">&#9733; Custom Stats</button>
+            <span style="font-size:10px;color:var(--dim);margin-left:8px">Compare vs:</span>
+            <select id="h2h-ref-sel" onchange="h2hSetRef(this.value)" style="background:var(--s2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:10px;padding:3px 7px;cursor:pointer">
+              <option value="">— off —</option>
+            </select>
+            <button class="btn btd bsm" onclick="h2hClearAll()">Clear All</button>
+          </div>
+        </div>
+        <div id="h2h-roster" style="padding:10px 18px;display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+
+      <!-- Comparison tables — one per active timeframe -->
+      <div id="h2h-tables"></div>
+    </div><!-- end p-h2hcomp -->
+
+
+    <div class="pnl" id="p-sources">      <div class="pgt">Data Sources</div>
       <div class="pgs">Google Sheet master &middot; FanGraphs &middot; Baseball Savant supplemental</div>
       <div class="fc">
         <div class="fct">Google Sheet (Master Source)</div>
@@ -1024,7 +1237,13 @@ var USERS_KEY='dl_users';
 var currentUser=null; // {id, name, pw}
 
 function getUsers(){
-  try{var u=localStorage.getItem(USERS_KEY);if(u)return JSON.parse(u);}catch(e){}
+  try{
+    var u=localStorage.getItem(USERS_KEY);
+    if(u){var parsed=JSON.parse(u);if(Array.isArray(parsed)&&parsed.length)return parsed;}
+  }catch(e){
+    // Corrupted data — clear it so the bootstrap re-seeds Admin
+    try{localStorage.removeItem(USERS_KEY);}catch(e2){}
+  }
   return[];
 }
 function saveUsers(users){try{localStorage.setItem(USERS_KEY,JSON.stringify(users));}catch(e){}}
@@ -1050,6 +1269,7 @@ function loadUserState(user){
     if(s.fgsGrps)fgsGrps=Object.assign({py:true,py1:false,py2:false,l2:false,l3:false,car:false},s.fgsGrps);
     if(s.fgColHidden)fgColHidden=Object.assign({},s.fgColHidden);
     if(s.fgsCustomCols)fgsCustomCols=Object.assign({h:[],p:[]},s.fgsCustomCols);
+    if(s.cgCustomCols)cgCustomCols=Object.assign({h:[],p:[]},s.cgCustomCols);
     if(s.fglYearFrom)fglYearFrom=s.fglYearFrom;
     if(s.fglYearTo)fglYearTo=s.fglYearTo;
     if(s.fglColHidden)fglColHidden=Object.assign({},s.fglColHidden);
@@ -1077,6 +1297,7 @@ function saveUserState(){
       fgsGrps:fgsGrps,
       fgColHidden:fgColHidden,
       fgsCustomCols:fgsCustomCols,
+      cgCustomCols:cgCustomCols,
       fglYearFrom:fglYearFrom,
       fglYearTo:fglYearTo,
       fglColHidden:fglColHidden,
@@ -1354,6 +1575,8 @@ function go(id){
     else if(id==='edit')try{renderManualTable();}catch(e){}
     else if(id==='fgstats')try{initFgStats();}catch(e){console.error(e);}
     else if(id==='fglive')try{initFgLive();}catch(e){console.error(e);}
+    else if(id==='compgen')try{initCompGen();}catch(e){console.error(e);}
+    else if(id==='h2hcomp')try{initH2H();}catch(e){console.error(e);}
   }catch(e){console.error('Tab error:',e);}
 }
 
@@ -1837,8 +2060,62 @@ function renderAll(){
   try{renderSuppSummary();}catch(e){}
   // Hitters/Pitchers: re-render if currently visible
   try{var hp=document.querySelector('.pnl.on');if(hp){if(hp.id==='p-hitters')renderHitters();else if(hp.id==='p-pitchers')renderPitchers();}}catch(e){}
+  // FG tabs: init if currently visible (fixes type-tabs not populating on first load)
+  try{var ap=document.querySelector('.pnl.on');if(ap){if(ap.id==='p-fgstats')initFgStats();else if(ap.id==='p-fglive')initFgLive();}}catch(e){}
   // Persist user state after every full render
   try{saveUserState();}catch(e){}
+  // Background: silently pre-warm FG.contracts.cache for all hitter types
+  // so H2H and CG work immediately without needing to fetch on demand
+  setTimeout(fgPrewarmContractsCache, 500);
+}
+
+// Pre-warm FG.contracts.cache for all types by driving fgsLoadData's
+// exact fetch mechanism — the only path proven to work reliably.
+// Saves FG.fgs state, runs each type through the normal load path,
+// then restores state. Silent — no status messages, no table renders.
+function fgPrewarmContractsCache(){
+  var savedSide=FG.fgs.side, savedType=FG.fgs.type;
+  var items=[];
+  ['h','p'].forEach(function(side){
+    (side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES).forEach(function(t){
+      items.push({side:side,typeKey:t.key});
+    });
+  });
+  var qi=0;
+  function warmNext(){
+    if(qi>=items.length){
+      // Restore state
+      FG.fgs.side=savedSide; FG.fgs.type=savedType;
+      return;
+    }
+    var item=items[qi++];
+    var ck=item.side+'_'+item.typeKey;
+    if(FG.contracts.cache&&FG.contracts.cache[ck]&&
+       FG.contracts.cache[ck].rows&&FG.contracts.cache[ck].rows.length){
+      warmNext(); return;
+    }
+    // Use fgLoad exactly as fgsLoadData does — no side effects
+    fgLoad('fg_contracts',function(ctData){
+      if(ctData&&ctData.headers&&ctData.rows&&ctData.rows.length&&
+         ctData.status!=='no_data'&&ctData.status!=='pull_running'){
+        try{
+          var agg=fgsComputeAgg(item.side,item.typeKey,ctData);
+          if(!FG.contracts.cache)FG.contracts.cache={};
+          FG.contracts.cache[ck]={
+            headers:agg.headers||[],rows:agg.rows||[],
+            windows:agg.windows||CG_WINDOWS,stat_cols:agg.stat_cols||[],
+            isPartial:false,pulledAt:agg.pulled_at||''
+          };
+          if(!FG.live.cache)FG.live.cache={};
+          FG.live.cache[item.side+'_'+item.typeKey]={
+            headers:ctData.headers,rows:ctData.rows,_years:[]
+          };
+        }catch(e){}
+      }
+      setTimeout(warmNext,500);
+    },function(){setTimeout(warmNext,500);},{side:item.side,typeKey:item.typeKey});
+  }
+  setTimeout(warmNext,0);
 }
 function populateYrFilters(){
   var years=[];DB.merged.forEach(function(p){if(p.py&&years.indexOf(p.py)===-1)years.push(p.py);});years.sort(function(a,b){return b-a;});
@@ -3592,7 +3869,7 @@ var FG_PITCHER_TYPES=[
 // Defined once here; used by both the FG Contracts tab and the Live tab.
 var FG_COL_SPEC = {
   h: {
-    'Standard':         ['G','AB','PA','H','1B','2B','3B','HR','R','RBI','BB','IBB','SO','HBP','SF','SH','GDP','SB','CS','AVG'],
+    'Standard':         ['Age','G','AB','PA','H','1B','2B','3B','HR','R','RBI','BB','IBB','SO','HBP','SF','SH','GDP','SB','CS','AVG'],
     'Advanced':         ['PA','BB%','K%','BB/K','AVG','OBP','SLG','OPS','ISO','Spd','BABIP','UBR','wGDP','XBR','wSB','wRC','wRAA','wOBA','wRC+'],
     'Batted Ball':      ['BABIP','GB/FB','LD%','GB%','FB%','IFFB%','HR/FB','IFH','IFH%','BUH','BUH%','Pull%','Cent%','Oppo%','Soft%','Med%','Hard%'],
     'Win Probability':  ['WPA','-WPA','+WPA','RE24','REW','pLI','phLI','PH','WPA/LI','Clutch'],
@@ -3603,7 +3880,7 @@ var FG_COL_SPEC = {
     'Plate Disc ABS':   ['PA','O-Swing%','Z-Swing%','Swing%','O-Contact%','Z-Contact%','Contact%','Zone%','Pace']
   },
   p: {
-    'Standard':         ['W','L','ERA','G','GS','QS','CG','ShO','SV','HLD','BS','IP','TBF','H','R','ER','HR','BB','IBB','HBP','WP','BK','SO'],
+    'Standard':         ['Age','W','L','ERA','G','GS','QS','CG','ShO','SV','HLD','BS','IP','TBF','H','R','ER','HR','BB','IBB','HBP','WP','BK','SO'],
     'Advanced':         ['K/9','BB/9','K/BB','HR/9','K%','BB%','K-BB%','AVG','WHIP','BABIP','LOB%','ERA-','FIP-','xFIP-','ERA','FIP','E-F','xFIP','SIERA'],
     'Batted Ball':      ['BABIP','GB/FB','LD%','GB%','FB%','IFFB%','HR/FB','RS','RS/9','Balls','Strikes','Pitches','Pull%','Cent%','Oppo%','Soft%','Med%','Hard%'],
     'Win Probability':  ['WPA','-WPA','+WPA','RE24','REW','pLI','inLI','gmLI','exLI','Pulls','WPA/LI','Clutch','SD','MD'],
@@ -3633,11 +3910,12 @@ var FG_PAGE=150;
 // Previously `arguments[3]` worked in all browsers but was invisible to code readers
 // and would silently break if any build tool normalized the argument list.
 // All callers that passed a 4th arg (fgsLoadData) are unaffected — call sites unchanged.
+fgLoad._seq=0;
 function fgLoad(mode, onSuccess, onError, extraParams) {
   var urlEl=document.getElementById('s-gsurl');
   var base=(urlEl&&urlEl.value.trim())?urlEl.value.trim():SCRIPT_URL;
   base=base.replace(/\/+$/,'');
-  var cbName='fgCB_'+mode+'_'+Date.now();
+  var cbName='fgCB_'+mode+'_'+Date.now()+'_'+(++fgLoad._seq);
   var script=document.createElement('script');
   var done=false;
   var timeout=mode==='fg_pull'?600000:120000; // pull gets 10min, reads get 2min (GAS cold start)
@@ -4007,6 +4285,7 @@ function fgsComputeAgg(side,typeKey,ctData){
     '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches',
     '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard'];
   function isCount(col){
+    if(isRateOverride(col)) return false;
     for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;
     return false;
   }
@@ -4140,17 +4419,36 @@ function fgsComputeAgg(side,typeKey,ctData){
         var col=filtStatCols[ii];
         if(!validRows.length){row.push('');return;}
         var fullCol=prefix+col;
+        // Age: single-year windows → plain integer; multi-year windows → "min-max" range string
+        if(col==='Age'){
+          var ages=validRows.map(function(r){return parseFloat(r[si]);}).filter(function(v){return!isNaN(v);});
+          if(!ages.length){row.push('');return;}
+          if(yrs.length<=1){row.push(String(Math.round(ages[0])));return;}
+          var mn=Math.round(Math.min.apply(null,ages));
+          var mx=Math.round(Math.max.apply(null,ages));
+          row.push(mn===mx?String(mn):mn+'-'+mx);
+          return;
+        }
         if(isCount(fullCol)){
           var sum=0,hasVal=false;
           validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
-          row.push(hasVal&&validRows.length===yrs.length?String(Math.round(sum*1000)/1000):'');
+          row.push(hasVal?String(Math.round(sum*1000)/1000):''); // partial seasons OK
         }else{
           if(wgtCol>=0){
             var sw=0,sv2=0;
-            validRows.forEach(function(r){var w2=parseFloat(r[wgtCol]),v=parseFloat(r[si]);if(!isNaN(w2)&&!isNaN(v)){sw+=w2;sv2+=v*w2;}});
-            row.push(sw>0?String(Math.round((sv2/sw)*10000)/10000):'');
+            validRows.forEach(function(r){
+              var rawW=r[wgtCol]; var w2=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
+              var rawV=r[si];     var v2=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
+              if(!isNaN(w2)&&!isNaN(v2)){sw+=w2;sv2+=v2*w2;}
+            });
+            if(sw>0){row.push(String(Math.round((sv2/sw)*10000)/10000));}
+            else{
+              // Weight unavailable — fall back to simple mean
+              var vals2=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
+              row.push(vals2.length?String(Math.round(vals2.reduce(function(a,b){return a+b;},0)/vals2.length*10000)/10000):'');
+            }
           }else{
-            var vals=validRows.map(function(r){return parseFloat(r[si]);}).filter(function(v){return!isNaN(v);});
+            var vals=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
             row.push(vals.length?String(Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10000)/10000):'');
           }
         }
@@ -4310,7 +4608,9 @@ function renderFgStats(){
       var aggRow=getAggRow(p);
       if(!aggRow)return true;
       var per=f.per||activePer;
-      var winKey=FGS_WINDOW_MAP[per]||'PY';
+      // Age filter: always compare against the PY (single-year) value so numeric
+      // range filters work correctly — multi-year windows store "29-31" strings
+      var winKey=f.col==='Age'?'PY':(FGS_WINDOW_MAP[per]||'PY');
       var wi=winIdxMap[winKey];
       if(wi===undefined)return true;
       var si=statIdxMap[f.col];
@@ -4537,6 +4837,8 @@ function fgsGetSortVal(p,colIdx,isHit,visContractCols,aggByName,winIdxMap,nAgg,n
     for(var vi=0;vi<visCols.length;vi++){
       if(count===flatIdx){
         var winKey=winMap[per];
+        // Age: always sort by PY (single numeric age) regardless of active period
+        if(visCols[vi]==='Age')winKey='PY';
         var wi=winIdxMap[winKey];
         var si=statIdxMap[visCols[vi]];
         if(wi===undefined||si===undefined)return '';
@@ -4643,6 +4945,21 @@ function fgcCloseModal(){
   var modal=document.getElementById('fgc-modal');
   var ctx=modal?modal.dataset.ctx:'';
   if(modal)modal.classList.remove('open');
+  // Restore title for non-cgcomp contexts
+  if(ctx!=='cgcomp'){
+    var titleEl=modal?modal.querySelector('.fgc-title'):null;
+    if(titleEl)titleEl.innerHTML='★ Custom Tab — Add / Remove Stats';
+  }
+  if(ctx==='cgcomp'){
+    if(modal)modal.dataset.ctx='';
+    cgCloseCustomPicker();
+    return;
+  }
+  if(ctx==='h2hcomp'){
+    if(modal)modal.dataset.ctx='';
+    h2hCloseCustomPicker();
+    return;
+  }
   if(ctx==='fgl'){
     if(modal)modal.dataset.ctx='';
     rebuildColPanel('fgl');
@@ -4667,8 +4984,12 @@ function fgcRenderModalTypes(){
   var side=FG.fgs.side;
   var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
   var el=document.getElementById('fgc-type-list');if(!el)return;
+  var modal=document.getElementById('fgc-modal');
+  var isCg=modal&&modal.dataset.ctx==='cgcomp';
+  var isH2H=modal&&modal.dataset.ctx==='h2hcomp';
+  var srcCols=isCg?(cgCustomCols[side]||[]):(isH2H?(h2hCustomCols[side]||[]):(fgsCustomCols[side]||[]));
   el.innerHTML=types.map(function(t){
-    var n=(fgsCustomCols[side]||[]).filter(function(e){return e.indexOf(t.key+'|')===0;}).length;
+    var n=srcCols.filter(function(e){return e.indexOf(t.key+'|')===0;}).length;
     return '<button class="fgc-type-btn'+(fgcModalType===t.key?' on':'')
       +'" onclick="fgcSelectModalType(\''+t.key+'\')">'+(t.label)+(n?' <span style="color:var(--accent);font-size:9px">('+n+')</span>':'')+' </button>';
   }).join('');
@@ -4677,20 +4998,22 @@ function fgcRenderModalCols(){
   var side=FG.fgs.side;
   var tk=fgcModalType;
   var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][tk])||[];
-  var custom=fgsCustomCols[side]||[];
+  var modal2=document.getElementById('fgc-modal');
+  var ctx2=modal2?modal2.dataset.ctx:'';
+  var isCg2=ctx2==='cgcomp';
+  var isH2H2=ctx2==='h2hcomp';
+  var custom=isCg2?(cgCustomCols[side]||[]):(isH2H2?(h2hCustomCols[side]||[]):(fgsCustomCols[side]||[]));
   var hdr=document.getElementById('fgc-col-header');
   var grid=document.getElementById('fgc-col-grid');
   var cnt=document.getElementById('fgc-sel-count');
-  var allSelected=cols.length>0&&cols.every(function(col){return custom.indexOf(tk+'|'+col)>=0;});
+  var selPanel=document.getElementById('fgc-sel-panel');
   var safeTk=tk.replace(/'/g,"\\'");
+
+  // Type header with Select All / Clear
   if(hdr)hdr.innerHTML=
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
-    +'<span>'+tk+' &mdash; check to add to Custom tab</span>'
-    +'<div style="display:flex;gap:6px;flex-shrink:0">'
-    +'<button class="btn bts bsm" onclick="fgcSelectGroup(\''+safeTk+'\')" style="font-size:9px;padding:3px 8px;letter-spacing:1px">Select All</button>'
-    +'<button class="btn btd bsm" onclick="fgcClearGroup(\''+safeTk+'\')" style="font-size:9px;padding:3px 8px;letter-spacing:1px">Clear</button>'
-    +'</div>'
-    +'</div>';
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'    +'<span style="font-size:10px;color:var(--dim)">'+tk+' — check to include</span>'    +'<div style="display:flex;gap:5px;flex-shrink:0">'    +'<button class="btn bts bsm" onclick="fgcSelectGroup(\''+safeTk+'\')">Select All</button>'    +'<button class="btn btd bsm" onclick="fgcClearGroup(\''+safeTk+'\')">Clear</button>'    +'</div></div>';
+
+  // Checkbox grid — all available cols for this type
   if(grid){
     grid.innerHTML=cols.map(function(col){
       var entry=tk+'|'+col;
@@ -4700,21 +5023,83 @@ function fgcRenderModalCols(){
         +' onchange="fgcToggleEntry(\''+safeTk+'\',\''+safeCol+'\',this)">'+col+'</label>';
     }).join('');
   }
-  if(cnt)cnt.textContent=custom.length+' stat'+(custom.length!==1?'s':'')+' selected across all types';
+
+  // Selected stats panel — draggable chips showing full selection in order
+  if(selPanel){
+    if(!custom.length){
+      selPanel.innerHTML='<div style="color:var(--dim);font-size:10px;font-style:italic">No stats selected yet</div>';
+    }else{
+      var chips=custom.map(function(entry,i){
+        var parts=entry.split('|');
+        var typeLabel=parts[0]; var colLabel=parts[1]||parts[0];
+        var safeEntry=entry.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div draggable="true" data-idx="'+i+'" data-entry="'+entry.replace(/"/g,'&quot;')+'"'          +' ondragstart="fgcDragStart(event)" ondragover="fgcDragOver(event)" ondrop="fgcDrop(event)"'          +' style="display:inline-flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--border);border-radius:3px;padding:2px 6px;cursor:grab;font-size:10px;color:var(--text);user-select:none;margin:2px">'          +'<span style="color:var(--dim);font-size:9px">⠇</span>'          +'<span style="font-size:8px;color:var(--accent);margin-right:1px">'+typeLabel+'</span>'          +colLabel          +'<button onclick="fgcRemoveEntry(\''+safeEntry+'\')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;line-height:1;padding:0;margin-left:3px">×</button>'          +'</div>';
+      }).join('');
+      selPanel.innerHTML='<div style="font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">'        +'Selected (drag to reorder • × to remove):</div>'        +'<div id="fgc-drag-list">'+chips+'</div>';
+    }
+  }
+
+  var totalSel=isCg2?(cgCustomCols[side]||[]).length:(isH2H2?(h2hCustomCols[side]||[]).length:custom.length);
+  if(cnt)cnt.textContent=totalSel+' stat'+(totalSel!==1?'s':'')+' selected';
 }
+
+// ── Drag-and-drop reorder for selected stats chips ─────────────────────
+var fgcDragSrcIdx=-1;
+function fgcDragStart(e){
+  fgcDragSrcIdx=parseInt(e.currentTarget.dataset.idx);
+  e.dataTransfer.effectAllowed='move';
+}
+function fgcDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+}
+function fgcDrop(e){
+  e.preventDefault();
+  var tgtIdx=parseInt(e.currentTarget.dataset.idx);
+  if(isNaN(fgcDragSrcIdx)||fgcDragSrcIdx<0||fgcDragSrcIdx===tgtIdx)return;
+  var modal=document.getElementById('fgc-modal');
+  var ctx=modal?modal.dataset.ctx:'';
+  var side=FG.fgs.side;
+  var target=ctx==='cgcomp'?cgCustomCols:(ctx==='h2hcomp'?h2hCustomCols:fgsCustomCols);
+  if(!target[side])return;
+  var arr=target[side];
+  var item=arr.splice(fgcDragSrcIdx,1)[0];
+  arr.splice(tgtIdx,0,item);
+  fgcDragSrcIdx=-1;
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+function fgcRemoveEntry(entry){
+  var modal=document.getElementById('fgc-modal');
+  var ctx=modal?modal.dataset.ctx:'';
+  var side=FG.fgs.side;
+  var target=ctx==='cgcomp'?cgCustomCols:(ctx==='h2hcomp'?h2hCustomCols:fgsCustomCols);
+  if(!target[side])return;
+  var idx=target[side].indexOf(entry);
+  if(idx>=0)target[side].splice(idx,1);
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+}
+
 function fgcToggleEntry(typeKey,col,cb){
   var side=FG.fgs.side;
-  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  var modal=document.getElementById('fgc-modal');
+  var isCg=modal&&modal.dataset.ctx==='cgcomp';
+  var isH2H=modal&&modal.dataset.ctx==='h2hcomp';
+  var target=isCg?cgCustomCols:(isH2H?h2hCustomCols:fgsCustomCols);
+  if(!target[side])target[side]=[];
   var entry=typeKey+'|'+col;
-  var idx=fgsCustomCols[side].indexOf(entry);
-  if(cb.checked){if(idx<0)fgsCustomCols[side].push(entry);}
-  else{if(idx>=0)fgsCustomCols[side].splice(idx,1);}
+  var idx=target[side].indexOf(entry);
+  if(cb.checked){if(idx<0)target[side].push(entry);}
+  else{if(idx>=0)target[side].splice(idx,1);}
   fgcRenderModalTypes();
   fgcRenderModalCols();
 }
 function fgcClearAll(){
   var modal=document.getElementById('fgc-modal');
   if(modal&&modal.dataset.ctx==='fgl'){fglClearCustomAll();return;}
+  if(modal&&modal.dataset.ctx==='cgcomp'){cgCustomCols[CG.side||FG.fgs.side]=[];fgcRenderModalTypes();fgcRenderModalCols();return;}
+  if(modal&&modal.dataset.ctx==='h2hcomp'){h2hCustomCols[H2H.side||FG.fgs.side]=[];fgcRenderModalTypes();fgcRenderModalCols();return;}
   fgsCustomCols[FG.fgs.side]=[];
   fgcRenderModalTypes();
   fgcRenderModalCols();
@@ -4723,13 +5108,16 @@ function fgcSelectAll(){
   var modal=document.getElementById('fgc-modal');
   if(modal&&modal.dataset.ctx==='fgl'){fglSelectCustomAll();return;}
   var side=FG.fgs.side;
-  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  var isCg=modal&&modal.dataset.ctx==='cgcomp';
+  var isH2H=modal&&modal.dataset.ctx==='h2hcomp';
+  var target=isCg?cgCustomCols:(isH2H?h2hCustomCols:fgsCustomCols);
+  if(!target[side])target[side]=[];
   var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
   types.forEach(function(t){
     var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][t.key])||[];
     cols.forEach(function(col){
       var entry=t.key+'|'+col;
-      if(fgsCustomCols[side].indexOf(entry)<0)fgsCustomCols[side].push(entry);
+      if(target[side].indexOf(entry)<0)target[side].push(entry);
     });
   });
   fgcRenderModalTypes();
@@ -4739,11 +5127,14 @@ function fgcSelectGroup(typeKey){
   var modal=document.getElementById('fgc-modal');
   if(modal&&modal.dataset.ctx==='fgl'){fglSelectGroup(typeKey);return;}
   var side=FG.fgs.side;
-  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
+  var isCg=modal&&modal.dataset.ctx==='cgcomp';
+  var isH2H=modal&&modal.dataset.ctx==='h2hcomp';
+  var target=isCg?cgCustomCols:(isH2H?h2hCustomCols:fgsCustomCols);
+  if(!target[side])target[side]=[];
   var cols=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
   cols.forEach(function(col){
     var entry=typeKey+'|'+col;
-    if(fgsCustomCols[side].indexOf(entry)<0)fgsCustomCols[side].push(entry);
+    if(target[side].indexOf(entry)<0)target[side].push(entry);
   });
   fgcRenderModalTypes();
   fgcRenderModalCols();
@@ -4752,8 +5143,11 @@ function fgcClearGroup(typeKey){
   var modal=document.getElementById('fgc-modal');
   if(modal&&modal.dataset.ctx==='fgl'){fglClearGroup(typeKey);return;}
   var side=FG.fgs.side;
-  if(!fgsCustomCols[side])fgsCustomCols[side]=[];
-  fgsCustomCols[side]=fgsCustomCols[side].filter(function(e){return e.indexOf(typeKey+'|')!==0;});
+  var isCg=modal&&modal.dataset.ctx==='cgcomp';
+  var isH2H=modal&&modal.dataset.ctx==='h2hcomp';
+  var target=isCg?cgCustomCols:(isH2H?h2hCustomCols:fgsCustomCols);
+  if(!target[side])target[side]=[];
+  target[side]=target[side].filter(function(e){return e.indexOf(typeKey+'|')!==0;});
   fgcRenderModalTypes();
   fgcRenderModalCols();
 }
@@ -5453,6 +5847,7 @@ function fglRender(){
     '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
     '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches'];
   function isCount(col){
+    if(isRateOverride(col)) return false;
     for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;
     return false;
   }
@@ -5689,7 +6084,7 @@ function fglExportCSV(){
   var nameIdx=headers.indexOf('PlayerName'),teamIdx=headers.indexOf('Team');
   var wgtIdx=FG.fgl.side==='h'?headers.indexOf(prefix+'PA'):(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf(prefix+'IP'));
   var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI','_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L','_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC'];
-  function isCount2(col){for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;return false;}
+  function isCount2(col){if(isRateOverride(col))return false;for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;return false;}
   var yrFrom=fglYearFrom||new Date().getFullYear();
   var yrTo=Math.max(yrFrom,fglYearTo||yrFrom);
   var playerData={};
@@ -5722,7 +6117,2565 @@ function fglExportCSV(){
   a.click();toast('Exported '+exportRows.length+' rows');
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMP GENERATOR — Diamond Dollars v9.1
+// Three-window player comp tool using live leaderboard + contract FG stats
+// ═══════════════════════════════════════════════════════════════════════════
+
+var CG = {
+  // Target player — from leaderboard, NOT from DB.merged
+  player:     null,   // {name, fgId, side, seasons:{year:true}, team, pos}
+  fgId:       null,
+  side:       'h',    // 'h' or 'p' — user-selectable
+  py:         null,   // selected PY integer
+  // All-type aggregated data for the target player: {typeKey: {window: {cols, stats}}}
+  targetStats:  {},
+  // All-type aggregated data for contract comps
+  compStats:    [],
+  // Correlation weights
+  corrWeights:  {},
+  // Timeframe toggles
+  tfs: {py:true, py1:false, py2:false, l2:false, l3:false, car:false},
+  // Type visibility toggles
+  typeOn: {},
+  // Loading state
+  loadingTypes: 0,
+  loadedTypes:  0,
+  // Cached raw data by typeKey
+  rawContractCache: {},   // legacy — no longer used; kept for safety
+  rawLiveCache:     {},   // legacy — no longer used; kept for safety
+  // Index of all leaderboard players built from Standard type for search
+  ldbIndex:    null,  // [{name, fgId, team, pos, seasons}]  — populated on first load
+  ldbSide:     null,  // which side the index was built for
+  lastComps:   []
+};
+
+// Custom stat selection for COMP GENERATOR — same 'typeKey|col' entry format as fgsCustomCols
+var cgCustomCols = {h:[], p:[]};
+var CG_CUSTOM_KEY = '__custom_cg__';
+
+var CG_WINDOWS     = ['PY','PY-1','PY-2','L2','L3','CAR'];
+var CG_TF_KEYS     = ['py','py1','py2','l2','l3','car'];
+var CG_TF_LABELS   = {py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'Career'};
+var CG_TF_WINMAP   = {py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'CAR'};
+var CG_TF_COLORS   = {py:'g-py',py1:'g-py1',py2:'g-py2',l2:'g-l2',l3:'g-l3',car:'g-car'};
+var RATE_OVERRIDE_SFX = [
+  '%+',         // All index/plus stats: wRC+, BB%+, K%+, ERA+, etc.
+  '/9',         // Per-9 rates: K/9, BB/9, HR/9, RA/9
+  'K%','BB%','K-BB%','HR%','LOB%','SwStr%','CStr%','CSW%','F-Strike%',
+  'K/BB',       // ratio stat
+  'GB/FB',      // ratio stat
+  'HR/FB',      // ratio stat
+  'LD%','GB%','FB%','IFFB%',   // batted ball percentages
+  'Pull%','Cent%','Oppo%',     // spray percentages
+  'Soft%','Med%','Hard%',      // contact quality percentages
+  'IFH%','BUH%',               // infield/bunt hit percentages
+  'ERA-','FIP-','xFIP-',       // minus stats (scale same as plus stats)
+  'Barrel%','HardHit%',        // Statcast percentages
+  'FastSwing%','SquaredUpSwing%','BlastSwing%','BlastContact%','IdealAttackAngle%', // bat track
+  'O-Swing%','Z-Swing%','Swing%','O-Contact%','Z-Contact%','Contact%','Zone%',     // plate disc
+  'FB%'                        // pitch type percentages: FB%, SL%, CT%, etc.
+];
+function isRateOverride(fullCol){
+  for(var i=0;i<RATE_OVERRIDE_SFX.length;i++){
+    var sfx=RATE_OVERRIDE_SFX[i];
+    if(fullCol.length>=sfx.length && fullCol.slice(-sfx.length)===sfx) return true;
+  }
+  return false;
+}
+
+var COUNT_SFX_CG   = ['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
+  '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
+  '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
+  '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
+  '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches',
+  '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard'];
+
+function cgIsCount(col){
+  if(isRateOverride(col)) return false;
+  for(var i=0;i<COUNT_SFX_CG.length;i++)if(col.indexOf(COUNT_SFX_CG[i])>=0)return true;
+  return false;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+function initCompGen(){
+  cgSetStatus('');
+  cgSetSideUI(CG.side);
+  // If index already built for this side, show count
+  if(CG.ldbIndex&&CG.ldbSide===CG.side){
+    cgShowLdbCount(CG.ldbIndex.length);
+  } else {
+    cgBuildLdbIndex(CG.side, function(){});
+  }
+}
+
+// ── Side selector ─────────────────────────────────────────────────────────
+function cgSetSide(side, btn){
+  if(CG.side===side)return;
+  CG.side=side;
+  cgSetSideUI(side);
+  // Clear player selection when switching sides
+  cgClearPlayer();
+  // Rebuild leaderboard index for new side
+  CG.ldbIndex=null;
+  CG.ldbSide=null;
+  cgBuildLdbIndex(side, function(){});
+}
+
+function cgSetSideUI(side){
+  var hBtn=document.getElementById('cg-side-h');
+  var pBtn=document.getElementById('cg-side-p');
+  if(hBtn){hBtn.classList.toggle('on',side==='h');hBtn.classList.toggle('g-py',side==='h');}
+  if(pBtn){pBtn.classList.toggle('on',side==='p');pBtn.classList.toggle('g-py1',side==='p');}
+}
+
+// ── Build leaderboard player index from Standard type raw data ────────────
+// This gives us a searchable roster of ALL FanGraphs-tracked players (not just
+// those with contracts) so the target player can be anyone in the system.
+function cgBuildLdbIndex(side, cb){
+  cgSetStatus('Loading leaderboard index...','');
+  fgLoad('fg_contracts', function(data){
+    if(!data||!data.headers||!data.rows||!data.rows.length){
+      cgSetStatus('No leaderboard data — run a FG pull first','err');
+      cb();return;
+    }
+    var headers=data.headers||[];
+    var rows=data.rows||[];
+    var pidIdx=headers.indexOf('playerid');
+    var nameIdx=headers.indexOf('PlayerName');
+    var seasIdx=headers.indexOf('season');
+    var teamIdx=headers.indexOf('Team');
+    // Try to find a position column
+    var posCol=side==='h'?headers.indexOf('Standard_Pos'):headers.indexOf('Standard_Role');
+
+    if(pidIdx<0||nameIdx<0){cgSetStatus('Leaderboard data missing player columns','err');cb();return;}
+
+    var playerMap={};
+    rows.forEach(function(r){
+      var pid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+      var nm=String(r[nameIdx]||'').replace(/<[^>]*>/g,'').trim();
+      if(!pid||!nm)return;
+      var yr=parseInt(r[seasIdx])||0;
+      var tm=teamIdx>=0?String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim():'';
+      var pos=posCol>=0?String(r[posCol]||'').trim():'';
+      if(!playerMap[pid]){
+        playerMap[pid]={name:nm,fgId:pid,team:tm,pos:pos,seasons:{},latestYr:0};
+      }
+      if(yr){
+        playerMap[pid].seasons[yr]=true;
+        if(yr>playerMap[pid].latestYr){
+          playerMap[pid].latestYr=yr;
+          playerMap[pid].team=tm||playerMap[pid].team;
+          if(pos)playerMap[pid].pos=pos;
+        }
+      }
+    });
+
+    CG.ldbIndex=Object.values(playerMap).sort(function(a,b){return a.name.localeCompare(b.name);});
+    CG.ldbSide=side;
+    // Store raw Standard leaderboard data into the shared FG.live.cache so
+    // cgLoadPlayer can reuse it without a second network call
+    if(!FG.live.cache)FG.live.cache={};
+    var liveKey=side+'_Standard';
+    if(!FG.live.cache[liveKey]||!FG.live.cache[liveKey].rows||!FG.live.cache[liveKey].rows.length){
+      var seasIdx2=headers.indexOf('season');
+      var yearsSet2={};
+      if(seasIdx2>=0)rows.forEach(function(r){var y=parseInt(r[seasIdx2]);if(y)yearsSet2[y]=true;});
+      FG.live.cache[liveKey]={headers:headers,rows:rows,_years:Object.keys(yearsSet2).map(Number)};
+    }
+    cgSetStatus('','ok');
+    cgShowLdbCount(CG.ldbIndex.length);
+    cb();
+  }, function(err){
+    // Retry once on script load error (common on cold GAS start)
+    if(String(err).indexOf('Script load error')>=0){
+      cgSetStatus('Retrying leaderboard load...','');
+      setTimeout(function(){
+        fgLoad('fg_contracts',function(data2){
+          if(!data2||!data2.headers||!data2.rows||!data2.rows.length){
+            cgSetStatus('No leaderboard data — run a FG pull first','err');cb();return;
+          }
+          var headers=data2.headers||[],rows=data2.rows||[];
+          var pidIdx=headers.indexOf('playerid'),nameIdx=headers.indexOf('PlayerName');
+          var seasIdx=headers.indexOf('season'),teamIdx=headers.indexOf('Team');
+          var posCol=side==='h'?headers.indexOf('Standard_Pos'):headers.indexOf('Standard_Role');
+          if(pidIdx<0||nameIdx<0){cgSetStatus('Leaderboard data missing player columns','err');cb();return;}
+          var playerMap={};
+          rows.forEach(function(r){
+            var pid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+            var nm=String(r[nameIdx]||'').replace(/<[^>]*>/g,'').trim();
+            if(!pid||!nm)return;
+            var yr=parseInt(r[seasIdx])||0,tm=teamIdx>=0?String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim():'';
+            var pos=posCol>=0?String(r[posCol]||'').trim():'';
+            if(!playerMap[pid])playerMap[pid]={name:nm,fgId:pid,team:tm,pos:pos,seasons:{},latestYr:0};
+            if(yr){playerMap[pid].seasons[yr]=true;if(yr>playerMap[pid].latestYr){playerMap[pid].latestYr=yr;playerMap[pid].team=tm||playerMap[pid].team;if(pos)playerMap[pid].pos=pos;}}
+          });
+          CG.ldbIndex=Object.values(playerMap).sort(function(a,b){return a.name.localeCompare(b.name);});
+          CG.ldbSide=side;
+          if(!FG.live.cache)FG.live.cache={};
+          var liveKey=side+'_Standard';
+          if(!FG.live.cache[liveKey]||!FG.live.cache[liveKey].rows||!FG.live.cache[liveKey].rows.length){
+            var seasIdx2=headers.indexOf('season'),yearsSet2={};
+            if(seasIdx2>=0)rows.forEach(function(r){var y=parseInt(r[seasIdx2]);if(y)yearsSet2[y]=true;});
+            FG.live.cache[liveKey]={headers:headers,rows:rows,_years:Object.keys(yearsSet2).map(Number)};
+          }
+          cgSetStatus('','ok');cgShowLdbCount(CG.ldbIndex.length);cb();
+        },function(){
+          cgSetStatus('Error loading leaderboard — check GAS deployment','err');cb();
+        },{side:side,typeKey:'Standard',leaderboard:'1'});
+      },1500);
+    }else{
+      cgSetStatus('Error loading leaderboard: '+err,'err');
+      cb();
+    }
+  }, {side:side, typeKey:'Standard', leaderboard:'1'});
+}
+
+function cgShowLdbCount(n){
+  var el=document.getElementById('cg-ldb-count');
+  if(el)el.textContent=n?'('+n.toLocaleString()+' players)':'';
+}
+
+function cgSetStatus(msg,cls){
+  var el=document.getElementById('cg-status');
+  if(!el)return;
+  el.textContent=msg;
+  el.style.color=cls==='err'?'var(--red)':cls==='ok'?'var(--green)':'var(--dim)';
+}
+
+// ── Player Search Dropdown — searches ldbIndex (leaderboard, all players) ─
+function cgPlayerSearch(val){
+  var dd=document.getElementById('cg-player-dropdown');
+  if(!dd)return;
+  var v=val.trim().toLowerCase();
+  if(!v||v.length<2){dd.style.display='none';return;}
+
+  // Ensure index exists; if not, trigger load then re-run search
+  if(!CG.ldbIndex||CG.ldbSide!==CG.side){
+    cgBuildLdbIndex(CG.side, function(){cgPlayerSearch(val);});
+    return;
+  }
+
+  var matches=[];
+  var exactId=[];
+  CG.ldbIndex.forEach(function(entry){
+    if(matches.length>=20)return;
+    var matchName=entry.name.toLowerCase().indexOf(v)>=0;
+    var matchId=entry.fgId&&entry.fgId===v;
+    if(matchId)exactId.push(entry);
+    else if(matchName)matches.push(entry);
+  });
+  var combined=exactId.concat(matches).slice(0,18);
+  if(!combined.length){dd.style.display='none';return;}
+
+  dd.innerHTML=combined.map(function(entry,i){
+    var yrs=Object.keys(entry.seasons).map(Number).sort(function(a,b){return b-a;});
+    var yrRange=yrs.length?(yrs[yrs.length-1]===yrs[0]?yrs[0]:yrs[yrs.length-1]+'–'+yrs[0]):'';
+    return'<div class="cg-player-dd-item" onclick="cgSelectLdbPlayer('+i+')" data-idx="'+i+'">'
+      +'<span style="font-weight:700">'+entry.name+'</span>'
+      +'<span class="cg-player-dd-meta">'
+        +(entry.team?entry.team+' · ':'')
+        +(entry.pos?entry.pos+' · ':'')
+        +(yrRange?yrRange+' · ':'')
+        +'<span style="color:var(--dim);font-size:9px">'+entry.fgId+'</span>'
+      +'</span>'
+    +'</div>';
+  }).join('');
+
+  dd._cgMatches=combined;
+
+  // Position fixed dropdown below the input using viewport coordinates
+  var inp=document.getElementById('cg-player-search');
+  if(inp){
+    var rect=inp.getBoundingClientRect();
+    dd.style.top=(rect.bottom+4)+'px';
+    dd.style.left=rect.left+'px';
+    dd.style.width=Math.max(rect.width,320)+'px';
+  }
+  dd.style.display='block';
+}
+
+function cgSelectLdbPlayer(idx){
+  var dd=document.getElementById('cg-player-dropdown');
+  if(!dd||!dd._cgMatches)return;
+  var entry=dd._cgMatches[idx];
+  if(!entry)return;
+
+  CG.player=entry;  // leaderboard player object, NOT DB.merged
+  CG.fgId=entry.fgId;
+  // side already set by toggle — don't override
+
+  var inp=document.getElementById('cg-player-search');
+  if(inp)inp.value=entry.name;
+  dd.style.display='none';
+
+  // Populate PY selector from this player's available seasons
+  cgPopulatePYSelFromEntry(entry);
+  cgShowPlayerCardFromEntry(entry);
+}
+
+function cgPopulatePYSelFromEntry(entry){
+  var sel=document.getElementById('cg-py-sel');
+  if(!sel)return;
+  while(sel.options.length>0)sel.remove(0);
+  var yrs=Object.keys(entry.seasons||{}).map(Number).sort(function(a,b){return b-a;});
+  if(!yrs.length){
+    var o=document.createElement('option');o.value='';o.textContent='No seasons found';sel.appendChild(o);
+    return;
+  }
+  // Add a placeholder
+  var ph=document.createElement('option');ph.value='';ph.textContent='Select PY...';sel.appendChild(ph);
+  yrs.forEach(function(y){
+    var o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);
+  });
+  // Default to most recent year
+  sel.value=String(yrs[0]);
+  CG.py=yrs[0];
+}
+
+function cgClearPlayer(){
+  CG.player=null;CG.fgId=null;CG.py=null;
+  CG.targetStats={};CG.compStats=[];CG.corrWeights={};
+  var inp=document.getElementById('cg-player-search');
+  if(inp)inp.value='';
+  var dd=document.getElementById('cg-player-dropdown');
+  if(dd)dd.style.display='none';
+  document.getElementById('cg-player-card').style.display='none';
+  document.getElementById('cg-win2').style.display='none';
+  document.getElementById('cg-win-peers').style.display='none';
+  document.getElementById('cg-win3').style.display='none';
+  cgSetStatus('');
+  // Reset PY selector
+  var sel=document.getElementById('cg-py-sel');
+  if(sel){while(sel.options.length>0)sel.remove(0);var o=document.createElement('option');o.value='';o.textContent='Select player first';sel.appendChild(o);}
+}
+
+function cgPyChange(){
+  var sel=document.getElementById('cg-py-sel');
+  CG.py=sel?parseInt(sel.value)||null:null;
+  // Update player card PY display
+  if(CG.player&&CG.py){
+    var metaEl=document.getElementById('cg-card-meta');
+    if(metaEl){
+      metaEl.textContent='Platform Year: '+CG.py
+        +(CG.player.team?' · '+CG.player.team:'')
+        +(CG.player.pos?' · '+CG.player.pos:'')
+        +' · FG ID: '+CG.fgId;
+    }
+  }
+}
+
+// ── Show player card (leaderboard version — no contract info) ────────────
+function cgShowPlayerCardFromEntry(entry){
+  document.getElementById('cg-player-card').style.display='';
+  document.getElementById('cg-card-name').textContent=entry.name;
+
+  var pill=document.getElementById('cg-card-side-pill');
+  if(pill){
+    pill.textContent=CG.side==='h'?'Hitter':'Pitcher';
+    pill.style.background=CG.side==='h'?'rgba(79,195,247,0.15)':'rgba(206,147,216,0.15)';
+    pill.style.color=CG.side==='h'?'var(--blue)':'var(--purple)';
+  }
+
+  var yrs=Object.keys(entry.seasons||{}).map(Number).sort(function(a,b){return b-a;});
+  var metaEl=document.getElementById('cg-card-meta');
+  if(metaEl){
+    metaEl.textContent='Platform Year: '+(CG.py||yrs[0]||'—')
+      +(entry.team?' · '+entry.team:'')
+      +(entry.pos?' · '+entry.pos:'')
+      +' · FG ID: '+entry.fgId;
+  }
+
+  // Show season availability pills instead of contract stats
+  var statsEl=document.getElementById('cg-card-stats');
+  if(statsEl){
+    var seasPills=yrs.slice(0,8).map(function(y){
+      var ispy=y===(CG.py||yrs[0]);
+      return'<div style="background:'+(ispy?'rgba(232,197,71,0.2)':'var(--s1)')+';border:1px solid '+(ispy?'rgba(232,197,71,0.4)':'var(--border)')+';border-radius:5px;padding:4px 9px;text-align:center">'
+        +'<div style="font-size:8px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-bottom:2px">Season</div>'
+        +'<div style="font-size:13px;font-weight:900;color:'+(ispy?'var(--accent)':'var(--text)')+'">'+y+'</div>'
+      +'</div>';
+    }).join('');
+    statsEl.innerHTML=seasPills+(yrs.length>8?'<div style="padding:4px 9px;color:var(--dim);font-size:11px;align-self:center">+'+( yrs.length-8)+' more</div>':'');
+  }
+}
+
+// cgDetectSide no longer needed for the target player — side is set by toggle.
+// Keep a stub in case anything references it.
+function cgDetectSide(p){return CG.side||'h';}
+function cgShowSideBadge(){} // no-op — replaced by cgSetSideUI
+
+// cgPopulatePYSel — no longer used for target player, keep for safety
+function cgPopulatePYSel(){}
+
+
+// ── Type toggle buttons ──────────────────────────────────────────────────
+// ── Custom stat picker for COMP GENERATOR ────────────────────────────────
+function cgOpenCustomPicker(){
+  var side=CG.side||'h';
+  if(!cgCustomCols[side])cgCustomCols[side]=[];
+  var modal=document.getElementById('fgc-modal');
+  if(!modal)return;
+  modal.dataset.ctx='cgcomp';
+  FG.fgs.side=side;
+  window._cgSavedFgsCustom=fgsCustomCols;
+  fgsCustomCols=cgCustomCols;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  if(!fgcModalType||types.every(function(t){return t.key!==fgcModalType;})){
+    fgcModalType=types[0].key;
+  }
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+  fgsCustomCols=window._cgSavedFgsCustom;
+  var titleEl=modal.querySelector('.fgc-title');
+  if(titleEl)titleEl.innerHTML='\u2605 Comp Generator \u2014 Custom Stat Display';
+  modal.classList.add('open');
+}
+
+function cgCloseCustomPicker(){
+  var side=CG.side||'h';
+  cgBuildTypeToggles(side);
+  cgRenderPlayerStats();
+  cgRunComps();
+  try{saveUserState();}catch(e){}
+}
+
+// Helper: get active cols for a type — custom list when set, else full spec
+function cgGetActiveCols(typeKey,side){
+  var custom=cgCustomCols[side]||[];
+  if(custom.length>0){
+    return custom.filter(function(e){return e.indexOf(typeKey+'|')===0;})
+                 .map(function(e){return e.split('|')[1];});
+  }
+  return (FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+}
+
+function cgBuildTypeToggles(side){
+  var el=document.getElementById('cg-type-toggles');
+  if(!el)return;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  types.forEach(function(t){if(CG.typeOn[t.key]===undefined)CG.typeOn[t.key]=true;});
+  var custom=(cgCustomCols[side]||[]);
+  el.innerHTML=types.map(function(t){
+    var n=custom.filter(function(e){return e.indexOf(t.key+'|')===0;}).length;
+    return'<button class="cg-type-btn'+(CG.typeOn[t.key]?' on':'')+'" onclick="cgToggleType(\''+t.key+'\',this)">'
+      +t.label+(n?' <span style="color:var(--accent);font-size:8px">('+n+')</span>':'')
+      +'</button>';
+  }).join('');
+  var cb=document.getElementById('cg-custom-btn');
+  if(cb)cb.textContent=custom.length?'\u2605 Custom ('+custom.length+')':'\u2605 Custom';
+}
+
+function cgToggleType(typeKey,btn){
+  CG.typeOn[typeKey]=!CG.typeOn[typeKey];
+  btn.classList.toggle('on',CG.typeOn[typeKey]);
+  cgRenderPlayerStats();
+  cgRunComps();
+}
+
+function cgToggleTF(tf,btn){
+  CG.tfs[tf]=!CG.tfs[tf];
+  btn.classList.toggle('on',CG.tfs[tf]);
+  cgRenderPlayerStats();
+  cgRunComps();
+}
+
+// ── Load Player ──────────────────────────────────────────────────────────
+// Strategy: reuse FG.live.cache (raw leaderboard rows) and FG.contracts.cache
+// (aggregated contract rows) that are already populated by the CONTRACT OVERVIEW
+// and LIVE LEADERBOARDS tabs. Only fetch types that are genuinely missing.
+// ── COMP GENERATOR ENGINE — v9.4 rewrite ─────────────────────────────────
+// Diagnosis of prior crashes:
+// 1. cgFetchMissingType called fgsStoreAndRender which triggered renderFgStats()
+//    on every fetch — 9+ full DOM rebuilds in parallel.
+// 2. cgComputePlayerAgg scanned 34k+ rows synchronously per type (9 scans total).
+// 3. cgBuildCompStats inner loop ran per-player per-type conversions unnecessarily.
+// Fix: fetch without triggering renders; pre-index live data by pid; simplify comp
+// stats to read directly from the already-indexed FG.contracts.cache agg rows.
+
+// ── Shared type loader ────────────────────────────────────────────────────
+// Loads raw season rows for one stat type into FG.live.cache.
+// Uses identical fetch pattern to fgsLoadData (the proven working path).
+// cb(ok) — ok=true if data was loaded, false if not available.
+function cgEnsureTypeLoaded(side, typeKey, cb){
+  var lk  = side+'_'+typeKey;
+  var lk2 = 'live_'+side+'_'+typeKey;
+  if(FG.live.cache &&
+    ((FG.live.cache[lk]  && FG.live.cache[lk].rows  && FG.live.cache[lk].rows.length) ||
+     (FG.live.cache[lk2] && FG.live.cache[lk2].rows && FG.live.cache[lk2].rows.length))){
+    cb(true); return;
+  }
+  fgLoad('fg_contracts', function(data){
+    if(data && data.headers && data.rows && data.rows.length){
+      if(!FG.live.cache) FG.live.cache = {};
+      FG.live.cache[lk]  = {headers:data.headers, rows:data.rows, _years:[]};
+      FG.live.cache[lk2] = FG.live.cache[lk];
+      cb(true);
+    } else {
+      cb(false);
+    }
+  }, function(){ cb(false); }, {side:side, typeKey:typeKey});
+}
+
+// Run cb() after all types in `typeList` are loaded sequentially.
+function cgLoadTypesSequential(side, typeList, onProgress, onDone){
+  var i = 0;
+  function next(){
+    if(i >= typeList.length){ onDone(); return; }
+    var t = typeList[i++];
+    if(onProgress) onProgress(i, typeList.length, t.label);
+    cgEnsureTypeLoaded(side, t.key, function(){ next(); });
+  }
+  next();
+}
+
+
+function cgLoadPlayer(){
+  if(!CG.player){cgSetStatus('Please select a player from the leaderboard search','err');return;}
+  cgPyChange();
+  if(!CG.py){cgSetStatus('Please select a Platform Year','err');return;}
+
+  cgShowPlayerCardFromEntry(CG.player);
+  cgBuildTypeToggles(CG.side);
+  CG.targetStats = {};
+  CG.compStats   = [];
+  CG.corrWeights = {};
+
+  document.getElementById('cg-win2').style.display='';
+  document.getElementById('cg-win-peers').style.display='none';
+  document.getElementById('cg-win3').style.display='none';
+  document.getElementById('cg-stats-body').innerHTML=
+    '<div style="padding:30px;text-align:center;color:var(--dim)">'+
+    '<div class="fg-spinner" style="margin:0 auto 12px"></div>Loading stats...</div>';
+
+  var side  = CG.side;
+  var types = side==='h' ? FG_HITTER_TYPES : FG_PITCHER_TYPES;
+
+  // Find which types need loading
+  var missing = types.filter(function(t){
+    var lk = side+'_'+t.key;
+    return !(FG.live.cache && FG.live.cache[lk] &&
+             FG.live.cache[lk].rows && FG.live.cache[lk].rows.length);
+  });
+
+  // Also find which need contract cache for comp scoring
+  var missingContract = types.filter(function(t){
+    var ck = side+'_'+t.key;
+    return !(FG.contracts.cache && FG.contracts.cache[ck] &&
+             FG.contracts.cache[ck].rows && FG.contracts.cache[ck].rows.length);
+  });
+
+  function finish(){
+    cgSetStatus('Building stats...','');
+    // Build contract cache asynchronously so it doesn't block the player stats render
+    setTimeout(function(){
+      missingContract.forEach(function(t){
+        var lk = side+'_'+t.key;
+        var ck = side+'_'+t.key;
+        var raw = FG.live.cache && FG.live.cache[lk];
+        if(raw && raw.rows && raw.rows.length &&
+           !(FG.contracts.cache && FG.contracts.cache[ck] && FG.contracts.cache[ck].rows && FG.contracts.cache[ck].rows.length)){
+          try{
+            var agg = fgsComputeAgg(side, t.key, raw);
+            if(!FG.contracts.cache) FG.contracts.cache = {};
+            FG.contracts.cache[ck] = {
+              headers:agg.headers||[], rows:agg.rows||[],
+              windows:agg.windows||CG_WINDOWS, stat_cols:agg.stat_cols||[],
+              isPartial:false, pulledAt:agg.pulled_at||''
+            };
+          }catch(e){console.error('fgsComputeAgg '+t.key+':',e);}
+        }
+      });
+    }, 0);
+    // Render player stats immediately without waiting for contract cache
+    setTimeout(function(){cgFinishLoad();}, 0);
+  }
+
+  if(!missing.length){ finish(); return; }
+
+  cgSetStatus('Loading '+missing.length+' type'+(missing.length>1?'s':'')+'...','');
+  cgLoadTypesSequential(side, missing, function(i, total, label){
+    cgSetStatus('Loading '+i+'/'+total+': '+label+'...','');
+  }, finish);
+}
+
+
+function cgFinishLoad(){
+  try{
+    cgBuildTargetStats();
+  }catch(e){console.error('cgBuildTargetStats:',e);}
+  cgRenderPlayerStats();
+  try{
+    cgBuildCompStats();
+    cgRunComps();
+    cgRenderPeers();
+  }catch(e){console.error('cgBuildCompStats/Run/Peers:',e);}
+  document.getElementById('cg-win-peers').style.display='';
+  document.getElementById('cg-win3').style.display='';
+  cgSetStatus('','ok');
+}
+
+// ── Build target player stats ─────────────────────────────────────────────
+// Pre-index all live rows by playerid for O(1) per-type lookup instead of
+// scanning 34k rows 9 times.
+function cgBuildTargetStats(){
+  var py    = CG.py;
+  var side  = CG.side;
+  var fgId  = CG.fgId;
+  var nm    = CG.player ? normName(CG.player.name) : '';
+  var types = side==='h' ? FG_HITTER_TYPES : FG_PITCHER_TYPES;
+
+  // Resolve pid once from whichever live cache is available
+  var resolvedPid = null;
+  types.some(function(t){
+    var raw = FG.live.cache && FG.live.cache[side+'_'+t.key];
+    if(!raw||!raw.headers||!raw.rows) return false;
+    var pidH = raw.headers.indexOf('playerid');
+    var nmH  = raw.headers.indexOf('PlayerName');
+    if(pidH<0) return false;
+    if(fgId) raw.rows.some(function(r){
+      var p=String(r[pidH]||'').replace(/\.0+$/,'').trim();
+      if(p===fgId){resolvedPid=p;return true;}
+    });
+    if(!resolvedPid && nmH>=0) raw.rows.some(function(r){
+      if(normName(String(r[nmH]||''))===nm){
+        resolvedPid=String(r[pidH]||'').replace(/\.0+$/,'').trim();
+        return true;
+      }
+    });
+    return !!resolvedPid;
+  });
+
+  types.forEach(function(t){
+    // Try live cache first (raw rows → cgComputePlayerAgg)
+    var lk  = side+'_'+t.key;
+    var lk2 = 'live_'+side+'_'+t.key;
+    var raw = (FG.live.cache && (FG.live.cache[lk]||FG.live.cache[lk2]));
+    if(raw && raw.headers && raw.rows && raw.rows.length){
+      var agg = cgComputePlayerAgg(raw, t.key, side, resolvedPid||fgId, nm, py, true);
+      if(agg){ CG.targetStats[t.key]=agg; return; }
+    }
+    // Fall back: read from contracts cache (same structure as h2hLoadPlayerStats extracts)
+    var ck = side+'_'+t.key;
+    var cc = FG.contracts.cache && FG.contracts.cache[ck];
+    if(!cc||!cc.rows||!cc.rows.length) return;
+    var statCols=cc.stat_cols||[], windows=cc.windows||CG_WINDOWS;
+    var nC=7, nS=statCols.length, pyStr=String(py);
+    var winIdxMap={}; windows.forEach(function(w,i){winIdxMap[w]=i;});
+    function cgNameVariants(rawName){
+      var n=String(rawName||'');
+      var v=[normName(n),normName(fgToLastFirst(n))];
+      var parts=n.replace(',','').trim().split(/\s+/);
+      if(parts.length>=2){v.push(normName(parts[parts.length-1]+parts.slice(0,-1).join('')));v.push(normName(parts.slice(1).join('')+parts[0]));}
+      return v;
+    }
+    var row=null;
+    cc.rows.some(function(r){
+      var rPY=String(r[5]||'').replace(/\.0+$/,'').trim();
+      if(rPY!==pyStr)return false;
+      if(cgNameVariants(r[0]).indexOf(nm)>=0){row=r;return true;}
+    });
+    if(!row) return;
+    var result={};
+    windows.forEach(function(w){
+      var wi=winIdxMap[w]; if(wi===undefined) return;
+      var stats={};
+      statCols.forEach(function(col,si){
+        var v=row[nC+wi*nS+si];
+        var n=(v===''||v===null||v===undefined)?null:parseFloat(v);
+        stats[col]=isNaN(n)?null:n;
+      });
+      result[w]={cols:statCols,stats:stats};
+    });
+    CG.targetStats[t.key]=result;
+  });
+}
+
+
+// ── Build comp stats from FG.contracts.cache (already aggregated) ─────────
+function cgBuildCompStats(){
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var isHit=side==='h';
+  var WINS=CG_WINDOWS;
+
+  // Contract player metadata from sheet
+  var contractMeta={};
+  DB.merged.forEach(function(p){
+    if(!p.sheetTab)return;
+    if(p.sheetTab.toLowerCase().indexOf(isHit?'hitter':'pitcher')<0)return;
+    var py=parseInt(p.py)||0; if(!py)return;
+    var k=normName(p.name)+'|'+py;
+    if(!contractMeta[k])contractMeta[k]=p;
+    var k2=normName(fgToLastFirst(p.name))+'|'+py;
+    if(!contractMeta[k2])contractMeta[k2]=p;
+  });
+
+  // Build aggIndex[typeKey] = Map of normName|py → {cols, windowStats}
+  var aggIndex={};
+  types.forEach(function(t){
+    var cacheKey=side+'_'+t.key;
+    var cached=FG.contracts.cache&&FG.contracts.cache[cacheKey];
+    if(!cached||!cached.rows||!cached.rows.length)return;
+    var statCols=cached.stat_cols||[];
+    var wins=cached.windows||WINS;
+    var nC=7, nS=statCols.length;
+    var winIdxMap={};wins.forEach(function(w,i){winIdxMap[w]=i;});
+    var idx={};
+    cached.rows.forEach(function(row){
+      var nm=normName(String(row[0]||''));
+      var py=String(row[5]||'').replace(/\.0+$/,'').trim();
+      if(!nm||!py)return;
+      var key=nm+'|'+py;
+      if(idx[key])return; // first occurrence wins
+      var wStats={};
+      WINS.forEach(function(w){
+        var wi=winIdxMap[w]; if(wi===undefined)return;
+        var stats={};
+        statCols.forEach(function(col,si){
+          var v=row[nC+wi*nS+si];
+          stats[col]=(v===''||v===null||v===undefined)?null:v;
+        });
+        wStats[w]={cols:statCols,stats:stats};
+      });
+      idx[key]={cols:statCols,windows:wStats};
+    });
+    aggIndex[t.key]=idx;
+  });
+
+  // Union of all (normName|py) keys that have contract metadata
+  var seen={};
+  var compList=[];
+  Object.keys(aggIndex).forEach(function(typeKey){
+    Object.keys(aggIndex[typeKey]).forEach(function(key){
+      if(seen[key])return;
+      var meta=contractMeta[key];
+      if(!meta)return;
+      seen[key]=true;
+      var parts=key.split('|');
+      compList.push({key:key,nm:parts[0],py:parseInt(parts[1])||0,meta:meta});
+    });
+  });
+
+  CG.compStats=compList.map(function(entry){
+    var stats={};
+    types.forEach(function(t){
+      var idx=aggIndex[t.key];
+      if(!idx)return;
+      var td=idx[entry.key];
+      if(!td)return;
+      var converted={};
+      WINS.forEach(function(w){
+        var wd=td.windows[w]; if(!wd)return;
+        converted[w]={cols:td.cols,stats:wd.stats};
+      });
+      stats[t.key]=converted;
+    });
+    var m=entry.meta;
+    var mlsRaw=m._rawRow&&(m._rawRow['MLSsig_0']||m._rawRow['MLSsig']);
+    return{name:m.name,py:entry.py,pPos:m.pPos||'',sigTm:m.sigTm||'',
+           guar:m.guar||0,guarAav:m.guarAav||0,aav:m.aav||0,
+           fy:m.fy||'',term:m.term||0,sigAge:m.sigAge||0,
+           code:m.code||'',mlsSig:mlsRaw!==undefined&&mlsRaw!==''?parseFloat(mlsRaw)||0:null,
+           stats:stats};
+  });
+}
+
+// ── Aggregate one player's stats from raw season rows ────────────────────
+// Used by cgBuildTargetStats to build window stats for the target player.
+// Optimised: caller pre-resolves the pid so this does a single-pass filter.
+function cgComputePlayerAgg(raw,typeKey,side,fgId,nm,py,isLive){
+  var headers=raw.headers||[];
+  var rows=raw.rows||[];
+  var pidIdx=headers.indexOf('playerid');
+  var seasIdx=headers.indexOf('season');
+  var nameIdx=headers.indexOf('PlayerName');
+  if(pidIdx<0||seasIdx<0){
+    return null;
+  }
+
+  var prefix=typeKey+'_';
+  var spec=(FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+  var specSet={};spec.forEach(function(c){specSet[c]=1;});
+  var statIdxs=[],statCols=[];
+  headers.forEach(function(h,i){
+    if({playerid:1,season:1,PlayerName:1,Team:1,xMLBAMID:1}[h])return;
+    if(h.indexOf(prefix)===0){
+      var col=h.slice(prefix.length);
+      if(!spec.length||specSet[col]){statIdxs.push(i);statCols.push(col);}
+    }
+  });
+  if(!statIdxs.length)return null;
+
+  var wgtIdx=side==='h'
+    ?headers.indexOf(prefix+'PA')
+    :(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf(prefix+'IP'));
+
+  // Resolve the player's pid: prefer passed fgId, fallback to name match
+  var confirmedPid=null;
+  if(fgId){
+    rows.some(function(r){
+      var p=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+      if(p===fgId){confirmedPid=p;return true;}
+    });
+  }
+  if(!confirmedPid&&nm&&nameIdx>=0){
+    rows.some(function(r){
+      var rNm=normName(String(r[nameIdx]||''));
+      if(rNm===nm){confirmedPid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();return true;}
+    });
+  }
+  if(!confirmedPid)return null;
+
+  // Single-pass: collect this player's rows by year
+  var seasons={};
+  rows.forEach(function(r){
+    var p=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+    if(p!==confirmedPid)return;
+    var yr=parseInt(r[seasIdx])||0;
+    if(yr)seasons[yr]=r;
+  });
+  if(!Object.keys(seasons).length)return null;
+
+  var effectivePY=py;
+  if(isLive&&!py){
+    var yrKeys=Object.keys(seasons).map(Number).sort(function(a,b){return b-a;});
+    effectivePY=yrKeys[0]||new Date().getFullYear();
+  }
+  if(!effectivePY)return null;
+
+  var windowYears={
+    'PY':[effectivePY],'PY-1':[effectivePY-1],'PY-2':[effectivePY-2],
+    'L2':[effectivePY,effectivePY-1],'L3':[effectivePY,effectivePY-1,effectivePY-2],'CAR':[]
+  };
+  Object.keys(seasons).forEach(function(yr){
+    if(parseInt(yr)<=effectivePY)windowYears['CAR'].push(parseInt(yr));
+  });
+
+  var result={};
+  CG_WINDOWS.forEach(function(w){
+    var yrs=windowYears[w];
+    var validRows=yrs.map(function(y){return seasons[y];}).filter(Boolean);
+    var wStats={};
+    statIdxs.forEach(function(si,ii){
+      var col=statCols[ii];
+      var fullCol=prefix+col;
+      if(!validRows.length){wStats[col]=null;return;}
+      if(col==='Age'){
+        var ages=validRows.map(function(r){return parseFloat(r[si]);}).filter(function(v){return!isNaN(v);});
+        if(!ages.length){wStats[col]=null;return;}
+        if(yrs.length<=1){wStats[col]=Math.round(ages[0]);return;}
+        var mn=Math.round(Math.min.apply(null,ages)),mx=Math.round(Math.max.apply(null,ages));
+        wStats[col]=mn===mx?String(mn):mn+'-'+mx;
+        return;
+      }
+      if(cgIsCount(fullCol)){
+        var sum=0,has=false;
+        validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;has=true;}});
+        wStats[col]=has?sum:null; // partial seasons OK
+      }else if(wgtIdx>=0){
+        var sw=0,sv=0;
+        validRows.forEach(function(r){
+          // GAS stores nulls as '' — treat as 0 for weight, skip for value
+          var rawW=r[wgtIdx]; var w2=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
+          var rawV=r[si];     var v=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
+          if(!isNaN(w2)&&!isNaN(v)){sw+=w2;sv+=v*w2;}
+        });
+        if(sw>0){wStats[col]=sv/sw;}
+        else{
+          // Weight unavailable — fall back to simple mean of non-null values
+          var vals2=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
+          wStats[col]=vals2.length?vals2.reduce(function(a,b){return a+b;},0)/vals2.length:null;
+        }
+      }else{
+        var vals=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
+        wStats[col]=vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:null;
+      }
+    });
+    result[w]={cols:statCols,stats:wStats};
+  });
+  return result;
+}
+
+// ── Render target player stats (Window 2) — flat single-table layout ─────
+// All selected stat types shown as rows; timeframes as columns.
+// No per-type sub-tables — one clean unified view.
+function cgRenderPlayerStats(){
+  var el=document.getElementById('cg-stats-body');
+  if(!el)return;
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
+
+  // Collect {typeKey, typeLabel, col} for every visible stat
+  var statCols=[];
+  types.forEach(function(t){
+    if(!CG.typeOn[t.key])return;
+    var td=CG.targetStats[t.key];
+    if(!td)return;
+    var allCols=(td['PY']||td[CG_WINDOWS[0]]||{cols:[]}).cols||[];
+    var active=cgGetActiveCols(t.key,side);
+    var cols=active.length>0?active.filter(function(c){return allCols.indexOf(c)>=0;}):allCols;
+    cols.forEach(function(col){statCols.push({typeKey:t.key,typeLabel:t.label,col:col});});
+  });
+
+  if(!statCols.length||!activeTFs.length){
+    el.innerHTML='<div style="padding:20px;color:var(--dim);font-size:12px">'
+      +(Object.keys(CG.targetStats).length?'Select at least one timeframe above.':'No stat data available — check player and PY selection.')
+      +'</div>';
+    return;
+  }
+
+  // Layout: rows = timeframes, columns = stats (same orientation as every other stat tab)
+  // Group columns visually by type using a two-row header (type group + stat name)
+  var html='<div style="overflow-x:auto"><table class="cg-stat-table"><thead>';
+
+  // Row 1: type group headers (colspan per type)
+  html+='<tr><th style="text-align:left;min-width:70px;background:var(--s2)">Timeframe</th>';
+  var lastType='';
+  var typeCounts={};
+  statCols.forEach(function(sc){typeCounts[sc.typeKey]=(typeCounts[sc.typeKey]||0)+1;});
+  var seenType={};
+  statCols.forEach(function(sc){
+    if(seenType[sc.typeKey])return;
+    seenType[sc.typeKey]=true;
+    var cls=FGS_PERIOD_COLORS['py']||''; // accent colour for type headers
+    html+='<th colspan="'+typeCounts[sc.typeKey]+'" style="text-align:center;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);background:var(--s2);border-left:2px solid rgba(232,197,71,0.25);padding:5px 8px;white-space:nowrap">'+sc.typeLabel+'</th>';
+  });
+  html+='</tr>';
+
+  // Row 2: stat name headers
+  html+='<tr><th style="text-align:left;font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;padding:5px 10px;background:var(--s2);border-bottom:1px solid var(--border)">Period</th>';
+  var firstOfType={};
+  statCols.forEach(function(sc){
+    var isFirst=!firstOfType[sc.typeKey];
+    firstOfType[sc.typeKey]=true;
+    html+='<th style="text-align:right;font-size:9px;letter-spacing:.5px;color:var(--dim);text-transform:uppercase;padding:5px 8px;background:var(--s2);border-bottom:1px solid var(--border);white-space:nowrap'+(isFirst?';border-left:2px solid rgba(232,197,71,0.25)':'')+'">'
+      +sc.col+'</th>';
+  });
+  html+='</tr></thead><tbody>';
+
+  // One row per active timeframe
+  activeTFs.forEach(function(tf,ti){
+    var win=CG_TF_WINMAP[tf];
+    var tfCls=CG_TF_COLORS[tf];
+    var isLast=ti===activeTFs.length-1;
+    html+='<tr>';
+    // Timeframe label cell
+    html+='<td class="'+tfCls+'" style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;padding:6px 10px;border-bottom:'+(isLast?'none':'1px solid rgba(255,255,255,0.04)')+'">'
+      +CG_TF_LABELS[tf]+'</td>';
+    // One cell per stat
+    var firstOfTypeRow={};
+    statCols.forEach(function(sc){
+      var isFirst=!firstOfTypeRow[sc.typeKey];
+      firstOfTypeRow[sc.typeKey]=true;
+      var td=CG.targetStats[sc.typeKey];
+      var wData=td&&td[win];
+      var v=wData&&wData.stats?wData.stats[sc.col]:null;
+      var display=v!==null&&v!==undefined?fgsFmtStat(sc.col,String(v)):'—';
+      html+='<td style="text-align:right;font-size:12px;padding:6px 8px;border-bottom:'+(isLast?'none':'1px solid rgba(255,255,255,0.04)')+(isFirst?';border-left:2px solid rgba(232,197,71,0.15)':'')+'">'+display+'</td>';
+    });
+    html+='</tr>';
+  });
+
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+// ── Compute Correlation Weights ──────────────────────────────────────────
+// For each (typeKey, statCol) compute Pearson r between that stat (PY window)
+// and AAV across all contract comp players. Weights are |r|.
+function cgComputeCorrWeights(){
+  var weights={};
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+
+  types.forEach(function(t){
+    var typeKey=t.key;
+    weights[typeKey]={};
+    var typeData=CG.targetStats[typeKey];
+    if(!typeData)return;
+    var cols=typeData['PY']?typeData['PY'].cols:[];
+
+    cols.forEach(function(col){
+      // Gather (stat, aav) pairs from contract comps
+      var pairs=[];
+      CG.compStats.forEach(function(cp){
+        if(!cp.stats[typeKey])return;
+        var wData=cp.stats[typeKey]['PY'];
+        if(!wData)return;
+        var v=wData.stats[col];
+        var a=cp.aav||0;
+        if(v!==null&&v!==undefined&&!isNaN(v)&&a>0)pairs.push([v,a]);
+      });
+      if(pairs.length<5){weights[typeKey][col]=1;return;}
+      var r=cgPearson(pairs.map(function(p){return p[0];}),pairs.map(function(p){return p[1];}));
+      weights[typeKey][col]=isNaN(r)?1:(Math.abs(r)*0.5+0.5); // scale: r=1 → weight 1.5, r=0 → weight 0.5
+    });
+  });
+
+  CG.corrWeights=weights;
+}
+
+function cgPearson(xs,ys){
+  var n=xs.length;
+  if(!n)return 0;
+  var mx=xs.reduce(function(a,b){return a+b;},0)/n;
+  var my=ys.reduce(function(a,b){return a+b;},0)/n;
+  var num=0,dx2=0,dy2=0;
+  for(var i=0;i<n;i++){
+    var dx=xs[i]-mx,dy=ys[i]-my;
+    num+=dx*dy;dx2+=dx*dx;dy2+=dy*dy;
+  }
+  return dx2&&dy2?num/Math.sqrt(dx2*dy2):0;
+}
+
+// ── Run Comparability Scoring (Window 3) ─────────────────────────────────
+// ── Parse an Age value that may be a plain integer or a "min-max" range ──
+// Returns the numeric midpoint so comp scoring stays quantitative.
+// "31" → 31,  "29-31" → 30,  null → NaN
+function cgParseAgeVal(v){
+  if(v===null||v===undefined)return NaN;
+  var s=String(v).trim();
+  if(!s)return NaN;
+  // Range format "29-31" — note: negative ages don't exist so the only '-' is the separator
+  var m=s.match(/^(\d+)-(\d+)$/);
+  if(m)return(parseInt(m[1])+parseInt(m[2]))/2;
+  var n=parseFloat(s);
+  return n;
+}
+
+
+// ── Same-PY Leaderboard Peers ──────────────────────────────────────────────
+// Find up to 5 leaderboard players (same PY season, same side) with the closest
+// statistical profile to the target player across all loaded type caches.
+// Uses the same z-score similarity method as cgRunComps but against raw live rows.
+function cgRenderPeers(){
+  var peersEl=document.getElementById('cg-peers-body');
+  var metaEl=document.getElementById('cg-peers-meta');
+  var win=document.getElementById('cg-win-peers');
+  if(!peersEl)return;
+
+  var side=CG.side;
+  var py=CG.py;
+  var targetFgId=CG.fgId;
+  var targetNm=CG.player?normName(CG.player.name):'';
+  if(!py||!targetNm){win&&(win.style.display='none');return;}
+
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+
+  // For each type, gather all leaderboard players who have data in `py`
+  // Build: peerIndex[fgId] = {name, team, typeStats:{typeKey:{col:val}}}
+  var peerIndex={};
+
+  types.forEach(function(t){
+    var typeKey=t.key;
+    var liveKey=side+'_'+typeKey;
+    var raw=FG.live.cache&&FG.live.cache[liveKey];
+    if(!raw||!raw.headers||!raw.rows)return;
+
+    var headers=raw.headers;
+    var rows=raw.rows;
+    var pidIdx=headers.indexOf('playerid');
+    var seasIdx=headers.indexOf('season');
+    var nameIdx=headers.indexOf('PlayerName');
+    var teamIdx=headers.indexOf('Team');
+    if(pidIdx<0||seasIdx<0)return;
+
+    var prefix=typeKey+'_';
+    var activeCols=cgGetActiveCols(typeKey,side);
+    // Build stat index arrays
+    var statIdxs=[],statCols=[];
+    headers.forEach(function(h,i){
+      if({playerid:1,season:1,PlayerName:1,Team:1,xMLBAMID:1}[h])return;
+      if(h.indexOf(prefix)===0){
+        var col=h.slice(prefix.length);
+        if(!activeCols.length||activeCols.indexOf(col)>=0){
+          statIdxs.push(i);statCols.push(col);
+        }
+      }
+    });
+    if(!statIdxs.length)return;
+
+    // Collect rows for the target PY only
+    rows.forEach(function(r){
+      var yr=parseInt(r[seasIdx])||0;
+      if(yr!==py)return;
+      var pid=String(r[pidIdx]||'').replace(/\.0+$/,'').trim();
+      if(!pid)return;
+      var nm=nameIdx>=0?String(r[nameIdx]||'').replace(/<[^>]*>/g,'').trim():'';
+      var tm=teamIdx>=0?String(r[teamIdx]||'').replace(/<[^>]*>/g,'').trim():'';
+      if(!peerIndex[pid])peerIndex[pid]={name:nm,team:tm,typeStats:{}};
+      if(!peerIndex[pid].typeStats[typeKey])peerIndex[pid].typeStats[typeKey]={};
+      statCols.forEach(function(col,ii){
+        var v=parseFloat(r[statIdxs[ii]]);
+        if(!isNaN(v))peerIndex[pid].typeStats[typeKey][col]=v;
+      });
+    });
+  });
+
+  var peers=Object.keys(peerIndex).map(function(pid){return{fgId:pid,data:peerIndex[pid]};});
+  var total=peers.length;
+
+  // Remove the target player themselves
+  peers=peers.filter(function(p){
+    if(p.fgId===targetFgId)return false;
+    if(normName(p.data.name)===targetNm)return false;
+    return true;
+  });
+
+  if(!peers.length){
+    win&&(win.style.display='none');return;
+  }
+
+  // Build population stats (mean+sd) per type/col for z-score normalisation
+  var popStats={};  // typeKey -> col -> {mean, sd}
+  types.forEach(function(t){
+    var typeKey=t.key;
+    popStats[typeKey]={};
+    var colVals={};
+    peers.forEach(function(p){
+      var ts=p.data.typeStats[typeKey];
+      if(!ts)return;
+      Object.keys(ts).forEach(function(col){
+        if(!colVals[col])colVals[col]=[];
+        colVals[col].push(ts[col]);
+      });
+    });
+    Object.keys(colVals).forEach(function(col){
+      var vals=colVals[col];
+      if(vals.length<2)return;
+      var mean=vals.reduce(function(a,b){return a+b;},0)/vals.length;
+      var sd=Math.sqrt(vals.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/vals.length);
+      if(sd>0)popStats[typeKey][col]={mean:mean,sd:sd};
+    });
+  });
+
+  // Get target player's own stats for this PY from CG.targetStats
+  function getTargetVal(typeKey,col){
+    var td=CG.targetStats[typeKey];
+    if(!td||!td['PY'])return null;
+    var v=td['PY'].stats[col];
+    if(v===null||v===undefined)return null;
+    var n=col==='Age'?cgParseAgeVal(v):parseFloat(v);
+    return isNaN(n)?null:n;
+  }
+
+  // Score each peer
+  var scored=peers.map(function(p){
+    var totalScore=0,totalWeight=0;
+    types.forEach(function(t){
+      var typeKey=t.key;
+      var peerTs=p.data.typeStats[typeKey];
+      if(!peerTs)return;
+      Object.keys(peerTs).forEach(function(col){
+        var ps=popStats[typeKey][col];
+        if(!ps)return;
+        var tv=getTargetVal(typeKey,col);
+        if(tv===null)return;
+        var cv=peerTs[col];
+        var zT=(tv-ps.mean)/ps.sd;
+        var zC=(cv-ps.mean)/ps.sd;
+        var sim=1/(1+Math.abs(zT-zC));
+        totalScore+=sim;totalWeight+=1;
+      });
+    });
+    var pct=totalWeight>0?Math.round((totalScore/totalWeight)*100):0;
+    return{fgId:p.fgId,name:p.data.name,team:p.data.team,pct:pct};
+  });
+
+  scored.sort(function(a,b){return b.pct-a.pct;});
+  var top5=scored.slice(0,5);
+
+  if(metaEl)metaEl.textContent=py+' season · '+total+' leaderboard players compared · showing top 5';
+
+  peersEl.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0">'
+    +top5.map(function(p,i){
+      var rank=i+1;
+      var barW=Math.max(0,Math.min(100,p.pct));
+      var barC=p.pct>=80?'var(--green)':p.pct>=65?'var(--accent)':'var(--blue)';
+      var textC=p.pct>=80?'var(--green)':p.pct>=65?'var(--accent)':'var(--blue)';
+      return'<div style="background:var(--s1);border:1px solid var(--border);border-radius:7px;padding:12px 16px;min-width:160px;flex:1;max-width:220px">'
+        +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">'
+          +'<span style="background:'+barC+';color:#000;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0">'+rank+'</span>'
+          +'<span style="font-size:13px;font-weight:800;color:var(--text)">'+p.name+'</span>'
+        +'</div>'
+        +'<div style="font-size:9px;color:var(--dim);margin-bottom:7px;letter-spacing:.5px">'+(p.team||'—')+'</div>'
+        +'<div style="font-size:18px;font-weight:900;color:'+textC+'">'+p.pct+'%</div>'
+        +'<div style="height:3px;background:var(--s3);border-radius:2px;margin-top:4px;overflow:hidden">'
+          +'<div style="height:100%;width:'+barW+'%;background:'+barC+';border-radius:2px"></div>'
+        +'</div>'
+        +'<div style="font-size:8px;color:var(--dim);margin-top:3px;letter-spacing:.5px">similarity</div>'
+      +'</div>';
+    }).join('')
+  +'</div>';
+}
+
+// ── Comp scoring state ───────────────────────────────────────────────────
+var cgCompSort   = {col:'pctMatch', asc:false};
+var cgCompFilter = {};   // {col: string | number threshold}
+var cgScoredCache= [];   // last full scored+sorted list, rebuilt only on re-score
+
+// ── Population stats cache: pre-computed once per score run ──────────────
+// Avoids the O(N²) inner loop that crashed the browser.
+// Shape: popStats[typeKey][win][col] = {mean, sd}
+var cgPopStats   = {};
+
+function cgBuildPopStats(side, types, activeTFs){
+  cgPopStats={};
+  types.forEach(function(t){
+    var typeKey=t.key;
+    cgPopStats[typeKey]={};
+    activeTFs.forEach(function(tf){
+      var win=CG_TF_WINMAP[tf];
+      cgPopStats[typeKey][win]={};
+      var activeCols=cgGetActiveCols(typeKey,side);
+      // Collect all values per col across all comp players
+      var colVals={};
+      CG.compStats.forEach(function(cp){
+        var d=cp.stats[typeKey];
+        if(!d||!d[win])return;
+        var stats=d[win].stats;
+        var allCols=d[win].cols||[];
+        var cols=activeCols.length>0?activeCols.filter(function(c){return allCols.indexOf(c)>=0;}):allCols;
+        cols.forEach(function(col){
+          var raw=stats[col];
+          if(raw===null||raw===undefined)return;
+          var n=col==='Age'?cgParseAgeVal(raw):parseFloat(raw);
+          if(isNaN(n))return;
+          if(!colVals[col])colVals[col]=[];
+          colVals[col].push(n);
+        });
+      });
+      Object.keys(colVals).forEach(function(col){
+        var vals=colVals[col];
+        if(vals.length<2)return;
+        var mean=vals.reduce(function(a,b){return a+b;},0)/vals.length;
+        var sd=Math.sqrt(vals.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/vals.length);
+        if(sd>0)cgPopStats[typeKey][win][col]={mean:mean,sd:sd};
+      });
+    });
+  });
+}
+
+// ── Score all comps (called once per player load or settings change) ──────
+function cgRunComps(){
+  if(!CG.player||!Object.keys(CG.targetStats).length)return;
+
+  var useCorr=!!(document.getElementById('cg-use-corr')&&document.getElementById('cg-use-corr').checked);
+
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
+  var activeTypes=types.filter(function(t){return CG.typeOn[t.key];});
+
+  if(!activeTFs.length||!activeTypes.length){
+    var st=document.getElementById('cg-comps-status');
+    if(st){st.style.display='';st.textContent='Select at least one timeframe and one stat type above.';}
+    return;
+  }
+
+  // Build correlation weights if needed
+  if(useCorr&&(!CG.corrWeights||!Object.keys(CG.corrWeights).length)){
+    cgComputeCorrWeights();
+  }
+
+  // Pre-compute population stats once — O(N·S) instead of O(N²·S)
+  cgBuildPopStats(side, activeTypes, activeTFs);
+
+  var targetNm=normName(CG.player.name);
+  var targetPY=CG.py;
+
+  // Score each comp player
+  var scored=[];
+  CG.compStats.forEach(function(cp){
+    // Skip the target player themselves
+    if(normName(cp.name)===targetNm&&cp.py===targetPY)return;
+
+    var totalScore=0,totalWeight=0,statCount=0;
+    var typeBreakdown={};
+
+    activeTypes.forEach(function(t){
+      var typeKey=t.key;
+      var tgt=CG.targetStats[typeKey];
+      var cmpType=cp.stats[typeKey];
+      if(!tgt||!cmpType)return;
+      typeBreakdown[typeKey]={score:0,weight:0};
+
+      activeTFs.forEach(function(tf){
+        var win=CG_TF_WINMAP[tf];
+        var tgtW=tgt[win];
+        var cmpW=cmpType[win];
+        if(!tgtW||!cmpW)return;
+
+        var allCols=tgtW.cols||[];
+        var activeCols=cgGetActiveCols(typeKey,side);
+        var cols=activeCols.length>0?activeCols.filter(function(c){return allCols.indexOf(c)>=0;}):allCols;
+        var popW=cgPopStats[typeKey]&&cgPopStats[typeKey][win];
+        if(!popW)return;
+
+        cols.forEach(function(col){
+          var ps=popW[col];
+          if(!ps)return; // not enough variance to normalise
+
+          var tv=tgtW.stats[col];
+          var cv=cmpW.stats[col];
+          var tvMissing=(tv===null||tv===undefined);
+          var cvMissing=(cv===null||cv===undefined);
+          // Both missing same season → perfect match on absence
+          if(tvMissing&&cvMissing){
+            var wt0=1;
+            if(useCorr&&CG.corrWeights[typeKey]&&CG.corrWeights[typeKey][col]!==undefined)wt0=CG.corrWeights[typeKey][col];
+            totalScore+=wt0;totalWeight+=wt0;statCount++;
+            typeBreakdown[typeKey].score+=wt0;typeBreakdown[typeKey].weight+=wt0;
+            return;
+          }
+          // Only one missing → incomparable, skip
+          if(tvMissing||cvMissing)return;
+          var tvN=col==='Age'?cgParseAgeVal(tv):parseFloat(tv);
+          var cvN=col==='Age'?cgParseAgeVal(cv):parseFloat(cv);
+          if(isNaN(tvN)||isNaN(cvN))return;
+
+          var zT=(tvN-ps.mean)/ps.sd;
+          var zC=(cvN-ps.mean)/ps.sd;
+          var sim=1/(1+Math.abs(zT-zC));
+
+          var wt=1;
+          if(useCorr&&CG.corrWeights[typeKey]&&CG.corrWeights[typeKey][col]!==undefined){
+            wt=CG.corrWeights[typeKey][col];
+          }
+
+          totalScore+=sim*wt;
+          totalWeight+=wt;
+          statCount++;
+          typeBreakdown[typeKey].score+=sim*wt;
+          typeBreakdown[typeKey].weight+=wt;
+        });
+      });
+    });
+
+    var pctMatch=totalWeight>0?Math.round((totalScore/totalWeight)*100):0;
+    scored.push({cp:cp,pctMatch:pctMatch,statCount:statCount,typeBreakdown:typeBreakdown});
+  });
+
+  scored.sort(function(a,b){return b.pctMatch-a.pctMatch;});
+  cgScoredCache=scored;
+  CG.lastComps=scored;
+
+  cgRenderCompsTable(activeTypes,activeTFs,useCorr);
+}
+
+// ── Sort: just re-render from cache — no re-score ─────────────────────────
+// ── Filter application — rebuilds only tbody+status, never the header ────
+// This prevents focus loss when typing into filter inputs.
+function cgApplyCompFilter(col,val){
+  if(val===''||val===null)delete cgCompFilter[col];
+  else cgCompFilter[col]=val;
+  cgRenderCompsBody();
+}
+
+// ── Code multi-select state ───────────────────────────────────────────────
+var cgCodeFilterOpen=false;
+
+function cgToggleCodeFilter(code){
+  if(!cgCompFilter.codes)cgCompFilter.codes=[];
+  var idx=cgCompFilter.codes.indexOf(code);
+  if(idx>=0)cgCompFilter.codes.splice(idx,1);
+  else cgCompFilter.codes.push(code);
+  // Update pill display
+  var btn=document.getElementById('cg-code-btn');
+  if(btn)btn.textContent=cgCompFilter.codes&&cgCompFilter.codes.length
+    ?cgCompFilter.codes.join(', ')
+    :'Any';
+  // Re-check all checkboxes in the dropdown
+  var list=document.getElementById('cg-code-list');
+  if(list){
+    list.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      cb.checked=(cgCompFilter.codes||[]).indexOf(cb.value)>=0;
+    });
+  }
+  cgRenderCompsBody();
+}
+
+function cgOpenCodeDropdown(){
+  var list=document.getElementById('cg-code-list');
+  if(!list)return;
+  cgCodeFilterOpen=!cgCodeFilterOpen;
+  list.style.display=cgCodeFilterOpen?'block':'none';
+  var btn=document.getElementById('cg-code-btn');
+  if(btn)btn.classList.toggle('active',cgCodeFilterOpen);
+}
+
+function cgClearCodeFilter(){
+  cgCompFilter.codes=[];
+  var btn=document.getElementById('cg-code-btn');
+  if(btn)btn.textContent='Any';
+  cgCodeFilterOpen=false;
+  var list=document.getElementById('cg-code-list');
+  if(list){list.style.display='none';list.querySelectorAll('input').forEach(function(cb){cb.checked=false;});}
+  cgRenderCompsBody();
+}
+
+// Build the code dropdown (called once when header is built)
+function cgBuildCodeDropdown(){
+  var codes=[];
+  var seen={};
+  cgScoredCache.forEach(function(s){
+    var c=(s.cp.code||'').trim();
+    if(c&&!seen[c]){seen[c]=true;codes.push(c);}
+  });
+  codes.sort();
+  var selected=cgCompFilter.codes||[];
+  var btnLabel=selected.length?selected.join(', '):'Any';
+
+  return '<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'
+    +'<div style="position:relative">'
+    +'<button id="cg-code-btn" onclick="cgOpenCodeDropdown()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 6px;cursor:pointer;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:80px;text-align:left">'+btnLabel+'</button>'
+    +'<div id="cg-code-list" style="display:none;position:fixed;z-index:9999;background:var(--s2);border:1px solid rgba(255,255,255,0.15);border-radius:5px;box-shadow:0 6px 20px rgba(0,0,0,0.7);padding:4px 0;max-height:200px;overflow-y:auto;min-width:110px">'
+    +(codes.length?
+        '<div onclick="cgClearCodeFilter()" style="padding:5px 10px;font-size:10px;color:var(--accent);cursor:pointer;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.07)">Clear</div>'
+        +codes.map(function(c){
+          var chk=selected.indexOf(c)>=0;
+          var safeC=c.replace(/'/g,"\\'");
+          return'<label style="display:flex;align-items:center;gap:6px;padding:4px 10px;cursor:pointer;font-size:11px;color:var(--text)">'
+            +'<input type="checkbox" value="'+c+'"'+(chk?' checked':'')+' onchange="cgToggleCodeFilter(\'' +safeC+ '\')" style="accent-color:var(--accent)"> '+c
+            +'</label>';
+        }).join('')
+      :'<div style="padding:5px 10px;font-size:10px;color:var(--dim)">No codes</div>')
+    +'</div>'
+    +'</div></td>';
+}
+
+// ── Sort: re-render header (updates arrows) + body ────────────────────────
+function cgSortCompsBy(col){
+  if(cgCompSort.col===col){cgCompSort.asc=!cgCompSort.asc;}
+  else{
+    cgCompSort.col=col;
+    cgCompSort.asc=(col==='name'||col==='pPos'||col==='sigTm'||col==='fy'||col==='code');
+  }
+  // Rebuild header to update sort arrows, then body
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
+  var activeTypes=types.filter(function(t){return CG.typeOn[t.key];});
+  var useCorr=!!(document.getElementById('cg-use-corr')&&document.getElementById('cg-use-corr').checked);
+  cgRenderCompsTable(activeTypes,activeTFs,useCorr);
+}
+
+// ── Body-only re-render (preserves filter input focus) ───────────────────
+function cgRenderCompsBody(){
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
+  var activeTypes=types.filter(function(t){return CG.typeOn[t.key];});
+  var useCorr=!!(document.getElementById('cg-use-corr')&&document.getElementById('cg-use-corr').checked);
+
+  // Remember focused element (id or a data attribute) so we can restore it
+  var focusedId=document.activeElement?document.activeElement.id:null;
+  var focusedName=document.activeElement?document.activeElement.getAttribute('data-fkey'):null;
+  var focusedPos=document.activeElement&&document.activeElement.selectionStart!=null
+    ?document.activeElement.selectionStart:null;
+
+  _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr);
+
+  // Restore focus — find by data-fkey attribute we set on inputs
+  if(focusedName){
+    var el=document.querySelector('[data-fkey="'+focusedName+'"]');
+    if(el){
+      el.focus();
+      try{if(focusedPos!==null)el.setSelectionRange(focusedPos,focusedPos);}catch(e){}
+    }
+  }
+}
+
+// ── Head-to-Head modal ────────────────────────────────────────────────────
+// ── Stat comparison color coding ─────────────────────────────────────────
+// Returns a CSS background-color string for a cell given its value vs reference.
+// Green = better, Red = worse, Yellow = similar (within threshold).
+// "Better" depends on the stat — most stats higher=better, some lower=better.
+var H2H_LOWER_BETTER = {
+  'K%':1,'BB/K':0,'ERA':1,'FIP':1,'xFIP':1,'SIERA':1,'ERA-':1,'FIP-':1,'xFIP-':1,
+  'WHIP':1,'HR/9':1,'BB/9':1,'BB%':0,'K-BB%':0,
+  'K%+':1,'SwStr%':1,'Age':1,
+  '-WPA':1,'Clutch':0
+};
+function h2hStatCellBg(col, val, refVal){
+  if(val===null||val===undefined||isNaN(parseFloat(val))) return '';
+  if(refVal===null||refVal===undefined||isNaN(parseFloat(refVal))) return '';
+  var v = col==='Age' ? cgParseAgeVal(val)   : parseFloat(val);
+  var r = col==='Age' ? cgParseAgeVal(refVal) : parseFloat(refVal);
+  if(isNaN(v)||isNaN(r)) return '';
+  if(r===0&&v===0) return '';
+  // Threshold: within 3% of reference is "similar"
+  var threshold = Math.abs(r)*0.03 + 0.005;
+  var diff = v - r;
+  var absDiff = Math.abs(diff);
+  if(absDiff <= threshold) return 'background:rgba(255,214,0,0.13)';  // yellow — similar
+  var lowerBetter = H2H_LOWER_BETTER[col]===1;
+  var better = lowerBetter ? diff<0 : diff>0;
+  return better ? 'background:rgba(76,175,80,0.18)' : 'background:rgba(229,57,53,0.15)';
+}
+
+
+function cgShowH2H(idx){
+  var s=cgScoredCache[idx];
+  if(!s)return;
+  var cp=s.cp;
+  var side=CG.side;
+  var types=(side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES);
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
+  var orderedTFs=activeTFs.slice().sort(function(a,b){
+    var order={py:0,py1:1,py2:2,l2:3,l3:4,car:5};
+    return order[a]-order[b];
+  });
+
+  var pct=s.pctMatch;
+  var barC=pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--blue)':'var(--dim)';
+  var tgtPY=CG.py;
+  var cmpPY=cp.py;
+
+  function winYear(py,tf){
+    if(tf==='py')  return py;
+    if(tf==='py1') return py-1;
+    if(tf==='py2') return py-2;
+    if(tf==='l2')  return (py-1)+'\u2013'+py;
+    if(tf==='l3')  return (py-2)+'\u2013'+py;
+    if(tf==='car') return '\u2264'+py;
+    return '';
+  }
+
+  var html='<div style="font-size:13px;font-weight:900;color:var(--accent);margin-bottom:4px">'
+    +'Head-to-Head: '+CG.player.name+' vs '+cp.name+'</div>'
+    +'<div style="font-size:10px;color:var(--dim);margin-bottom:12px">'
+      +cp.py+' PY \u00b7 '+(cp.pPos||'\u2014')+' \u00b7 '+(cp.sigTm||'\u2014')
+      +' \u00b7 <span style="font-weight:800;color:'+barC+'">'+pct+'% match</span>'
+      +' \u00b7 GUAR AAV: '+(cp.guarAav?'$'+cp.guarAav.toFixed(1)+'M':'\u2014')
+      +' \u00b7 Term: '+(cp.term?cp.term+'yr':'\u2014')
+      +(cp.code?' \u00b7 Code: <strong>'+cp.code+'</strong>':'')
+      +(cp.mlsSig!==null&&cp.mlsSig!==undefined?' \u00b7 MLS@Sign: '+cp.mlsSig.toFixed(2):'')
+    +'</div>';
+
+  orderedTFs.forEach(function(tf){
+    var win=CG_TF_WINMAP[tf];
+    var tfLabel=CG_TF_LABELS[tf];
+    var tfCls=CG_TF_COLORS[tf];
+    var tgtYr=winYear(tgtPY,tf);
+    var cmpYr=winYear(cmpPY,tf);
+
+    var statList=[];
+    types.forEach(function(t){
+      if(!CG.typeOn[t.key])return;
+      var tgtData=CG.targetStats[t.key];
+      if(!tgtData||!tgtData[win])return;
+      var allCols=tgtData[win].cols||[];
+      var activeCols=cgGetActiveCols(t.key,side);
+      var cols=activeCols.length>0?activeCols.filter(function(c){return allCols.indexOf(c)>=0;}):allCols;
+      cols.forEach(function(col){statList.push({typeKey:t.key,typeLabel:t.label,col:col});});
+    });
+    if(!statList.length)return;
+
+    html+='<div style="margin-bottom:14px">';
+    html+='<div class="'+tfCls+'" style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border-radius:4px 4px 0 0;display:inline-block">'+tfLabel+'</div>';
+    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead>';
+
+    // Type group header row
+    html+='<tr><td style="padding:4px 8px;background:var(--s2);font-size:9px;color:var(--dim);font-weight:700;white-space:nowrap;border-bottom:1px solid var(--border)">Player (Season)</td>';
+    var typeCounts={};
+    statList.forEach(function(sc){typeCounts[sc.typeKey]=(typeCounts[sc.typeKey]||0)+1;});
+    var seenT={};
+    statList.forEach(function(sc){
+      if(seenT[sc.typeKey])return; seenT[sc.typeKey]=true;
+      html+='<th colspan="'+typeCounts[sc.typeKey]+'" style="text-align:center;font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:var(--s2);border-bottom:1px solid var(--border);border-left:1px solid rgba(232,197,71,0.2);padding:4px 6px;white-space:nowrap">'+sc.typeLabel+'</th>';
+    });
+    html+='</tr>';
+
+    // Stat name header row
+    html+='<tr><td style="background:var(--s2);border-bottom:2px solid var(--border)"></td>';
+    var firstOfT={};
+    statList.forEach(function(sc){
+      var iF=!firstOfT[sc.typeKey]; firstOfT[sc.typeKey]=true;
+      html+='<th style="text-align:right;font-size:9px;color:var(--dim);background:var(--s2);padding:3px 7px;white-space:nowrap;border-bottom:2px solid var(--border)'+(iF?';border-left:1px solid rgba(232,197,71,0.2)':'')+'">'+sc.col+'</th>';
+    });
+    html+='</tr></thead><tbody>';
+
+    // Target player row
+    html+='<tr style="background:rgba(232,197,71,0.06)">';
+    html+='<td style="padding:5px 8px;font-weight:800;font-size:11px;color:var(--accent);white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.06)">'
+      +CG.player.name+' <span style="font-size:9px;color:var(--dim);font-weight:400">('+tgtYr+')</span></td>';
+    var firstOfT2={};
+    statList.forEach(function(sc){
+      var iF=!firstOfT2[sc.typeKey]; firstOfT2[sc.typeKey]=true;
+      var td2=CG.targetStats[sc.typeKey]; var wData=td2&&td2[win];
+      var v=wData&&wData.stats?wData.stats[sc.col]:null;
+      html+='<td style="text-align:right;padding:5px 7px;border-bottom:1px solid rgba(255,255,255,0.06)'+(iF?';border-left:1px solid rgba(232,197,71,0.2)':'')+'">'+
+        (v!==null&&v!==undefined?fgsFmtStat(sc.col,String(v)):'—')+'</td>';
+    });
+    html+='</tr>';
+
+    // Comp player row — color coded vs target
+    html+='<tr>';
+    html+='<td style="padding:5px 8px;font-weight:700;font-size:11px;color:var(--text);white-space:nowrap">'
+      +cp.name+' <span style="font-size:9px;color:var(--dim);font-weight:400">('+cmpYr+')</span></td>';
+    var firstOfT3={};
+    statList.forEach(function(sc){
+      var iF=!firstOfT3[sc.typeKey]; firstOfT3[sc.typeKey]=true;
+      var cpType=cp.stats[sc.typeKey]; var cmpWData=cpType&&cpType[win];
+      var cv=cmpWData&&cmpWData.stats?cmpWData.stats[sc.col]:null;
+      var tgtType=CG.targetStats[sc.typeKey]; var tgtW=tgtType&&tgtType[win];
+      var tv=tgtW&&tgtW.stats?tgtW.stats[sc.col]:null;
+      var bg=h2hStatCellBg(sc.col,cv,tv);
+      var sty='text-align:right;padding:5px 7px'+(iF?';border-left:1px solid rgba(232,197,71,0.2)':'')+(bg?';'+bg:'');
+      html+='<td style="'+sty+'">'+(cv!==null&&cv!==undefined?fgsFmtStat(sc.col,String(cv)):'\u2014')+'</td>';
+    });
+    html+='</tr>';
+    html+='</tbody></table></div></div>';
+  });
+
+  // Overlay modal — click outside to close, no event propagation bugs
+  var existing=document.getElementById('cg-h2h-modal');
+  if(existing)existing.remove();
+  var overlay=document.createElement('div');
+  overlay.id='cg-h2h-modal';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.55)';
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  var box=document.createElement('div');
+  box.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--s1);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,0.85);width:min(96vw,1100px);max-height:80vh;overflow-y:auto';
+  box.innerHTML=html+'<div style="text-align:right;margin-top:12px">'
+    +'<button onclick="document.getElementById(\'cg-h2h-modal\').remove()" style="background:var(--accent);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:1px;padding:8px 20px">Close</button>'
+    +'</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+
+// ── Full render: header + body ────────────────────────────────────────────
+function cgRenderCompsTable(activeTypes,activeTFs,useCorr){
+  var headEl=document.getElementById('cg-comps-head');
+  var bodyEl=document.getElementById('cg-comps-body');
+  if(!headEl||!bodyEl)return;
+
+  function arr(col){
+    if(cgCompSort.col!==col)return'<span style="opacity:.25;font-size:8px"> ⇅</span>';
+    return'<span style="color:var(--accent);font-size:9px"> '+(cgCompSort.asc?'↑':'↓')+'</span>';
+  }
+  function th(label,col,align){
+    var q="'";
+    return'<th onclick="cgSortCompsBy('+q+col+q+')" style="cursor:pointer;font-size:9px;letter-spacing:1px;color:var(--dim);padding:7px 10px;text-align:'+(align||'right')+';white-space:nowrap;border-bottom:1px solid var(--border);user-select:none;background:var(--s2)">'+label+arr(col)+'</th>';
+  }
+  function fr(minKey,maxKey,pMin,pMax,w){
+    w=w||'40px';
+    var vMin=cgCompFilter[minKey]||''; var vMax=cgCompFilter[maxKey]||'';
+    var sty='style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 4px;width:'+w+';outline:none"';
+    var q="'";
+    return'<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'
+      +'<div style="display:flex;gap:2px;align-items:center">'
+      +'<input type="number" data-fkey="'+minKey+'" value="'+vMin+'" placeholder="'+pMin+'" onchange="cgApplyCompFilter('+q+minKey+q+',this.value)" '+sty+'>'
+      +'<span style="font-size:9px;color:var(--dim)">–</span>'
+      +'<input type="number" data-fkey="'+maxKey+'" value="'+vMax+'" placeholder="'+pMax+'" onchange="cgApplyCompFilter('+q+maxKey+q+',this.value)" '+sty+'>'
+      +'</div></td>';
+  }
+  function ft(col,ph,w){
+    var val=cgCompFilter[col]||''; w=w||'90px';
+    var q="'";
+    return'<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'
+      +'<input data-fkey="'+col+'" value="'+String(val).replace(/"/g,'&quot;')+'" placeholder="'+ph+'" onchange="cgApplyCompFilter('+q+col+q+',this.value)"'
+      +' style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 5px;width:'+w+';outline:none">'
+      +'</td>';
+  }
+  function fempty(){return'<td style="border-bottom:1px solid var(--border);background:var(--s2)"></td>';}
+
+  var head='<tr>'
+    +'<th style="font-size:9px;color:var(--dim);padding:7px 10px;text-align:center;border-bottom:1px solid var(--border);background:var(--s2)">#</th>'
+    +th('Player','name','left')
+    +th('PY','py','center')
+    +th('Pos','pPos','center')
+    +th('Team','sigTm','center')
+    +th('Match %','pctMatch')
+    +th('Stats','statCount')
+    +th('FY','fy','center')
+    +th('Term','term')
+    +th('Age@Sign','sigAge')
+    +th('GUAR AAV','guarAav')
+    +th('GUAR Total','guar')
+    +th('Code','code','center')
+    +th('MLS@Sign','mlsSig')
+    +'</tr>'
+    +'<tr>'
+    +fempty()
+    +ft('name','name…','100px')
+    +fr('pyMin','pyMax','from','to','40px')
+    +ft('pPos','pos…','38px')
+    +ft('sigTm','team…','42px')
+    +fr('pctMin','pctMax','≥%','≤%','34px')
+    +fr('statMin','statMax','≥','≤','32px')
+    +fr('fyMin','fyMax','from','to','36px')
+    +fr('termMin','termMax','≥yr','≤yr','32px')
+    +fr('ageMin','ageMax','≥','≤','32px')
+    +fr('guarAavMin','guarAavMax','≥$M','≤$M','36px')
+    +fr('guarMin','guarMax','≥$M','≤$M','36px')
+    +cgBuildCodeDropdown()
+    +fr('mlsMin','mlsMax','≥','≤','30px')
+    +'</tr>';
+  headEl.innerHTML=head;
+
+  // Position code dropdown below its button after DOM insertion
+  setTimeout(function(){
+    var btn=document.getElementById('cg-code-btn');
+    var list=document.getElementById('cg-code-list');
+    if(btn&&list){var r=btn.getBoundingClientRect();list.style.top=(r.bottom+2)+'px';list.style.left=r.left+'px';}
+  },0);
+
+  _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr);
+}
+
+// ── Body-only render (no header rebuild — preserves filter input focus) ───
+function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
+  var statusEl=document.getElementById('cg-comps-status');
+  var bodyEl  =document.getElementById('cg-comps-body');
+  if(!bodyEl)return;
+
+  var allScored=cgScoredCache;
+
+  function inRange(val,minKey,maxKey){
+    var n=parseFloat(val); if(isNaN(n))return true;
+    var mn=cgCompFilter[minKey]; var mx=cgCompFilter[maxKey];
+    if(mn!==undefined&&mn!==''&&!isNaN(parseFloat(mn))&&n<parseFloat(mn))return false;
+    if(mx!==undefined&&mx!==''&&!isNaN(parseFloat(mx))&&n>parseFloat(mx))return false;
+    return true;
+  }
+  function txtFilter(val,q){return!q||String(val||'').toLowerCase().indexOf(q.toLowerCase())>=0;}
+
+  var filtered=allScored.filter(function(s){
+    var cp=s.cp;
+    if(!txtFilter(cp.name,  cgCompFilter.name))  return false;
+    if(!txtFilter(cp.pPos,  cgCompFilter.pPos))  return false;
+    if(!txtFilter(cp.sigTm, cgCompFilter.sigTm)) return false;
+    if(!inRange(cp.py,      'pyMin','pyMax'))     return false;
+    if(!inRange(s.pctMatch, 'pctMin','pctMax'))   return false;
+    if(!inRange(s.statCount,'statMin','statMax')) return false;
+    if(!inRange(cp.fy,      'fyMin','fyMax'))     return false;
+    if(!inRange(cp.term,    'termMin','termMax')) return false;
+    if(!inRange(cp.sigAge,  'ageMin','ageMax'))   return false;
+    if(!inRange(cp.guarAav, 'guarAavMin','guarAavMax'))return false;
+    if(!inRange(cp.guar,    'guarMin','guarMax')) return false;
+    var selCodes=cgCompFilter.codes;
+    if(selCodes&&selCodes.length&&selCodes.indexOf((cp.code||'').trim())<0)return false;
+    if(!inRange(cp.mlsSig,  'mlsMin','mlsMax'))  return false;
+    return true;
+  });
+
+  var sc=cgCompSort.col,sa=cgCompSort.asc;
+  var getV=function(s){
+    var cp=s.cp;
+    var map={pctMatch:s.pctMatch,name:cp.name,py:cp.py,pPos:cp.pPos,sigTm:cp.sigTm,
+             statCount:s.statCount,fy:cp.fy,term:cp.term,sigAge:cp.sigAge,
+             guarAav:cp.guarAav,guar:cp.guar,code:cp.code,mlsSig:cp.mlsSig};
+    return map[sc]!==undefined?map[sc]:s.pctMatch;
+  };
+  var sorted=filtered.slice().sort(function(a,b){
+    var av=getV(a),bv=getV(b); if(av===bv)return 0;
+    if(typeof av==='string')return sa?av.localeCompare(bv):bv.localeCompare(av);
+    return sa?av-bv:bv-av;
+  });
+  var show=sorted.slice(0,25);
+
+  if(statusEl){
+    var nFilt=Object.keys(cgCompFilter).filter(function(k){var v=cgCompFilter[k];return k==='codes'?v&&v.length>0:v!==''&&v!==undefined;}).length;
+    statusEl.style.display='';
+    statusEl.innerHTML='<strong>'+show.length+'</strong>'+(filtered.length>25?' of '+filtered.length:'')
+      +' / '+allScored.length+' contract players'
+      +(activeTFs&&activeTFs.length?' · '+activeTFs.map(function(tf){return CG_TF_LABELS[tf];}).join(', '):'')
+      +(nFilt?' · <span style="color:var(--accent)">'+nFilt+' filter'+(nFilt>1?'s':'')+' active — <a href="#" onclick="cgClearCompFilters();return false" style="color:var(--red)">clear</a></span>':'')
+      +(useCorr?' · <span style="color:var(--green)">Corr. weighted</span>':'')
+      +' <button onclick="cgShowMatchExplainer()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:3px;color:var(--dim);cursor:pointer;font-size:9px;padding:1px 6px;margin-left:6px">? Match %</button>';
+  }
+
+  if(!show.length){
+    bodyEl.innerHTML='<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--dim)">No comps match current filters — <a href="#" onclick="cgClearCompFilters();return false" style="color:var(--accent)">clear filters</a></td></tr>';
+    return;
+  }
+
+  var side=CG.side;
+  var types2=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var typeMap={};types2.forEach(function(t){typeMap[t.key]=t.label;});
+
+  var rows=show.map(function(s,i){
+    var cp=s.cp;
+    var globalIdx=cgScoredCache.indexOf(s);
+    var rank=i+1;
+    var rankBg=rank===1?'var(--accent)':rank===2?'#c0c0c0':rank===3?'#cd7f32':'var(--s3)';
+    var rankFg=rank<=3?'#000':'var(--dim)';
+    var pct=s.pctMatch;
+    var barW=Math.max(0,Math.min(100,pct));
+    var barC=pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--blue)':'var(--dim)';
+    var textC=pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--text)':'var(--dim)';
+
+    var breakdown='';
+    if(s.typeBreakdown){
+      var bParts=[];
+      Object.keys(s.typeBreakdown).forEach(function(tk){
+        var bd=s.typeBreakdown[tk]; if(!bd.weight)return;
+        var tp=Math.round((bd.score/bd.weight)*100);
+        var bc=tp>=80?'rgba(102,187,106,0.15)':tp>=60?'rgba(232,197,71,0.15)':'rgba(255,255,255,0.06)';
+        var fc=tp>=80?'var(--green)':tp>=60?'var(--accent)':'var(--dim)';
+        bParts.push('<span style="background:'+bc+';color:'+fc+';border-radius:3px;font-size:8px;padding:1px 4px">'+(typeMap[tk]||tk)+': '+tp+'%</span>');
+      });
+      if(bParts.length)breakdown='<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">'+bParts.join('')+'</div>';
+    }
+
+    function td(v,align,extra){
+      return'<td style="padding:6px 10px;font-size:11px;vertical-align:middle;text-align:'+(align||'right')+(extra?';'+extra:'')+'">'+
+        (v===''||v===null||v===undefined?'—':v)+'</td>';
+    }
+
+    var matchCell='<td style="padding:6px 10px;vertical-align:middle;min-width:80px;cursor:pointer" onclick="cgShowH2H('+globalIdx+')" title="Click to see head-to-head stats">'
+      +'<div style="font-size:14px;font-weight:900;color:'+textC+';text-decoration:underline;text-decoration-style:dotted">'+pct+'%</div>'
+      +'<div class="cg-comp-bar"><div class="cg-comp-bar-fill" style="width:'+barW+'%;background:'+barC+'"></div></div>'
+      +'</td>';
+
+    return'<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'
+      +'<td style="padding:6px 10px;text-align:center;vertical-align:middle">'
+        +'<span class="cg-comp-rank" style="background:'+rankBg+';color:'+rankFg+'">'+rank+'</span>'
+      +'</td>'
+      +td(cp.name+breakdown,'left','font-weight:700')
+      +td(cp.py||'—','center')
+      +td(cp.pPos?pTag(cp.pPos):'—','center')
+      +td(cp.sigTm||'—','center')
+      +matchCell
+      +td(s.statCount,'right','color:var(--dim)')
+      +td(cp.fy||'—','center')
+      +td(cp.term?cp.term+'yr':'—')
+      +td(cp.sigAge?cp.sigAge.toFixed(1):'—')
+      +td(cp.guarAav?'$'+cp.guarAav.toFixed(1)+'M':'')
+      +td(cp.guar?'$'+cp.guar.toFixed(0)+'M':'')
+      +td(cp.code||'—','center')
+      +td(cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(2):'—')
+      +'</tr>';
+  }).join('');
+
+  bodyEl.innerHTML=rows;
+}
+
+
+function cgClearCompFilters(){
+  cgCompFilter={};
+  cgCodeFilterOpen=false;
+  var side=CG.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
+  var activeTypes=types.filter(function(t){return CG.typeOn[t.key];});
+  var useCorr=!!(document.getElementById('cg-use-corr')&&document.getElementById('cg-use-corr').checked);
+  cgRenderCompsTable(activeTypes,activeTFs,useCorr); // full re-render to reset header inputs
+}
+
+function cgShowMatchExplainer(){
+  var existing=document.getElementById('cg-explainer-modal');
+  if(existing){existing.remove();return;}
+  var box=document.createElement('div');
+  box.id='cg-explainer-modal';
+  box.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--s1);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:22px 24px;z-index:99999;box-shadow:0 12px 40px rgba(0,0,0,0.8);max-width:460px;width:90vw';
+  box.innerHTML=''
+    +'<div style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:10px">What does Match % mean?</div>'
+    +'<p style="font-size:12px;line-height:1.7;margin-bottom:10px">Match % is a <strong>statistical similarity score</strong> — it measures how closely a comp player\'s stats resemble the target player\'s stats across all selected stat types and timeframes.</p>'
+    +'<p style="font-size:12px;line-height:1.7;margin-bottom:10px"><strong>How it\'s calculated:</strong> For each stat, both players\' values are converted to z-scores (standard deviations from the league mean). The closer the z-scores, the higher the similarity for that stat. Scores are averaged across all active stat/timeframe combinations.</p>'
+    +'<div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:12px;line-height:1.7">'
+      +'<div style="font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-bottom:6px">What the numbers mean</div>'
+      +'<div style="margin-bottom:4px"><strong style="color:var(--green)">90%+</strong> — Nearly identical production across most categories. Very rare, high-confidence comparable.</div>'
+      +'<div style="margin-bottom:4px"><strong style="color:var(--accent)">75%</strong> — Broadly similar performance. Directionally useful; may differ meaningfully in a few areas.</div>'
+      +'<div><strong style="color:var(--blue)">55%</strong> — Shares some traits but differs substantially in others. A data point, not a direct comp.</div>'
+    +'</div>'
+    +'<p style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:14px">Tip: enable <em>Correlation Weighting</em> to give more influence to stats that historically predict contract value — this sharpens the signal, especially for players in transition years.</p>'
+    +'<div style="text-align:right"><button onclick="document.getElementById(\'cg-explainer-modal\').remove()" style="background:var(--accent);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:1px;padding:8px 20px">Got it</button></div>';
+  document.body.appendChild(box);
+  setTimeout(function(){
+    document.addEventListener('click',function h(e){
+      var m=document.getElementById('cg-explainer-modal');
+      if(m&&!m.contains(e.target)){m.remove();document.removeEventListener('click',h);}
+    });
+  },100);
+}
+
+
+// ── Export CSV ────────────────────────────────────────────────────────────
+function cgExportComps(){
+  if(!CG.lastComps||!CG.lastComps.length){toast('No comps to export');return;}
+  // lastComps is now the full sorted array; slice top 25 for export
+  var exportComps=CG.lastComps.slice(0,25);
+  var hdrs=['Rank','Player','PY','Pos','Team','Match%','Stats Used','FY','Term','Sign Age','GUAR AAV ($M)','GUAR Total ($M)','Code','MLS@Sign'];
+  var rows=exportComps.map(function(s,i){
+    var cp=s.cp;
+    return[
+      i+1,
+      (cp.name||'').replace(/,/g,';'),
+      cp.py||'',
+      cp.pPos||'',
+      cp.sigTm||'',
+      s.pctMatch,
+      s.statCount,
+      cp.fy||'',
+      cp.term||'',
+      cp.sigAge?cp.sigAge.toFixed(1):'',
+      cp.guarAav?cp.guarAav.toFixed(2):'',
+      cp.guar?cp.guar.toFixed(0):'',
+      cp.code||'',
+      cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(2):''
+    ].join(',');
+  });
+  var csv=[hdrs.join(',')].concat(rows).join('\n');
+  var b=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='compgen_'+(CG.player?CG.player.name.replace(/\s+/g,'_'):'player')+'_py'+(CG.py||'')+'.csv';
+  a.click();
+  toast('Exported '+exportComps.length+' comps');
+}
+
+// ── Stat formatter ────────────────────────────────────────────────────────
+function cgFmtStat(col,v,typeKey,side){
+  if(v===null||v===undefined||isNaN(v))return'—';
+  var n=parseFloat(v);
+  var pctCols={
+    'BB%':1,'K%':1,'O-Swing%':1,'Z-Swing%':1,'Swing%':1,'O-Contact%':1,'Z-Contact%':1,
+    'Contact%':1,'Zone%':1,'SwStr%':1,'CSW%':1,'Brl%':1,'HH%':1,'Barrel%':1,'HardHit%':1,
+    'GB%':1,'FB%':1,'LD%':1,'IFFB%':1,'LOB%':1,'HR/FB':1,'Pull%':1,'Cent%':1,'Oppo%':1,
+    'Soft%':1,'Med%':1,'Hard%':1,'F-Strike%':1,'K-BB%':1,'SwSp%':1,'LD%+':1,'GB%+':1,
+    'FB%+':1,'Pull%+':1,'Cent%+':1,'Oppo%+':1,'FastSwing%':1,'SquaredUpSwing%':1,'BlastSwing%':1,
+    'BlastContact%':1,'IdealAttackAngle%':1
+  };
+  var rateCols={
+    'AVG':1,'OBP':1,'SLG':1,'ISO':1,'wOBA':1,'xAVG':1,'xSLG':1,'xwOBA':1,'BABIP':1,
+    'AVG+':1,'OBP+':1,'SLG+':1,'wRC+':1,'ISO+':1,'BABIP+':1,'K%+':1,'BB%+':1
+  };
+  if(pctCols[col]){
+    var pv=Math.abs(n)<=1?n*100:n;
+    return pv.toFixed(1)+'%';
+  }
+  if(rateCols[col])return n.toFixed(3).replace(/^0/,'');
+  if(n%1===0)return String(Math.round(n));
+  if(Math.abs(n)<1)return n.toFixed(3).replace(/^0\./,'.');
+  return n.toFixed(2);
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click',function(e){
+  // Player search dropdown
+  var dd=document.getElementById('cg-player-dropdown');
+  var inp=document.getElementById('cg-player-search');
+  if(dd&&!dd.contains(e.target)&&e.target!==inp){dd.style.display='none';}
+  // Code filter dropdown
+  var codeList=document.getElementById('cg-code-list');
+  var codeBtn=document.getElementById('cg-code-btn');
+  if(codeList&&codeList.style.display!=='none'&&!codeList.contains(e.target)&&e.target!==codeBtn){
+    codeList.style.display='none';
+    cgCodeFilterOpen=false;
+    if(codeBtn)codeBtn.classList.remove('active');
+  }
+});
+function cgRepositionDropdown(){
+  var dd=document.getElementById('cg-player-dropdown');
+  var inp=document.getElementById('cg-player-search');
+  if(!dd||dd.style.display==='none'||!inp)return;
+  var rect=inp.getBoundingClientRect();
+  dd.style.top=(rect.bottom+4)+'px';
+  dd.style.left=rect.left+'px';
+  dd.style.width=Math.max(rect.width,320)+'px';
+}
+window.addEventListener('scroll',cgRepositionDropdown,true);
+window.addEventListener('resize',cgRepositionDropdown);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// H2H COMPARISON TAB
+// ═══════════════════════════════════════════════════════════════════════════
+
+var H2H = {
+  side:    'h',
+  tfs:     {py:true,py1:false,py2:false,l2:false,l3:false,car:false},
+  players: [],   // [{entry, py, stats:{typeKey:{win:{cols,stats}}}, contractMeta}]
+  sort:    {},   // {tf: {col, asc}} per timeframe
+  pendingEntry: null,  // player entry selected from dropdown, awaiting PY confirm
+  refIdx: null   // index into H2H.players of the reference player for color coding
+};
+// Custom stat selections for H2H — same format as cgCustomCols: ['typeKey|col', ...]
+var h2hCustomCols = {h:[], p:[]};
+
+// ── Reference player selector ───────────────────────────────────────────
+function h2hSetRef(val){
+  H2H.refIdx = (val===''||val===null||val===undefined) ? null : parseInt(val);
+  h2hRenderTables();
+}
+function h2hUpdateRefSel(){
+  var sel=document.getElementById('h2h-ref-sel');
+  if(!sel)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">— off —</option>';
+  H2H.players.forEach(function(p,i){
+    var opt=document.createElement('option');
+    opt.value=String(i);
+    opt.textContent=p.entry.name+' ('+p.py+')';
+    sel.appendChild(opt);
+  });
+  // Restore or clear selection
+  if(H2H.refIdx!==null && H2H.refIdx<H2H.players.length){
+    sel.value=String(H2H.refIdx);
+  }else{
+    H2H.refIdx=null; sel.value='';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+function initH2H(){
+  h2hSetSideUI(H2H.side);
+  // Reuse CG leaderboard index if same side already built
+  if(CG.ldbIndex&&CG.ldbSide===H2H.side){
+    h2hShowLdbCount(CG.ldbIndex.length);
+  }else{
+    // Trigger build (reuses cgBuildLdbIndex which stores into FG.live.cache)
+    cgBuildLdbIndex(H2H.side,function(){h2hShowLdbCount(CG.ldbIndex?CG.ldbIndex.length:0);});
+  }
+  h2hRenderRoster();
+  h2hRenderTables();
+}
+
+function h2hShowLdbCount(n){
+  var el=document.getElementById('h2h-ldb-count');
+  if(el)el.textContent=n?'('+n.toLocaleString()+' players)':'';
+}
+
+// Custom stat picker for H2H — reuses the shared fgc-modal with ctx='h2hcomp'
+function h2hOpenCustomPicker(){
+  var side=H2H.side;
+  if(!h2hCustomCols[side])h2hCustomCols[side]=[];
+  var modal=document.getElementById('fgc-modal');
+  if(!modal)return;
+  modal.dataset.ctx='h2hcomp';
+  FG.fgs.side=side;
+  // Temporarily swap fgsCustomCols to point at h2hCustomCols so the shared modal reads/writes H2H state
+  window._h2hSavedFgsCustom=fgsCustomCols;
+  fgsCustomCols=h2hCustomCols;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+  if(!fgcModalType||types.every(function(t){return t.key!==fgcModalType;})){
+    fgcModalType=types[0].key;
+  }
+  fgcRenderModalTypes();
+  fgcRenderModalCols();
+  fgsCustomCols=window._h2hSavedFgsCustom;
+  var titleEl=modal.querySelector('.fgc-title');
+  if(titleEl)titleEl.innerHTML='★ H2H Comparison — Custom Stat Selection';
+  modal.classList.add('open');
+}
+
+function h2hCloseCustomPicker(){
+  h2hUpdateCustomBtn();
+  h2hRenderTables();
+  try{saveUserState();}catch(e){}
+}
+
+function h2hGetActiveCols(typeKey,side){
+  var custom=h2hCustomCols[side]||[];
+  if(custom.length>0){
+    return custom.filter(function(e){return e.indexOf(typeKey+'|')===0;})
+                 .map(function(e){return e.split('|')[1];});
+  }
+  return (FG_COL_SPEC[side]&&FG_COL_SPEC[side][typeKey])||[];
+}
+
+function h2hUpdateCustomBtn(){
+  var side=H2H.side;
+  var custom=h2hCustomCols[side]||[];
+  var btn=document.getElementById('h2h-custom-btn');
+  if(btn)btn.textContent=custom.length?'★ Custom ('+custom.length+')':'★ Custom Stats';
+}
+
+function h2hSetSide(side,btn){
+  H2H.side=side;
+  h2hSetSideUI(side);
+  H2H.players=[];
+  h2hClearSearch();
+  h2hRenderRoster();
+  h2hRenderTables();
+  // Rebuild index for new side if needed
+  if(!CG.ldbIndex||CG.ldbSide!==side){
+    cgBuildLdbIndex(side,function(){h2hShowLdbCount(CG.ldbIndex?CG.ldbIndex.length:0);});
+  }else{
+    h2hShowLdbCount(CG.ldbIndex.length);
+  }
+}
+
+function h2hSetSideUI(side){
+  var hb=document.getElementById('h2h-side-h');
+  var pb=document.getElementById('h2h-side-p');
+  if(hb){hb.classList.toggle('on',side==='h');hb.classList.toggle('g-py',side==='h');}
+  if(pb){pb.classList.toggle('on',side==='p');pb.classList.toggle('g-py1',side==='p');}
+}
+
+// ── Player search ─────────────────────────────────────────────────────────
+function h2hSearch(val){
+  var dd=document.getElementById('h2h-search-dd');
+  if(!dd)return;
+  var v=val.trim().toLowerCase();
+  if(!v||v.length<2){dd.style.display='none';H2H.pendingEntry=null;return;}
+  if(!CG.ldbIndex||CG.ldbSide!==H2H.side){
+    cgBuildLdbIndex(H2H.side,function(){h2hSearch(val);});
+    return;
+  }
+  var matches=[],exactId=[];
+  CG.ldbIndex.forEach(function(e){
+    if(matches.length>=18)return;
+    if(e.fgId===v)exactId.push(e);
+    else if(e.name.toLowerCase().indexOf(v)>=0)matches.push(e);
+  });
+  var combined=exactId.concat(matches).slice(0,18);
+  if(!combined.length){dd.style.display='none';return;}
+  dd.innerHTML=combined.map(function(e,i){
+    var yrs=Object.keys(e.seasons||{}).map(Number).sort(function(a,b){return b-a;});
+    var range=yrs.length?(yrs[yrs.length-1]===yrs[0]?yrs[0]:yrs[yrs.length-1]+'\u2013'+yrs[0]):'';
+    return'<div class="cg-player-dd-item" onclick="h2hSelectEntry('+i+')" data-idx="'+i+'">'
+      +'<span style="font-weight:700">'+e.name+'</span>'
+      +'<span class="cg-player-dd-meta">'+(e.team?e.team+' \u00b7 ':'')+range+' \u00b7 <span style="font-size:9px;color:var(--dim)">'+e.fgId+'</span></span>'
+      +'</div>';
+  }).join('');
+  dd._matches=combined;
+  var inp=document.getElementById('h2h-search');
+  if(inp){var r=inp.getBoundingClientRect();dd.style.top=(r.bottom+4)+'px';dd.style.left=r.left+'px';dd.style.width=Math.max(r.width,300)+'px';}
+  dd.style.display='block';
+}
+
+function h2hSelectEntry(i){
+  var dd=document.getElementById('h2h-search-dd');
+  if(!dd||!dd._matches)return;
+  var entry=dd._matches[i];
+  H2H.pendingEntry=entry;
+  var inp=document.getElementById('h2h-search');
+  if(inp)inp.value=entry.name;
+  dd.style.display='none';
+  // Populate PY selector
+  var sel=document.getElementById('h2h-py-sel');
+  if(!sel)return;
+  while(sel.options.length)sel.remove(0);
+  var yrs=Object.keys(entry.seasons||{}).map(Number).sort(function(a,b){return b-a;});
+  if(!yrs.length){var o=document.createElement('option');o.value='';o.textContent='No seasons';sel.appendChild(o);return;}
+  var ph=document.createElement('option');ph.value='';ph.textContent='Select PY…';sel.appendChild(ph);
+  yrs.forEach(function(y){var o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});
+  sel.value=String(yrs[0]);
+}
+
+function h2hClearSearch(){
+  H2H.pendingEntry=null;
+  var inp=document.getElementById('h2h-search');if(inp)inp.value='';
+  var dd=document.getElementById('h2h-search-dd');if(dd)dd.style.display='none';
+  var sel=document.getElementById('h2h-py-sel');
+  if(sel){while(sel.options.length)sel.remove(0);var o=document.createElement('option');o.value='';o.textContent='Select player first';sel.appendChild(o);}
+}
+
+// ── Add player ────────────────────────────────────────────────────────────
+function h2hAddPlayer(){
+  if(!H2H.pendingEntry){toast('Select a player from the search first');return;}
+  var sel=document.getElementById('h2h-py-sel');
+  var py=sel?parseInt(sel.value)||0:0;
+  if(!py){toast('Select a season (PY)');return;}
+  // Prevent exact duplicate
+  var dup=H2H.players.some(function(p){return p.entry.fgId===H2H.pendingEntry.fgId&&p.py===py;});
+  if(dup){toast(H2H.pendingEntry.name+' ('+py+') already added');return;}
+
+  var playerObj={entry:H2H.pendingEntry,py:py,side:H2H.side,stats:{},contractMeta:null,loading:true};
+  H2H.players.push(playerObj);
+  h2hRenderRoster();
+
+  // Find contract metadata from DB.merged
+  // Match by: same PY + (name match OR fgId match)
+  var nm=normName(H2H.pendingEntry.name);
+  var fgIdStr=String(H2H.pendingEntry.fgId||'').trim();
+  DB.merged.forEach(function(p){
+    if(playerObj.contractMeta)return;
+    var pPY=parseInt(p.py)||0;
+    if(pPY!==py)return;
+    var nameMatch=normName(p.name)===nm||normName(fgToLastFirst(p.name||''))===nm;
+    var raw=p._rawRow||{};
+    var storedFgId=String(raw['Fangraphs_Id_0']||raw['Fangraphs_Id']||'').replace(/\.0+$/,'').trim();
+    var idMatch=fgIdStr&&storedFgId&&fgIdStr===storedFgId;
+    if(nameMatch||idMatch){
+      playerObj.contractMeta={
+        guar:   parseFloat(p.guar)||0,
+        guarAav:parseFloat(p.guarAav)||0,
+        term:   parseInt(p.term)||0,
+        code:   p.code||(raw['Code_0']||raw['Code']||'').trim()
+      };
+    }
+  });
+
+  // Load stats for this player across all types
+  h2hLoadPlayerStats(playerObj,function(){
+    playerObj.loading=false;
+    h2hRenderTables();
+  });
+
+  h2hClearSearch();
+}
+
+function h2hLoadPlayerStats(playerObj, cb){
+  var side  = playerObj.side;
+  var fgId  = playerObj.entry.fgId;
+  var nm    = normName(playerObj.entry.name);
+  var py    = playerObj.py;
+  var types = side==='h' ? FG_HITTER_TYPES : FG_PITCHER_TYPES;
+
+  var missing = types.filter(function(t){
+    var ck = side+'_'+t.key;
+    return !(FG.contracts.cache && FG.contracts.cache[ck] &&
+             FG.contracts.cache[ck].rows && FG.contracts.cache[ck].rows.length);
+  });
+
+  // Match player name against all variants (handles "First Last" vs "Last, First")
+  function nameVariants(rawName){
+    var n = String(rawName||'');
+    var v = [normName(n), normName(fgToLastFirst(n))];
+    var parts = n.replace(',','').trim().split(/\s+/);
+    if(parts.length>=2){
+      v.push(normName(parts[parts.length-1]+parts.slice(0,-1).join('')));
+      v.push(normName(parts.slice(1).join('')+parts[0]));
+    }
+    return v;
+  }
+
+  function extractFromContractsCache(){
+    types.forEach(function(t){
+      var ck  = side+'_'+t.key;
+      var cc  = FG.contracts.cache && FG.contracts.cache[ck];
+      if(!cc || !cc.rows || !cc.rows.length) return;
+
+      var statCols = cc.stat_cols || [];
+      var windows  = cc.windows  || CG_WINDOWS;
+      var nC = 7;
+      var nS = statCols.length;
+      var pyStr = String(py);
+
+      var row = null;
+      cc.rows.some(function(r){
+        var rPY = String(r[5]||'').replace(/\.0+$/,'').trim();
+        if(rPY !== pyStr) return false;
+        if(nameVariants(r[0]).indexOf(nm) >= 0){ row = r; return true; }
+      });
+      if(!row) return;
+
+      var winIdxMap = {};
+      windows.forEach(function(w,i){ winIdxMap[w] = i; });
+      var result = {};
+      windows.forEach(function(w){
+        var wi = winIdxMap[w];
+        if(wi === undefined) return;
+        var stats = {};
+        statCols.forEach(function(col, si){
+          var v = row[nC + wi*nS + si];
+          var n = (v===''||v===null||v===undefined) ? null : parseFloat(v);
+          stats[col] = isNaN(n) ? null : n;
+        });
+        result[w] = {cols: statCols, stats: stats};
+      });
+      playerObj.stats[t.key] = result;
+    });
+    cb();
+  }
+
+  if(!missing.length){
+    extractFromContractsCache();
+    return;
+  }
+
+  var qi = 0;
+  function loadNext(){
+    if(qi >= missing.length){
+      extractFromContractsCache();
+      return;
+    }
+    var t  = missing[qi++];
+    var ck = side+'_'+t.key;
+    if(FG.contracts.cache && FG.contracts.cache[ck] &&
+       FG.contracts.cache[ck].rows && FG.contracts.cache[ck].rows.length){
+      setTimeout(loadNext, 0); return;
+    }
+    fgLoad('fg_contracts', function(ctData){
+      if(ctData && ctData.headers && ctData.rows && ctData.rows.length){
+        try{
+          var agg = fgsComputeAgg(side, t.key, ctData);
+          if(!FG.contracts.cache) FG.contracts.cache = {};
+          FG.contracts.cache[ck] = {
+            headers:agg.headers||[], rows:agg.rows||[],
+            windows:agg.windows||CG_WINDOWS, stat_cols:agg.stat_cols||[],
+            isPartial:false, pulledAt:agg.pulled_at||''
+          };
+          if(!FG.live.cache) FG.live.cache = {};
+          FG.live.cache[side+'_'+t.key] = {headers:ctData.headers,rows:ctData.rows,_years:[]};
+        }catch(e){}
+      }
+      setTimeout(loadNext, 500);
+    }, function(){ setTimeout(loadNext, 500); }, {side:side, typeKey:t.key});
+  }
+  setTimeout(loadNext, 0);
+}
+
+
+// ── Roster chips ──────────────────────────────────────────────────────────
+function h2hRenderRoster(){
+  var wrap=document.getElementById('h2h-roster-wrap');
+  var roster=document.getElementById('h2h-roster');
+  if(!wrap||!roster)return;
+  if(!H2H.players.length){wrap.style.display='none';return;}
+  wrap.style.display='';
+  roster.innerHTML=H2H.players.map(function(p,i){
+    var col=H2H.side==='h'?'var(--blue)':'var(--purple)';
+    var contract='';
+    if(p.contractMeta){
+      var m=p.contractMeta;
+      contract='<span style="font-size:9px;color:var(--green);margin-left:5px">'
+        +(m.guar?'$'+m.guar.toFixed(0)+'M':'—')
+        +(m.term?' / '+m.term+'yr':'')
+        +(m.code?' '+m.code:'')
+        +'</span>';
+    }
+    return'<div style="display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 8px">'
+      +'<span style="font-size:10px;font-weight:800;color:'+col+'">'+p.entry.name+'</span>'
+      +'<span style="font-size:9px;color:var(--dim)">'+p.py+'</span>'
+      +contract
+      +(p.loading?'<span style="font-size:9px;color:var(--dim)">…</span>':'')
+      +'<button onclick="h2hRemovePlayer('+i+')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;line-height:1;padding:0;margin-left:2px">&times;</button>'
+      +'</div>';
+  }).join('');
+  h2hUpdateRefSel();
+}
+
+function h2hRemovePlayer(i){
+  H2H.players.splice(i,1);
+  h2hRenderRoster();
+  h2hRenderTables();
+}
+
+function h2hClearAll(){
+  H2H.players=[];
+  H2H.sort={};
+  h2hRenderRoster();
+  h2hRenderTables();
+}
+
+function h2hToggleTF(tf,btn){
+  H2H.tfs[tf]=!H2H.tfs[tf];
+  btn.classList.toggle('on',H2H.tfs[tf]);
+  var cls={py:'g-py',py1:'g-py1',py2:'g-py2',l2:'g-l2',l3:'g-l3',car:'g-car'}[tf];
+  btn.classList.toggle(cls,H2H.tfs[tf]);
+  h2hRenderTables();
+}
+
+// ── Render comparison tables ──────────────────────────────────────────────
+function h2hSortBy(tf,col){
+  if(!H2H.sort[tf])H2H.sort[tf]={col:col,asc:true};
+  else if(H2H.sort[tf].col===col)H2H.sort[tf].asc=!H2H.sort[tf].asc;
+  else{H2H.sort[tf].col=col;H2H.sort[tf].asc=typeof col==='string'&&isNaN(parseFloat(col));}
+  h2hRenderTables();
+}
+
+function h2hRenderTables(){
+  var el=document.getElementById('h2h-tables');
+  if(!el)return;
+  var activeTFs=CG_TF_KEYS.filter(function(tf){return H2H.tfs[tf];});
+  var side=H2H.side;
+  var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+
+  if(!H2H.players.length||!activeTFs.length){
+    el.innerHTML='<div class="emp"><div class="ei">&#9878;</div><div class="et">Add players above</div><div class="ex">Select players from the leaderboard and choose a PY to compare stats side-by-side</div></div>';
+    return;
+  }
+
+  // Build stat column list — use custom selection if set, else full spec
+  var typeCols={};  // typeKey → {label, cols:[]}
+  types.forEach(function(t){
+    var customCols=h2hGetActiveCols(t.key,side);
+    if(customCols.length>0){
+      typeCols[t.key]={label:t.label,cols:customCols};
+      return;
+    }
+    // No custom selection — gather all available cols from loaded player data
+    var cols=[];
+    var seen={};
+    H2H.players.forEach(function(p){
+      var td=p.stats[t.key];
+      if(!td)return;
+      var sample=td['PY']||td[CG_WINDOWS[0]];
+      if(!sample)return;
+      (sample.cols||[]).forEach(function(c){if(!seen[c]){seen[c]=true;cols.push(c);}});
+    });
+    if(cols.length)typeCols[t.key]={label:t.label,cols:cols};
+  });
+
+  var html='';
+
+  activeTFs.forEach(function(tf){
+    var win=CG_TF_WINMAP[tf];
+    var tfLabel=CG_TF_LABELS[tf];
+    var tfCls=CG_TF_COLORS[tf];
+    var sort=H2H.sort[tf]||{col:'__player__',asc:true};
+
+    // Build flat stat columns: player name + contract cols + all type/stat cols
+    // Rows = players
+    var typeKeys=Object.keys(typeCols);
+    if(!typeKeys.length)return;
+
+    // Compute year for each player in this window
+    function playerYear(p){
+      var py=p.py;
+      if(tf==='py')  return py;
+      if(tf==='py1') return py-1;
+      if(tf==='py2') return py-2;
+      if(tf==='l2')  return (py-1)+'\u2013'+py;
+      if(tf==='l3')  return (py-2)+'\u2013'+py;
+      if(tf==='car') return '\u2264'+py;
+      return py;
+    }
+
+    // Sort players
+    var sortedPlayers=H2H.players.slice();
+    if(sort.col==='__player__'){
+      sortedPlayers.sort(function(a,b){return a.entry.name.localeCompare(b.entry.name);});
+    }else if(sort.col==='__py__'){
+      sortedPlayers.sort(function(a,b){return sort.asc?a.py-b.py:b.py-a.py;});
+    }else if(sort.col==='__guar__'||sort.col==='__guarAav__'||sort.col==='__term__'){
+      var k=sort.col==='__guar__'?'guar':sort.col==='__guarAav__'?'guarAav':'term';
+      sortedPlayers.sort(function(a,b){
+        var av=a.contractMeta?a.contractMeta[k]||0:0;
+        var bv=b.contractMeta?b.contractMeta[k]||0:0;
+        return sort.asc?av-bv:bv-av;
+      });
+    }else{
+      // Sort by a stat column "typeKey|col"
+      var parts=sort.col.split('|');
+      var sortTypeKey=parts[0],sortCol=parts[1];
+      sortedPlayers.sort(function(a,b){
+        function getStatVal(p){
+          var td=p.stats[sortTypeKey];
+          if(!td||!td[win])return null;
+          var v=td[win].stats[sortCol];
+          if(v===null||v===undefined)return null;
+          return sortCol==='Age'?cgParseAgeVal(v):parseFloat(v);
+        }
+        var av=getStatVal(a),bv=getStatVal(b);
+        var ae=av===null||isNaN(av),be=bv===null||isNaN(bv);
+        if(ae&&be)return 0; if(ae)return 1; if(be)return -1;
+        return sort.asc?av-bv:bv-av;
+      });
+    }
+
+    function arr(col){
+      if(sort.col!==col)return'<span style="opacity:.2;font-size:8px"> \u21c5</span>';
+      return'<span style="color:var(--accent);font-size:9px"> '+(sort.asc?'\u2191':'\u2193')+'</span>';
+    }
+    function thClick(col){return'onclick="h2hSortBy(\''+tf+'\',\''+col+'\')"';}
+
+    html+='<div class="tw" style="margin-bottom:16px">';
+    // Header bar
+    html+='<div class="th">'
+      +'<div class="tt" style="display:flex;align-items:center;gap:8px">'
+        +'<span class="'+tfCls+'" style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:3px">'+tfLabel+'</span>'
+        +' Comparison'
+      +'</div>'
+    +'</div>';
+
+    // Table
+    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead>';
+
+    // Row 1: group headers
+    html+='<tr>'
+      +'<th colspan="2" style="text-align:left;font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;padding:5px 10px;background:var(--s2);border-bottom:1px solid var(--border)">Player</th>';
+    // Contract group (only if any player has contract)
+    var hasContract=H2H.players.some(function(p){return p.contractMeta;});
+    if(hasContract){
+      html+='<th colspan="4" style="text-align:center;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--green);background:var(--s2);border-bottom:1px solid var(--border);border-left:2px solid rgba(102,187,106,0.3);padding:5px 8px">Contract</th>';
+    }
+    typeKeys.forEach(function(typeKey,ti){
+      var tc=typeCols[typeKey];
+      html+='<th colspan="'+tc.cols.length+'" style="text-align:center;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--accent);background:var(--s2);border-bottom:1px solid var(--border);border-left:2px solid rgba(232,197,71,0.2);padding:5px 8px">'+tc.label+'</th>';
+    });
+    html+='</tr>';
+
+    // Row 2: col headers
+    html+='<tr>'
+      +'<th '+thClick('__player__')+' style="cursor:pointer;text-align:left;font-size:9px;color:var(--dim);padding:5px 10px;background:var(--s2);border-bottom:2px solid var(--border);white-space:nowrap">Player'+arr('__player__')+'</th>'
+      +'<th '+thClick('__py__')+' style="cursor:pointer;text-align:center;font-size:9px;color:var(--dim);padding:5px 8px;background:var(--s2);border-bottom:2px solid var(--border);white-space:nowrap">Season'+arr('__py__')+'</th>';
+    if(hasContract){
+      html+='<th '+thClick('__guar__')+' style="cursor:pointer;text-align:right;font-size:9px;color:var(--dim);padding:5px 8px;background:var(--s2);border-bottom:2px solid var(--border);border-left:2px solid rgba(102,187,106,0.3);white-space:nowrap">GUAR'+arr('__guar__')+'</th>'
+        +'<th '+thClick('__guarAav__')+' style="cursor:pointer;text-align:right;font-size:9px;color:var(--dim);padding:5px 8px;background:var(--s2);border-bottom:2px solid var(--border);white-space:nowrap">GUAR AAV'+arr('__guarAav__')+'</th>'
+        +'<th '+thClick('__term__')+' style="cursor:pointer;text-align:right;font-size:9px;color:var(--dim);padding:5px 8px;background:var(--s2);border-bottom:2px solid var(--border);white-space:nowrap">Term'+arr('__term__')+'</th>'
+        +'<th style="text-align:center;font-size:9px;color:var(--dim);padding:5px 8px;background:var(--s2);border-bottom:2px solid var(--border);white-space:nowrap">Code</th>';
+    }
+    typeKeys.forEach(function(typeKey,ti){
+      var tc=typeCols[typeKey];
+      tc.cols.forEach(function(col,ci){
+        var sortKey=typeKey+'|'+col;
+        var isFirst=ci===0;
+        html+='<th '+thClick(sortKey)+' style="cursor:pointer;text-align:right;font-size:9px;color:var(--dim);padding:5px 8px;background:var(--s2);border-bottom:2px solid var(--border);white-space:nowrap'+(isFirst?';border-left:2px solid rgba(232,197,71,0.2)':'')+'">'
+          +col+arr(sortKey)+'</th>';
+      });
+    });
+    html+='</tr></thead><tbody>';
+
+    // Data rows
+    sortedPlayers.forEach(function(p,pi){
+      var odd=pi%2===0;
+      var rowBg=odd?'':'background:rgba(255,255,255,0.02)';
+      html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.04);'+rowBg+'">';
+
+      // Player name + season
+      var nameColor=H2H.side==='h'?'var(--blue)':'var(--purple)';
+      html+='<td style="padding:6px 10px;font-weight:800;color:'+nameColor+';white-space:nowrap">'+p.entry.name+'</td>'
+        +'<td style="padding:6px 8px;text-align:center;color:var(--dim);font-size:10px;white-space:nowrap">'+playerYear(p)+'</td>';
+
+      // Contract columns
+      if(hasContract){
+        var m=p.contractMeta;
+        html+='<td style="padding:6px 8px;text-align:right;border-left:2px solid rgba(102,187,106,0.15);color:var(--green)">'+(m&&m.guar?'$'+m.guar.toFixed(0)+'M':'—')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right;color:var(--green)">'+(m&&m.guarAav?'$'+m.guarAav.toFixed(1)+'M':'—')+'</td>'
+          +'<td style="padding:6px 8px;text-align:right">'+(m&&m.term?m.term+'yr':'—')+'</td>'
+          +'<td style="padding:6px 8px;text-align:center">'+(m&&m.code?m.code:'—')+'</td>';
+      }
+
+      // Stat columns — color coded vs reference player when H2H.refIdx is set
+      var refP=(H2H.refIdx!==null&&H2H.refIdx<H2H.players.length&&H2H.players[H2H.refIdx]!==p)
+               ?H2H.players[H2H.refIdx]:null;
+      typeKeys.forEach(function(typeKey,ti){
+        var tc=typeCols[typeKey];
+        var pStats=p.stats[typeKey];
+        var wData=pStats&&pStats[win];
+        var refStats=refP&&refP.stats[typeKey];
+        var refWData=refStats&&refStats[win];
+        tc.cols.forEach(function(col,ci){
+          var isFirst=ci===0;
+          var v=wData&&wData.stats?wData.stats[col]:null;
+          var refV=refWData&&refWData.stats?refWData.stats[col]:null;
+          var display=v!==null&&v!==undefined?fgsFmtStat(col,String(v)):'\u2014';
+          var bg=refP?h2hStatCellBg(col,v,refV):'';
+          var sty='padding:6px 8px;text-align:right'+(isFirst?';border-left:2px solid rgba(232,197,71,0.1)':'')+(bg?';'+bg:'');
+          html+='<td style="'+sty+'">'+display+'</td>';
+        });
+      });
+
+
+      html+='</tr>';
+    });
+
+    html+='</tbody></table></div></div>';
+  });
+
+  el.innerHTML=html||'<div style="padding:20px;color:var(--dim);font-size:12px">Select at least one timeframe above.</div>';
+}
+
+// Close H2H search dropdown on outside click
+document.addEventListener('click',function(e){
+  var dd=document.getElementById('h2h-search-dd');
+  var inp=document.getElementById('h2h-search');
+  if(dd&&dd.style.display!=='none'&&!dd.contains(e.target)&&e.target!==inp)dd.style.display='none';
+});
+
+
 // ── Auto-check FG status on dashboard load (non-blocking) ──
+
 (function(){
   setTimeout(function(){
     try{
@@ -5776,9 +8729,10 @@ function fglExportCSV(){
     </div>
     <div class="fgc-body">
       <div class="fgc-types" id="fgc-type-list"></div>
-      <div class="fgc-cols">
-        <div id="fgc-col-header" style="font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)"></div>
-        <div class="fgc-cols-grid" id="fgc-col-grid"></div>
+      <div class="fgc-cols" style="display:flex;flex-direction:column;overflow:hidden;min-height:0">
+        <div id="fgc-col-header" style="font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);flex-shrink:0"></div>
+        <div class="fgc-cols-grid" id="fgc-col-grid" style="overflow-y:auto;flex:1;min-height:0"></div>
+        <div id="fgc-sel-panel" style="flex-shrink:0;border-top:1px solid var(--border);padding:8px 0 0;margin-top:8px;max-height:120px;overflow-y:auto"></div>
       </div>
     </div>
     <div class="fgc-foot">
