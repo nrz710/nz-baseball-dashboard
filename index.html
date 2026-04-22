@@ -4,6 +4,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1346,6 +1347,7 @@ var CFG={marketRate:8.0,season:'2025'};
 var DB={players:[],manual:[],fg:[],savant:[],merged:[],allCols:[],fullData:{}};
 var FK='dl_filters'; // legacy — unused but kept to not break anything
 var LOADING=false;
+var SHEET_READY=false;
 var DEFAULT_FILTERS=[
   {col:'FY',label:'FY',value:''},
   {col:'FY Age',label:'FY Age',value:''},
@@ -1588,6 +1590,7 @@ function refreshAll(){
   var badge=document.getElementById('bg-badge');
   loadPass('fast',function(data){
     processSheetData(data);
+    SHEET_READY=true;
     renderAll();
     setGSStatus('on','Sheet (core)');
     badge.textContent='Loading all columns...';badge.className='bg-badge';
@@ -2061,12 +2064,12 @@ function renderAll(){
   // Hitters/Pitchers: re-render if currently visible
   try{var hp=document.querySelector('.pnl.on');if(hp){if(hp.id==='p-hitters')renderHitters();else if(hp.id==='p-pitchers')renderPitchers();}}catch(e){}
   // FG tabs: init if currently visible (fixes type-tabs not populating on first load)
-  try{var ap=document.querySelector('.pnl.on');if(ap){if(ap.id==='p-fgstats')initFgStats();else if(ap.id==='p-fglive')initFgLive();}}catch(e){}
+  try{if(SHEET_READY){var ap=document.querySelector('.pnl.on');if(ap){if(ap.id==='p-fgstats')initFgStats();else if(ap.id==='p-fglive')initFgLive();}}}catch(e){}
   // Persist user state after every full render
   try{saveUserState();}catch(e){}
   // Background: silently pre-warm FG.contracts.cache for all hitter types
   // so H2H and CG work immediately without needing to fetch on demand
-  setTimeout(fgPrewarmContractsCache, 500);
+  if(!fgPrewarmContractsCache._fired){fgPrewarmContractsCache._fired=true;setTimeout(fgPrewarmContractsCache,500);}
 }
 
 // Pre-warm FG.contracts.cache for all types by driving fgsLoadData's
