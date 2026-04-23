@@ -4,7 +4,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1347,7 +1346,6 @@ var CFG={marketRate:8.0,season:'2025'};
 var DB={players:[],manual:[],fg:[],savant:[],merged:[],allCols:[],fullData:{}};
 var FK='dl_filters'; // legacy — unused but kept to not break anything
 var LOADING=false;
-var SHEET_READY=false;
 var DEFAULT_FILTERS=[
   {col:'FY',label:'FY',value:''},
   {col:'FY Age',label:'FY Age',value:''},
@@ -1590,7 +1588,6 @@ function refreshAll(){
   var badge=document.getElementById('bg-badge');
   loadPass('fast',function(data){
     processSheetData(data);
-    SHEET_READY=true;
     renderAll();
     setGSStatus('on','Sheet (core)');
     badge.textContent='Loading all columns...';badge.className='bg-badge';
@@ -2064,12 +2061,12 @@ function renderAll(){
   // Hitters/Pitchers: re-render if currently visible
   try{var hp=document.querySelector('.pnl.on');if(hp){if(hp.id==='p-hitters')renderHitters();else if(hp.id==='p-pitchers')renderPitchers();}}catch(e){}
   // FG tabs: init if currently visible (fixes type-tabs not populating on first load)
-  try{if(SHEET_READY){var ap=document.querySelector('.pnl.on');if(ap){if(ap.id==='p-fgstats')initFgStats();else if(ap.id==='p-fglive')initFgLive();}}}catch(e){}
+  try{var ap=document.querySelector('.pnl.on');if(ap){if(ap.id==='p-fgstats')initFgStats();else if(ap.id==='p-fglive')initFgLive();}}catch(e){}
   // Persist user state after every full render
   try{saveUserState();}catch(e){}
   // Background: silently pre-warm FG.contracts.cache for all hitter types
   // so H2H and CG work immediately without needing to fetch on demand
-  if(!fgPrewarmContractsCache._fired){fgPrewarmContractsCache._fired=true;setTimeout(fgPrewarmContractsCache,500);}
+  setTimeout(fgPrewarmContractsCache, 500);
 }
 
 // Pre-warm FG.contracts.cache for all types by driving fgsLoadData's
@@ -2115,8 +2112,8 @@ function fgPrewarmContractsCache(){
           };
         }catch(e){}
       }
-      setTimeout(warmNext,3000);
-    },function(){setTimeout(warmNext,3000);},{side:item.side,typeKey:item.typeKey});
+      setTimeout(warmNext,500);
+    },function(){setTimeout(warmNext,500);},{side:item.side,typeKey:item.typeKey});
   }
   setTimeout(warmNext,0);
 }
@@ -4235,6 +4232,65 @@ function fgsStoreAndRender(side,typeKey,data){
   renderFgStats();
 }
 
+
+// ── Rate-stat override list ───────────────────────────────────────────────
+// isRateOverride(fullCol) returns true when the full typeKey_col string ends
+// with one of these suffixes, meaning it must be PA-weighted averaged rather
+// than summed — even if a COUNT_SFX substring also matches.
+//
+// Why this is needed: COUNT_SFX uses substring matching which is too broad.
+// Examples of false positives without this guard:
+//   Advanced_K%   contains _K → would be summed (wrong — it's a rate)
+//   Advanced_BB%  contains _BB → would be summed (wrong)
+//   Batted Ball_GB%  contains _G → would be summed (wrong)
+//   Advanced_wRC+ contains _wRC → would be summed (wrong — index rate)
+//   Advanced_ERA- contains _ER → would be summed (wrong)
+//
+// IMPORTANT: This array and function MUST be defined before fgsComputeAgg
+// and before any other function that calls isRateOverride. Do NOT move it.
+var RATE_OVERRIDE_SFX = [
+  // Index/plus stats (park+league adjusted rates, 100=avg)
+  '%+',           // BB%+, K%+, AVG+, OBP+, SLG+, ISO+, etc.
+  '+',            // wRC+, ERA+, FIP+, xFIP+ — any trailing + is an index rate
+  // Per-9 rate stats
+  '/9',           // K/9, BB/9, HR/9, RA/9
+  // Ratio stats
+  'K/BB',         // strikeout-to-walk ratio
+  'GB/FB',        // ground ball to fly ball ratio
+  'HR/FB',        // home run per fly ball rate
+  // Percentage rate stats that false-match _K, _BB, _G, _L, _H etc.
+  'K%','BB%','K-BB%',   // false-match _K, _BB
+  'LOB%',               // false-match _L
+  'LD%','GB%','IFFB%',  // false-match _L, _G
+  'HR%',                // false-match _H, _HR
+  // Spray/contact quality percentages (false-match _Pull, _Cent, _Oppo, _Soft, _Med, _Hard)
+  'Pull%','Cent%','Oppo%','Soft%','Med%','Hard%',
+  // Batted ball percentages
+  'FB%',          // false-match none but needs explicit rate declaration
+  'IFH%','BUH%',  // infield hit rate, bunt hit rate
+  // Minus-scale stats (lower=better index stats, false-match _ER)
+  'ERA-','FIP-','xFIP-',
+  // Statcast percentage rates
+  'Barrel%','HardHit%',
+  // Statcast swing/contact rates
+  'SwStr%','CStr%','CSW%','F-Strike%',
+  // Bat tracking rates
+  'FastSwing%','SquaredUpSwing%','BlastSwing%','BlastContact%','IdealAttackAngle%',
+  // Plate discipline rates
+  'O-Swing%','Z-Swing%','Swing%','O-Contact%','Z-Contact%','Contact%','Zone%',
+  // Pitch type rates
+  'SL%','CT%','CB%','CH%','SF%','KN%','XX%'
+];
+
+function isRateOverride(fullCol){
+  // Check if fullCol ends with any rate suffix
+  for(var _i=0;_i<RATE_OVERRIDE_SFX.length;_i++){
+    var _sfx=RATE_OVERRIDE_SFX[_i];
+    if(fullCol.length>=_sfx.length&&fullCol.slice(-_sfx.length)===_sfx)return true;
+  }
+  return false;
+}
+
 // ── Client-side aggregation from fg_contracts raw season data ─────────────
 // Mirrors _buildAggFile in GAS but runs in the browser.
 // ctData = {headers:[...], rows:[[...], ...]} — all seasons for contract players
@@ -5418,12 +5474,6 @@ function fglLoadData(){
     var lk=Object.keys(FG.live.cache);
     if(lk.length>20)delete FG.live.cache[lk[0]];
     if(data.pulled_at)FG.pulledAt=data.pulled_at;
-    // Fix: if current year range has no data, reset to latest available year
-    if(years.length){
-      var latestYr=years[0];
-      if(years.indexOf(fglYearFrom)<0){fglYearFrom=latestYr;}
-      if(years.indexOf(fglYearTo)<0){fglYearTo=latestYr;}
-    }
     var d=data.pulled_at?new Date(data.pulled_at):null;
     fgSetStatus('fgl-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
     fglPopulateYears(years);
@@ -6169,31 +6219,6 @@ var CG_TF_KEYS     = ['py','py1','py2','l2','l3','car'];
 var CG_TF_LABELS   = {py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'Career'};
 var CG_TF_WINMAP   = {py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'CAR'};
 var CG_TF_COLORS   = {py:'g-py',py1:'g-py1',py2:'g-py2',l2:'g-l2',l3:'g-l3',car:'g-car'};
-var RATE_OVERRIDE_SFX = [
-  '%+',         // All index/plus stats: wRC+, BB%+, K%+, ERA+, etc.
-  '/9',         // Per-9 rates: K/9, BB/9, HR/9, RA/9
-  'K%','BB%','K-BB%','HR%','LOB%','SwStr%','CStr%','CSW%','F-Strike%',
-  'K/BB',       // ratio stat
-  'GB/FB',      // ratio stat
-  'HR/FB',      // ratio stat
-  'LD%','GB%','FB%','IFFB%',   // batted ball percentages
-  'Pull%','Cent%','Oppo%',     // spray percentages
-  'Soft%','Med%','Hard%',      // contact quality percentages
-  'IFH%','BUH%',               // infield/bunt hit percentages
-  'ERA-','FIP-','xFIP-',       // minus stats (scale same as plus stats)
-  'Barrel%','HardHit%',        // Statcast percentages
-  'FastSwing%','SquaredUpSwing%','BlastSwing%','BlastContact%','IdealAttackAngle%', // bat track
-  'O-Swing%','Z-Swing%','Swing%','O-Contact%','Z-Contact%','Contact%','Zone%',     // plate disc
-  'FB%'                        // pitch type percentages: FB%, SL%, CT%, etc.
-];
-function isRateOverride(fullCol){
-  for(var i=0;i<RATE_OVERRIDE_SFX.length;i++){
-    var sfx=RATE_OVERRIDE_SFX[i];
-    if(fullCol.length>=sfx.length && fullCol.slice(-sfx.length)===sfx) return true;
-  }
-  return false;
-}
-
 var COUNT_SFX_CG   = ['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
   '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
   '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
@@ -6292,19 +6317,6 @@ function cgBuildLdbIndex(side, cb){
       var yearsSet2={};
       if(seasIdx2>=0)rows.forEach(function(r){var y=parseInt(r[seasIdx2]);if(y)yearsSet2[y]=true;});
       FG.live.cache[liveKey]={headers:headers,rows:rows,_years:Object.keys(yearsSet2).map(Number)};
-    }
-    // Pre-populate FG.contracts.cache from the leaderboard data so H2H
-    // stats render immediately on fresh devices without extra fetches
-    var stdCk=side+'_Standard';
-    if(data&&data.headers&&data.rows&&data.rows.length&&
-       (!FG.contracts.cache||!FG.contracts.cache[stdCk]||!FG.contracts.cache[stdCk].rows||!FG.contracts.cache[stdCk].rows.length)){
-      try{
-        var stdAgg=fgsComputeAgg(side,'Standard',data);
-        if(!FG.contracts.cache)FG.contracts.cache={};
-        FG.contracts.cache[stdCk]={headers:stdAgg.headers||[],rows:stdAgg.rows||[],
-          windows:stdAgg.windows||CG_WINDOWS,stat_cols:stdAgg.stat_cols||[],
-          isPartial:false,pulledAt:stdAgg.pulled_at||''};
-      }catch(e){}
     }
     cgSetStatus('','ok');
     cgShowLdbCount(CG.ldbIndex.length);
@@ -8740,20 +8752,6 @@ document.addEventListener('click',function(e){
             +(meta.pitcher_seasons&&meta.pitcher_seasons!=='0'?' · '+meta.pitcher_seasons+' pitcher-seasons':'');
           fgSetStatus('fgs-status',statusMsg,'ok');
           fgSetStatus('fgl-status',ts,'ok');
-          // Trigger FG data load once sheet is ready
-          if(SHEET_READY){
-            var _ap=document.querySelector('.pnl.on');
-            if(_ap&&_ap.id==='p-fgstats')initFgStats();
-            else if(_ap&&_ap.id==='p-fglive')initFgLive();
-          }else{
-            var _fgST=setInterval(function(){
-              if(!SHEET_READY)return;
-              clearInterval(_fgST);
-              var _ap2=document.querySelector('.pnl.on');
-              if(_ap2&&_ap2.id==='p-fgstats')initFgStats();
-              else if(_ap2&&_ap2.id==='p-fglive')initFgLive();
-            },500);
-          }
         }else{
           fgSetStatus('fgs-status','No FanGraphs data yet — click "Pull FanGraphs Data" to fetch','err');
         }
