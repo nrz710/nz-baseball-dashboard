@@ -2074,7 +2074,11 @@ function renderAll(){
 // Saves FG.fgs state, runs each type through the normal load path,
 // then restores state. Silent — no status messages, no table renders.
 function fgPrewarmContractsCache(){
-  var savedSide=FG.fgs.side, savedType=FG.fgs.type;
+  // NOTE: do NOT save/restore FG.fgs.side or FG.fgs.type here.
+  // The prewarm runs for ~10 seconds; if the user changes side during that
+  // window, restoring the saved state would silently reset their selection
+  // and cause correlations/renders to use the wrong side.
+  // Each fgLoad call passes side/typeKey directly — no need to touch FG.fgs.
   var items=[];
   ['h','p'].forEach(function(side){
     (side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES).forEach(function(t){
@@ -2083,11 +2087,7 @@ function fgPrewarmContractsCache(){
   });
   var qi=0;
   function warmNext(){
-    if(qi>=items.length){
-      // Restore state
-      FG.fgs.side=savedSide; FG.fgs.type=savedType;
-      return;
-    }
+    if(qi>=items.length) return;
     var item=items[qi++];
     var ck=item.side+'_'+item.typeKey;
     if(FG.contracts.cache&&FG.contracts.cache[ck]&&
@@ -3076,7 +3076,9 @@ function renderCorr(){
         var y=metricFn(p);
         if(!isNaN(v)&&v!==0&&y>0)pairs.push([v,y]);
       });
+      // Exclude stat if fewer than 90% of players have a non-null value
       if(pairs.length<5)return;
+      if(pairs.length<players.length*0.9)return;
       var xs=pairs.map(function(p){return p[0];});
       var ys=pairs.map(function(p){return p[1];});
       var r=pearsonR(xs,ys);
@@ -3328,6 +3330,7 @@ function fgsCorrCompute(side,typeKey,metric,periodVal,scope){
           if(!isNaN(v)&&y>0)pairs.push([v,y]);
         });
         if(pairs.length<5)return;
+        if(pairs.length<players.length*0.9)return;
         var r=pearsonR(pairs.map(function(p){return p[0];}),pairs.map(function(p){return p[1];}));
         if(!isNaN(r))results.push({stat:col,per:win,r:r,n:pairs.length});
       });
@@ -3347,6 +3350,7 @@ function fgsCorrCompute(side,typeKey,metric,periodVal,scope){
           if(!isNaN(v)&&y>0)pairs.push([v,y]);
         });
         if(pairs.length<5)return;
+        if(pairs.length<players.length*0.9)return;
         var r=pearsonR(pairs.map(function(p){return p[0];}),pairs.map(function(p){return p[1];}));
         if(!isNaN(r))results.push({stat:col,per:win,r:r,n:pairs.length});
       });
@@ -4291,6 +4295,25 @@ function isRateOverride(fullCol){
   return false;
 }
 
+// ── Pitcher per-stat weight selection ────────────────────────────────────
+// ERA, FIP, xFIP, WHIP, K/9, BB/9, HR/9 and all /9 or run-rate stats are
+// IP-denominated: correct multi-year average = IP-weighted.
+// K%, BB%, batted-ball %, plate discipline %, pitch-type % are
+// TBF-denominated: correct multi-year average = TBF-weighted.
+// Source: FanGraphs library — Stats Diagram: Pitching Stats
+var PITCHER_IP_WEIGHTED = {
+  'ERA':1,'FIP':1,'xFIP':1,'SIERA':1,'WHIP':1,'E-F':1,
+  'K/9':1,'BB/9':1,'HR/9':1,'RA/9':1,'RS/9':1,
+  'ERA-':1,'FIP-':1,'xFIP-':1,
+  'LOB%':1,  // (H+BB-R)/(H+BB-HR) — IP-context stat
+  'RA9-WAR':1,'BIP-Wins':1,'LOB-Wins':1,'FDP-Wins':1  // value tab rate stats
+};
+function pitcherWgtCol(col, ipIdx, tbfIdx) {
+  // Returns the correct weight column index for a given pitcher stat column
+  if(PITCHER_IP_WEIGHTED[col]) return ipIdx;
+  return tbfIdx>=0 ? tbfIdx : ipIdx;  // TBF preferred, IP fallback
+}
+
 // ── Client-side aggregation from fg_contracts raw season data ─────────────
 // Mirrors _buildAggFile in GAS but runs in the browser.
 // ctData = {headers:[...], rows:[[...], ...]} — all seasons for contract players
@@ -4331,10 +4354,13 @@ function fgsComputeAgg(side,typeKey,ctData){
   });
   if(!filtStatIdxs.length){filtStatIdxs=statIdxs;filtStatCols=statCols;}
 
-  // Weight col: PA for hitters, TBF/IP for pitchers
+  // Weight cols: PA for hitters; for pitchers separate TBF and IP indices
+  // so each rate stat can use its correct denominator (pitcherWgtCol picks per stat)
   var wgtCol=side==='h'
     ?headers.indexOf(prefix+'PA')
-    :(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf(prefix+'IP'));
+    :-1;  // pitchers: use pitcherWgtCol(col, ipIdx, tbfIdx) per stat below
+  var tbfIdx=side==='p'?(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf('Standard_TBF')):-1;
+  var ipIdx =side==='p'?(headers.indexOf(prefix+'IP') >=0?headers.indexOf(prefix+'IP') :headers.indexOf('Standard_IP')) :-1;
 
   // Count stat suffixes
   var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
@@ -4493,11 +4519,13 @@ function fgsComputeAgg(side,typeKey,ctData){
           validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
           row.push(hasVal?String(Math.round(sum*1000)/1000):''); // partial seasons OK
         }else{
-          if(wgtCol>=0){
+          // For pitchers, pick IP or TBF as weight depending on stat's denominator
+          var effectiveWgt=side==='h'?wgtCol:pitcherWgtCol(col,ipIdx,tbfIdx);
+          if(effectiveWgt>=0){
             var sw=0,sv2=0;
             validRows.forEach(function(r){
-              var rawW=r[wgtCol]; var w2=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
-              var rawV=r[si];     var v2=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
+              var rawW=r[effectiveWgt]; var w2=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
+              var rawV=r[si];           var v2=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
               if(!isNaN(w2)&&!isNaN(v2)){sw+=w2;sv2+=v2*w2;}
             });
             if(sw>0){row.push(String(Math.round((sv2/sw)*10000)/10000));}
@@ -5888,15 +5916,24 @@ function fglRender(){
   var nameIdx=headers.indexOf('PlayerName');
   var teamIdx=headers.indexOf('Team');
 
-  // Weight col — search across all type prefixes
-  var wgtIdx=-1;
-  var wgtCols=side==='h'?['PA']:['TBF','IP'];
-  outerW: for(var wi=0;wi<wgtCols.length;wi++){
-    if(colHeaderIdx[wgtCols[wi]]!==undefined){wgtIdx=colHeaderIdx[wgtCols[wi]];break;}
-    for(var ti=0;ti<allTypesL.length;ti++){
-      var wIdx2=headers.indexOf(allTypesL[ti].key+'_'+wgtCols[wi]);
-      if(wIdx2>=0){wgtIdx=wIdx2;break outerW;}
+  // Weight cols — for hitters: PA. For pitchers: separate TBF and IP so each
+  // rate stat can use its correct denominator via pitcherWgtCol(col,ipIdx,tbfIdx)
+  var wgtIdx=-1;  // hitter PA index (or pitcher fallback for legacy paths)
+  var fglTbfIdx=-1, fglIpIdx=-1;
+  if(side==='h'){
+    if(colHeaderIdx['PA']!==undefined) wgtIdx=colHeaderIdx['PA'];
+    else{ for(var ti0=0;ti0<allTypesL.length;ti0++){var wi0=headers.indexOf(allTypesL[ti0].key+'_PA');if(wi0>=0){wgtIdx=wi0;break;}} }
+  }else{
+    // Find TBF and IP across all type prefixes
+    for(var ti1=0;ti1<allTypesL.length;ti1++){
+      var tbfH=headers.indexOf(allTypesL[ti1].key+'_TBF');
+      var ipH =headers.indexOf(allTypesL[ti1].key+'_IP');
+      if(tbfH>=0&&fglTbfIdx<0) fglTbfIdx=tbfH;
+      if(ipH>=0 &&fglIpIdx<0)  fglIpIdx=ipH;
     }
+    if(colHeaderIdx['TBF']!==undefined) fglTbfIdx=colHeaderIdx['TBF'];
+    if(colHeaderIdx['IP']!==undefined)  fglIpIdx=colHeaderIdx['IP'];
+    wgtIdx=fglTbfIdx>=0?fglTbfIdx:fglIpIdx; // legacy fallback
   }
 
   // Count stat detection (reuse existing logic)
@@ -5979,15 +6016,16 @@ function fglRender(){
       statIdxs.forEach(function(si,ii){
         var col=statCols[ii];
         if(si<0){stats[col]='';return;}
-        var fullCol='Standard_'+col;
+        var fullCol=typeKey+'_'+col;
         if(isCount(fullCol)){
           var sum=0,hasVal=false;
           pd.rows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
           stats[col]=hasVal?String(Math.round(sum*1000)/1000):'';
         }else{
-          if(wgtIdx>=0){
+          var effWgt=side==='h'?wgtIdx:pitcherWgtCol(col,fglIpIdx,fglTbfIdx);
+          if(effWgt>=0){
             var sw=0,sv=0;
-            pd.rows.forEach(function(r){var w=parseFloat(r[wgtIdx]),v=parseFloat(r[si]);if(!isNaN(w)&&!isNaN(v)){sw+=w;sv+=v*w;}});
+            pd.rows.forEach(function(r){var w=parseFloat(r[effWgt]),v=parseFloat(r[si]);if(!isNaN(w)&&!isNaN(v)){sw+=w;sv+=v*w;}});
             stats[col]=sw>0?String(Math.round((sv/sw)*10000)/10000):'';
           }else{
             var vals=pd.rows.map(function(r){return parseFloat(r[si]);}).filter(function(v){return!isNaN(v);});
@@ -6942,9 +6980,9 @@ function cgComputePlayerAgg(raw,typeKey,side,fgId,nm,py,isLive){
   });
   if(!statIdxs.length)return null;
 
-  var wgtIdx=side==='h'
-    ?headers.indexOf(prefix+'PA')
-    :(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):headers.indexOf(prefix+'IP'));
+  var wgtIdx=side==='h' ? headers.indexOf(prefix+'PA') : -1;
+  var cgTbfIdx=side==='p'?(headers.indexOf(prefix+'TBF')>=0?headers.indexOf(prefix+'TBF'):-1):-1;
+  var cgIpIdx =side==='p'?(headers.indexOf(prefix+'IP') >=0?headers.indexOf(prefix+'IP') :-1):-1;
 
   // Resolve the player's pid: prefer passed fgId, fallback to name match
   var confirmedPid=null;
@@ -7008,23 +7046,25 @@ function cgComputePlayerAgg(raw,typeKey,side,fgId,nm,py,isLive){
         var sum=0,has=false;
         validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;has=true;}});
         wStats[col]=has?sum:null; // partial seasons OK
-      }else if(wgtIdx>=0){
-        var sw=0,sv=0;
-        validRows.forEach(function(r){
-          // GAS stores nulls as '' — treat as 0 for weight, skip for value
-          var rawW=r[wgtIdx]; var w2=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
-          var rawV=r[si];     var v=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
-          if(!isNaN(w2)&&!isNaN(v)){sw+=w2;sv+=v*w2;}
-        });
-        if(sw>0){wStats[col]=sv/sw;}
-        else{
-          // Weight unavailable — fall back to simple mean of non-null values
-          var vals2=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
-          wStats[col]=vals2.length?vals2.reduce(function(a,b){return a+b;},0)/vals2.length:null;
-        }
       }else{
-        var vals=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
-        wStats[col]=vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:null;
+        // Pick correct weight column per stat for pitchers
+        var effW=side==='h'?wgtIdx:pitcherWgtCol(col,cgIpIdx,cgTbfIdx);
+        if(effW>=0){
+          var sw=0,sv=0;
+          validRows.forEach(function(r){
+            var rawW=r[effW]; var w2=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
+            var rawV=r[si];   var v=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
+            if(!isNaN(w2)&&!isNaN(v)){sw+=w2;sv+=v*w2;}
+          });
+          if(sw>0){wStats[col]=sv/sw;}
+          else{
+            var vals2=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
+            wStats[col]=vals2.length?vals2.reduce(function(a,b){return a+b;},0)/vals2.length:null;
+          }
+        }else{
+          var vals=validRows.map(function(r){var rv=r[si];return(rv===''||rv===null||rv===undefined)?NaN:parseFloat(rv);}).filter(function(v){return!isNaN(v);});
+          wStats[col]=vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:null;
+        }
       }
     });
     result[w]={cols:statCols,stats:wStats};
@@ -7143,7 +7183,9 @@ function cgComputeCorrWeights(){
         var a=cp.aav||0;
         if(v!==null&&v!==undefined&&!isNaN(v)&&a>0)pairs.push([v,a]);
       });
-      if(pairs.length<5){weights[typeKey][col]=1;return;}
+      var totalComps=CG.compStats.length;
+      // Exclude stat if fewer than 90% of comps have a non-null value
+      if(pairs.length<5||pairs.length<totalComps*0.9){weights[typeKey][col]=1;return;}
       var r=cgPearson(pairs.map(function(p){return p[0];}),pairs.map(function(p){return p[1];}));
       weights[typeKey][col]=isNaN(r)?1:(Math.abs(r)*0.5+0.5); // scale: r=1 → weight 1.5, r=0 → weight 0.5
     });
@@ -7457,15 +7499,10 @@ function cgRunComps(){
           var cv=cmpW.stats[col];
           var tvMissing=(tv===null||tv===undefined);
           var cvMissing=(cv===null||cv===undefined);
-          // Both missing same season → perfect match on absence
-          if(tvMissing&&cvMissing){
-            var wt0=1;
-            if(useCorr&&CG.corrWeights[typeKey]&&CG.corrWeights[typeKey][col]!==undefined)wt0=CG.corrWeights[typeKey][col];
-            totalScore+=wt0;totalWeight+=wt0;statCount++;
-            typeBreakdown[typeKey].score+=wt0;typeBreakdown[typeKey].weight+=wt0;
-            return;
-          }
-          // Only one missing → incomparable, skip
+          // Either or both missing → no evidence → skip entirely.
+          // Previously "both null" was treated as a perfect match, which caused
+          // players with no FG data (e.g. a hitter mislabeled as pitcher) to
+          // score 100% against anyone who also lacked data for those stats.
           if(tvMissing||cvMissing)return;
           var tvN=col==='Age'?cgParseAgeVal(tv):parseFloat(tv);
           var cvN=col==='Age'?cgParseAgeVal(cv):parseFloat(cv);
