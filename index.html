@@ -362,6 +362,7 @@ svg.ch{display:block}
     </div>
     <button class="lbtn" type="button" onclick="checkPw()" style="margin-top:10px">Sign In</button>
     <div class="lerr" id="pw-err"></div>
+    <div id="gas-conn-status" style="margin-top:14px;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;min-height:16px;text-align:center">Connecting to server…</div>
   </div>
 </div>
 
@@ -1233,6 +1234,12 @@ var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxkTaKbVD2QsoSmRk2MHMUOX
 // ═══ MULTI-USER SYSTEM ═══
 // Users stored as: dl_users → [{id, name, pw}]
 // Per-user state stored as: dl_state_{userId} → {cfg, manual, fg, savant, filters, vfState, hColHidden, pColHidden, ovColHidden, hGrps, pGrps, ovState, activeFilters}
+
+// ── Device detection ────────────────────────────────────────────────────
+var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var IS_MOBILE = IS_IOS || /Android/.test(navigator.userAgent);
+
 var USERS_KEY='dl_users';
 var currentUser=null; // {id, name, pw}
 
@@ -1362,6 +1369,32 @@ var activeFilters=DEFAULT_FILTERS.map(function(f){return Object.assign({},f);});
     saveUsers(users);
   }
   populateUserSel();
+  // Prewarm GAS immediately on page load — fires a lightweight ping so GAS
+  // is warm by the time the user logs in and real data fetches begin.
+  // Uses the status endpoint which returns quickly and has no side effects.
+  setTimeout(function(){
+    try{
+      var urlEl=document.getElementById('s-gsurl');
+      var base=(urlEl&&urlEl.value.trim())?urlEl.value.trim():SCRIPT_URL;
+      base=base.replace(/\/+$/,'');
+      var cb='gasPing_'+Date.now();
+      var s=document.createElement('script');
+      window[cb]=function(){
+        try{delete window[cb];}catch(e){window[cb]=undefined;}
+        if(s.parentNode)s.parentNode.removeChild(s);
+        var st=document.getElementById('gas-conn-status');
+        if(st){st.textContent='\u2713 Server ready';st.style.color='rgba(100,220,130,0.7)';}
+      };
+      s.onerror=function(){
+        if(s.parentNode)s.parentNode.removeChild(s);
+        try{delete window[cb];}catch(e){}
+        var st=document.getElementById('gas-conn-status');
+        if(st){st.textContent='Server warming up — sign in may take a moment';st.style.color='rgba(255,200,100,0.7)';}
+      };
+      s.src=base+'?mode=fg_status&callback='+cb;
+      document.head.appendChild(s);
+    }catch(e){}
+  },200);
 })();
 
 // ═══ EYE TOGGLE ═══
@@ -1592,6 +1625,32 @@ function refreshAll(){
     setGSStatus('on','Sheet (core)');
     badge.textContent='Loading all columns...';badge.className='bg-badge';
     // Start full load 1 second after fast load completes
+    // On iOS/mobile: skip automatic full load to avoid memory spike that crashes the tab.
+    // User can trigger it manually via the badge button.
+    if(IS_MOBILE){
+      var badge=document.getElementById('bg-badge');
+      if(badge){
+        badge.textContent='Tap to load full data';
+        badge.className='bg-badge';
+        badge.style.cursor='pointer';
+        badge.title='Load all 200+ columns';
+        badge.onclick=function(){
+          badge.onclick=null;badge.style.cursor='';
+          badge.textContent='Loading full data…';badge.className='bg-badge';
+          loadPass('full',function(fullData){
+            DB.fullData=fullData;extractAllCols(fullData);mergeFullData();DB.fullData=null;
+            renderAll();setGSStatus('on','Google Sheet');
+            badge.textContent='All columns ready';badge.className='bg-badge done';
+            document.getElementById('sb-time').textContent=new Date().toLocaleTimeString();
+            setTimeout(function(){badge.textContent='';badge.style.cursor='';badge.onclick=null;},5000);
+          },function(err){
+            badge.textContent='Full load failed — tap to retry';
+            badge.style.cursor='pointer';
+          });
+        };
+      }
+      return;
+    }
     setTimeout(function(){
       loadPass('full',function(fullData){
         DB.fullData=fullData;
@@ -1613,7 +1672,7 @@ function refreshAll(){
         badge.textContent='Full load failed — core data still active';
         console.error('Full load error:',err);
       });
-    },1000);
+    },1000); // end setTimeout
   },function(err){
     setGSStatus('off','Error: '+err);
     document.getElementById('gs-load-status').textContent='Load error: '+err+'. Check your Apps Script URL in Settings.';
@@ -1641,8 +1700,9 @@ function loadPass(mode,onSuccess,onError){
   var cbName='dlCB_'+mode+'_'+Date.now();
   var script=document.createElement('script');
   var done=false;
-  // Fast gets 20s, full gets 90s (large dataset)
-  var timeout=mode==='fast'?105000:150000;
+  // Desktop: fast=105s, full=150s. iOS/mobile: fast=45s, full=90s.
+  // Shorter mobile timeout means faster feedback if GAS is unresponsive.
+  var timeout=mode==='fast'?(IS_MOBILE?45000:105000):(IS_MOBILE?90000:150000);
 
   var timer=setTimeout(function(){
     if(done)return;done=true;cleanup();LOADING=false;
@@ -5272,6 +5332,20 @@ function fgsIsPlusStat(col){
 }
 
 function fgsFmtStat(col,raw){
+  // Age range strings (e.g. "28-29" for multi-year windows) — return directly
+  // parseFloat would truncate to just "28", losing the range
+  if(col==='Age'&&String(raw).indexOf('-')>=0){
+    var parts=String(raw).split('-');
+    if(parts.length===2){
+      var lo=Math.round(parseFloat(parts[0]));
+      var hi=Math.round(parseFloat(parts[1]));
+      if(!isNaN(lo)&&!isNaN(hi)){
+        // Abbreviated format: full first age, 2-digit second (e.g. "28-29")
+        return lo+'-'+hi;
+      }
+    }
+    return String(raw);
+  }
   var n=parseFloat(raw);
   if(isNaN(n))return String(raw);
   // + / index stats: rounded whole number, no decimals
@@ -7742,7 +7816,7 @@ function cgShowH2H(idx){
       +' \u00b7 GUAR AAV: '+(cp.guarAav?'$'+cp.guarAav.toFixed(1)+'M':'\u2014')
       +' \u00b7 Term: '+(cp.term?cp.term+'yr':'\u2014')
       +(cp.code?' \u00b7 Code: <strong>'+cp.code+'</strong>':'')
-      +(cp.mlsSig!==null&&cp.mlsSig!==undefined?' \u00b7 MLS@Sign: '+cp.mlsSig.toFixed(2):'')
+      +(cp.mlsSig!==null&&cp.mlsSig!==undefined?' \u00b7 MLS@Sign: '+cp.mlsSig.toFixed(3):'')
     +'</div>';
 
   orderedTFs.forEach(function(tf){
@@ -8038,7 +8112,7 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
       +td(cp.guarAav?'$'+cp.guarAav.toFixed(1)+'M':'')
       +td(cp.guar?'$'+cp.guar.toFixed(0)+'M':'')
       +td(cp.code||'—','center')
-      +td(cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(2):'—')
+      +td(cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(3):'—')
       +'</tr>';
   }).join('');
 
@@ -8107,7 +8181,7 @@ function cgExportComps(){
       cp.guarAav?cp.guarAav.toFixed(2):'',
       cp.guar?cp.guar.toFixed(0):'',
       cp.code||'',
-      cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(2):''
+      cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(3):''
     ].join(',');
   });
   var csv=[hdrs.join(',')].concat(rows).join('\n');
