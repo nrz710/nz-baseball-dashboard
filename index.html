@@ -4,6 +4,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2167,9 +2168,11 @@ function fgPrewarmContractsCache(){
             isPartial:false,pulledAt:agg.pulled_at||''
           };
           if(!FG.live.cache)FG.live.cache={};
-          FG.live.cache[item.side+'_'+item.typeKey]={
-            headers:ctData.headers,rows:ctData.rows,_years:[]
-          };
+          // Only write to the non-prefixed key — never overwrite the 'live_' prefixed key
+          // which belongs to Live Leaderboards and carries proper _years + all-player rows.
+          var lkPre=item.side+'_'+item.typeKey;
+          if(!FG.live.cache[lkPre]||!FG.live.cache[lkPre].rows||!FG.live.cache[lkPre].rows.length)
+            FG.live.cache[lkPre]={headers:ctData.headers,rows:ctData.rows,_years:[]};
         }catch(e){}
       }
       setTimeout(warmNext,500);
@@ -2521,11 +2524,13 @@ function buildViewTable(tableType){
               var statCols3=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA','oSLG'];
               var dec1Cols=['AB/HR','LA','Max EV','AvgEV','IP','IP/GS','aEV','MPH(FF)','MPH(SI)','MPH(FC)'];
               var dec2Cols=['gmLI','ERA','FIP','xFIP'];
+              var intCols_ov=['QS','Events','CG','ShO'];
               if(pctCols.indexOf(col)>=0)v=fPct(parseFloat(v));
               else if(warCols.indexOf(col)>=0)v=fWAR(parseFloat(v));
               else if(statCols3.indexOf(col)>=0)v=fStat(parseFloat(v));
               else if(dec1Cols.indexOf(col)>=0)v=fDec1(parseFloat(v));
               else if(dec2Cols.indexOf(col)>=0)v=fDec2(parseFloat(v));
+              else if(intCols_ov.indexOf(col)>=0)v=String(Math.round(parseFloat(v)));
               else v=parseFloat(v)%1!==0?parseFloat(v).toFixed(3).replace(/^0/,''):String(v);
             }
           }else{
@@ -2541,11 +2546,13 @@ function buildViewTable(tableType){
               var statCols3b=['AVG','OBP','SLG','ISO','wOBA','xAVG','xSLG','xwOBA','oSLG'];
               var dec1Cols2=['AB/HR','LA','Max EV','AvgEV','IP','IP/GS','aEV','MPH(FF)','MPH(SI)','MPH(FC)'];
               var dec2Cols2=['gmLI','ERA','FIP','xFIP'];
+              var intCols_ov2=['QS','Events','CG','ShO'];
               if(pctCols2.indexOf(col)>=0)v=fPct(parseFloat(v));
               else if(warCols2.indexOf(col)>=0)v=fWAR(parseFloat(v));
               else if(statCols3b.indexOf(col)>=0)v=fStat(parseFloat(v));
               else if(dec1Cols2.indexOf(col)>=0)v=fDec1(parseFloat(v));
               else if(dec2Cols2.indexOf(col)>=0)v=fDec2(parseFloat(v));
+              else if(intCols_ov2.indexOf(col)>=0)v=String(Math.round(parseFloat(v)));
             }
           }
           var colHidState=isHit?hColHidden:pColHidden;
@@ -4334,6 +4341,10 @@ var RATE_OVERRIDE_SFX = [
   'IFH%','BUH%',  // infield hit rate, bunt hit rate
   // Minus-scale stats (lower=better index stats, false-match _ER)
   'ERA-','FIP-','xFIP-',
+  // ERA family — prevent false-match on _ER suffix; these are computed specially below
+  'ERA','xERA',
+  // Pitcher value rate stats — prevent false-match on _WAR, _L, _Wins suffixes
+  'RA9-WAR','BIP-Wins','LOB-Wins','FDP-Wins',
   // Statcast percentage rates
   'Barrel%','HardHit%',
   // Statcast swing/contact rates
@@ -4423,12 +4434,12 @@ function fgsComputeAgg(side,typeKey,ctData){
   var ipIdx =side==='p'?(headers.indexOf(prefix+'IP') >=0?headers.indexOf(prefix+'IP') :headers.indexOf('Standard_IP')) :-1;
 
   // Count stat suffixes
-  var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
+  var COUNT_SFX=['_G','_GS','_QS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
     '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
     '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
     '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
     '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches',
-    '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard'];
+    '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard','_Events'];
   function isCount(col){
     if(isRateOverride(col)) return false;
     for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;
@@ -4577,7 +4588,36 @@ function fgsComputeAgg(side,typeKey,ctData){
         if(isCount(fullCol)){
           var sum=0,hasVal=false;
           validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
-          row.push(hasVal?String(Math.round(sum*1000)/1000):''); // partial seasons OK
+          if(!hasVal){row.push('');return;}
+          // QS, Events, and other whole-number counts must always be integers
+          var intCols={QS:1,Events:1,G:1,GS:1,SV:1,HLD:1,BS:1,W:1,L:1,CG:1,ShO:1,SB:1,CS:1};
+          if(intCols[col]){row.push(String(Math.round(sum)));}
+          else{row.push(String(Math.round(sum*1000)/1000));}
+        }else if(col==='ERA'||col==='xERA'){
+          // ERA must be computed as (ΣER / ΣIP) * 9 — never averaged or summed
+          var erIdx2=headers.indexOf(prefix+'ER');
+          var ipIdx2=headers.indexOf(prefix+'IP');
+          // Fallback to Standard_ columns if type-specific ones missing
+          if(erIdx2<0)erIdx2=headers.indexOf('Standard_ER');
+          if(ipIdx2<0)ipIdx2=headers.indexOf('Standard_IP');
+          if(erIdx2>=0&&ipIdx2>=0){
+            var totER=0,totIP=0;
+            validRows.forEach(function(r){
+              var erv=parseFloat(r[erIdx2]);var ipv=parseFloat(r[ipIdx2]);
+              if(!isNaN(erv)&&!isNaN(ipv)&&ipv>0){totER+=erv;totIP+=ipv;}
+            });
+            row.push(totIP>0?String(Math.round((totER/totIP)*9*100)/100):'');
+          }else{
+            // No ER/IP columns available — fall back to IP-weighted average
+            var sw3=0,sv3=0;
+            validRows.forEach(function(r){
+              var rawW=ipIdx>=0?r[ipIdx]:null;
+              var w3=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
+              var rawV=r[si];var v3=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
+              if(!isNaN(w3)&&!isNaN(v3)){sw3+=w3;sv3+=v3*w3;}
+            });
+            row.push(sw3>0?String(Math.round((sv3/sw3)*100)/100):'');
+          }
         }else{
           // For pitchers, pick IP or TBF as weight depending on stat's denominator
           var effectiveWgt=side==='h'?wgtCol:pitcherWgtCol(col,ipIdx,tbfIdx);
@@ -5359,6 +5399,8 @@ function fgsFmtStat(col,raw){
     var pv=Math.abs(n)<=1?n*100:n;
     return pv.toFixed(1)+'%';
   }
+  // Always-integer stats — these are discrete counts that can never be fractional
+  if(col==='QS'||col==='Events'||col==='CG'||col==='ShO')return String(Math.round(n));
   // Integers
   if(n%1===0)return String(Math.round(n));
   // Default: 2dp, no leading zero
@@ -5546,44 +5588,70 @@ function fglLoadData(){
   var side=FG.fgl.side;
   var typeKey=FG.fgl.type;
   var cacheKey='live_'+side+'_'+typeKey;
-  if(FG.live.cache&&FG.live.cache[cacheKey]){
+  if(FG.live.cache&&FG.live.cache[cacheKey]&&FG.live.cache[cacheKey].rows&&FG.live.cache[cacheKey].rows.length){
     fglPopulateYears(FG.live.cache[cacheKey]._years||[]);
     fglRender();return;
   }
   fgSetStatus('fgl-status','Loading '+typeKey+'...',null);
-  // Use leaderboard=1 param — Apps Script returns all FG players, not just contract players
+
+  function onNoData(){
+    // Show a retry button — most common cause is stale GAS CacheService entry.
+    // Retry with a dummy ts param which doesn't change the GAS cache key,
+    // but the user re-deploying GAS v6 will fix it permanently.
+    fgSetStatus('fgl-status','No data for this type','err');
+    if(bodyEl)bodyEl.innerHTML=
+      '<tr><td colspan="50" style="text-align:center;padding:60px;color:var(--dim)">'
+      +'<div style="font-size:13px;margin-bottom:12px">No data for <strong style="color:var(--text)">'+typeKey+'</strong></div>'
+      +'<div style="font-size:11px;color:var(--dim);margin-bottom:16px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.6">'
+      +'If other tabs load fine, this type may not have been pulled yet. '
+      +'Try clicking <strong>Pull FanGraphs Data</strong> to fetch it, or deploy GAS v6 to fix stale cache issues.'
+      +'</div>'
+      +'<button onclick="fglForceReload()" style="background:var(--accent);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:11px;font-weight:700;padding:8px 18px;margin-right:8px">Retry</button>'
+      +'</td></tr>';
+  }
+
   fgLoad('fg_contracts',function(data){
-    if(!data||data.status==='no_data'){
-      fgSetStatus('fgl-status','No data yet — click Pull FanGraphs Data','err');
-      if(bodyEl)bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">No data — click Pull FanGraphs Data</td></tr>';
-      return;
+    if(!data||data.status==='no_data'||!data.headers||!data.rows){
+      onNoData();return;
     }
     if(data.status==='pull_running'){
       fgSetStatus('fgl-status','Pull in progress: '+(data.pull_pct||0)+'%',null);
       if(!FG.loading){FG.loading=true;fgStartPolling();}
       return;
     }
+    if(!data.rows||!data.rows.length){onNoData();return;}
+    fglStoreAndRender(data,cacheKey,side,typeKey,bodyEl);
+  },function(err){
+    fgSetStatus('fgl-status','Error: '+err,'err');
+    if(bodyEl)bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">Error loading '+typeKey+': '+err+'<br><br><button onclick="fglForceReload()" style="background:var(--s2);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-size:11px;padding:6px 14px">Retry</button></td></tr>';
+  },{side:side,typeKey:typeKey,leaderboard:'1'});
+}
+
+function fglForceReload(){
+  // Clear the in-memory cache for the current type so fglLoadData re-fetches
+  var side=FG.fgl.side;
+  var typeKey=FG.fgl.type;
+  var cacheKey='live_'+side+'_'+typeKey;
+  if(FG.live.cache)delete FG.live.cache[cacheKey];
+  fglLoadData();
+}
+
+function fglStoreAndRender(data,cacheKey,side,typeKey,bodyEl){
     var headers=data.headers||[];
     var rows=data.rows||[];
-    // Extract available seasons
     var seasIdx=headers.indexOf('season');
     var yearsSet={};
     if(seasIdx>=0)rows.forEach(function(r){var y=parseInt(r[seasIdx]);if(y)yearsSet[y]=true;});
     var years=Object.keys(yearsSet).map(Number).sort(function(a,b){return b-a;});
     if(!FG.live.cache)FG.live.cache={};
-    // Show ALL fields that contain bat-track-like keywords
     FG.live.cache[cacheKey]={headers:headers,rows:rows,_years:years};
-    var lk=Object.keys(FG.live.cache);
-    if(lk.length>20)delete FG.live.cache[lk[0]];
+    var liveKeys=Object.keys(FG.live.cache).filter(function(k){return k.indexOf('live_')===0;});
+    if(liveKeys.length>30)delete FG.live.cache[liveKeys[0]];
     if(data.pulled_at)FG.pulledAt=data.pulled_at;
     var d=data.pulled_at?new Date(data.pulled_at):null;
     fgSetStatus('fgl-status',d?'Last pull: '+d.toLocaleDateString()+' '+d.toLocaleTimeString():'Data loaded','ok');
     fglPopulateYears(years);
     fglRender();
-  },function(err){
-    fgSetStatus('fgl-status','Error: '+err,'err');
-    if(bodyEl)bodyEl.innerHTML='<tr><td colspan="50" style="text-align:center;padding:40px;color:var(--dim)">Error: '+err+'</td></tr>';
-  },{side:side,typeKey:typeKey,leaderboard:'1'});
 }
 
 function fglOpenFilterBuilder(){
@@ -5702,7 +5770,8 @@ function fglCustomEnsureData(cb){
       if(data&&data.headers){
         if(!FG.live.cache)FG.live.cache={};
         FG.live.cache[ck]={headers:data.headers||[],rows:data.rows||[],_years:[]};
-        var lk=Object.keys(FG.live.cache);if(lk.length>20)delete FG.live.cache[lk[0]];
+        var liveKeys2=Object.keys(FG.live.cache).filter(function(k){return k.indexOf('live_')===0;});
+        if(liveKeys2.length>30)delete FG.live.cache[liveKeys2[0]];
       }
       done2();
     },function(){done2();},{side:side,typeKey:tk,leaderboard:'1'});
@@ -6011,11 +6080,11 @@ function fglRender(){
   }
 
   // Count stat detection (reuse existing logic)
-  var COUNT_SFX=['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
+  var COUNT_SFX=['_G','_GS','_QS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
     '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
     '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
     '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
-    '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches'];
+    '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches','_Events'];
   function isCount(col){
     if(isRateOverride(col)) return false;
     for(var i=0;i<COUNT_SFX.length;i++)if(col.indexOf(COUNT_SFX[i])>=0)return true;
@@ -6053,7 +6122,22 @@ function fglRender(){
         }).filter(function(v){return!isNaN(v);});
         if(!rawVals.length){stats[col]='';return;}
         if(isCount(fullCol)){
-          stats[col]=String(Math.round(rawVals.reduce(function(a,b){return a+b;},0)*1000)/1000);
+          var rawSum=rawVals.reduce(function(a,b){return a+b;},0);
+          var fglIntCols={QS:1,Events:1,G:1,GS:1,SV:1,HLD:1,BS:1,W:1,L:1,CG:1,ShO:1,SB:1,CS:1};
+          stats[col]=String(fglIntCols[col]?Math.round(rawSum):Math.round(rawSum*1000)/1000);
+        }else if(col==='ERA'||col==='xERA'){
+          var allT_era=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
+          var totER_w=0,totIP_w=0;
+          pd.entries.forEach(function(e){
+            var erv=NaN,ipv=NaN;
+            for(var ti=0;ti<allT_era.length;ti++){
+              var ec=allT_era[ti].key+'_ER';var ic=allT_era[ti].key+'_IP';
+              if(e.cols[ec]!==undefined)erv=parseFloat(e.cols[ec]);
+              if(e.cols[ic]!==undefined)ipv=parseFloat(e.cols[ic]);
+            }
+            if(!isNaN(erv)&&!isNaN(ipv)&&ipv>0){totER_w+=erv;totIP_w+=ipv;}
+          });
+          stats[col]=totIP_w>0?String(Math.round((totER_w/totIP_w)*9*100)/100):'';
         }else{
           // Weight by PA/TBF/IP
           var wgtCol2=side==='h'?'PA':'IP';
@@ -6094,7 +6178,22 @@ function fglRender(){
         if(isCount(fullCol)){
           var sum=0,hasVal=false;
           pd.rows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;hasVal=true;}});
-          stats[col]=hasVal?String(Math.round(sum*1000)/1000):'';
+          var fglIntCols2={QS:1,Events:1,G:1,GS:1,SV:1,HLD:1,BS:1,W:1,L:1,CG:1,ShO:1,SB:1,CS:1};
+          stats[col]=hasVal?String(fglIntCols2[col]?Math.round(sum):Math.round(sum*1000)/1000):'';
+        }else if(col==='ERA'||col==='xERA'){
+          var erIdx_r=headers.indexOf(typeKey+'_ER'), ipIdx_r=headers.indexOf(typeKey+'_IP');
+          if(erIdx_r<0)erIdx_r=headers.indexOf('Standard_ER');
+          if(ipIdx_r<0)ipIdx_r=headers.indexOf('Standard_IP');
+          if(erIdx_r>=0&&ipIdx_r>=0){
+            var totER_r=0,totIP_r=0;
+            pd.rows.forEach(function(r){var erv=parseFloat(r[erIdx_r]),ipv=parseFloat(r[ipIdx_r]);if(!isNaN(erv)&&!isNaN(ipv)&&ipv>0){totER_r+=erv;totIP_r+=ipv;}});
+            stats[col]=totIP_r>0?String(Math.round((totER_r/totIP_r)*9*100)/100):'';
+          }else{
+            var effWgt_e=side==='h'?wgtIdx:pitcherWgtCol(col,fglIpIdx,fglTbfIdx);
+            var sw_e=0,sv_e=0;
+            pd.rows.forEach(function(r){var w=parseFloat(r[effWgt_e]),v=parseFloat(r[si]);if(!isNaN(w)&&!isNaN(v)){sw_e+=w;sv_e+=v*w;}});
+            stats[col]=sw_e>0?String(Math.round((sv_e/sw_e)*100)/100):'';
+          }
         }else{
           var effWgt=side==='h'?wgtIdx:pitcherWgtCol(col,fglIpIdx,fglTbfIdx);
           if(effWgt>=0){
@@ -6331,12 +6430,12 @@ var CG_TF_KEYS     = ['py','py1','py2','l2','l3','car'];
 var CG_TF_LABELS   = {py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'Career'};
 var CG_TF_WINMAP   = {py:'PY',py1:'PY-1',py2:'PY-2',l2:'L2',l3:'L3',car:'CAR'};
 var CG_TF_COLORS   = {py:'g-py',py1:'g-py1',py2:'g-py2',l2:'g-l2',l3:'g-l3',car:'g-car'};
-var COUNT_SFX_CG   = ['_G','_GS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
+var COUNT_SFX_CG   = ['_G','_GS','_QS','_PA','_AB','_H','_1B','_2B','_3B','_HR','_R','_RBI',
   '_BB','_IBB','_SO','_HBP','_SF','_SH','_GDP','_SB','_CS','_IP','_W','_L',
   '_SV','_HLD','_BS','_TBF','_ER','_K','_WAR','_RAR','_wRAA','_wRC',
   '_Batting','_Fielding','_Replacement','_Positional','_Defense','_Offense',
   '_Dollars','_BaseRunning','_UBR','_GDPRuns','_Balls','_Strikes','_Pitches',
-  '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard'];
+  '_Pull','_Cent','_Oppo','_Soft','_Med','_Hard','_Events'];
 
 function cgIsCount(col){
   if(isRateOverride(col)) return false;
@@ -6756,12 +6855,11 @@ function cgEnsureTypeLoaded(side, typeKey, cb){
     if(data && data.headers && data.rows && data.rows.length){
       if(!FG.live.cache) FG.live.cache = {};
       FG.live.cache[lk]  = {headers:data.headers, rows:data.rows, _years:[]};
-      FG.live.cache[lk2] = FG.live.cache[lk];
       cb(true);
     } else {
       cb(false);
     }
-  }, function(){ cb(false); }, {side:side, typeKey:typeKey});
+  }, function(){ cb(false); }, {side:side, typeKey:typeKey, leaderboard:'1'});
 }
 
 // Run cb() after all types in `typeList` are loaded sequentially.
@@ -6852,14 +6950,20 @@ function cgFinishLoad(){
     cgBuildTargetStats();
   }catch(e){console.error('cgBuildTargetStats:',e);}
   cgRenderPlayerStats();
-  try{
-    cgBuildCompStats();
-    cgRunComps();
-    cgRenderPeers();
-  }catch(e){console.error('cgBuildCompStats/Run/Peers:',e);}
-  document.getElementById('cg-win-peers').style.display='';
-  document.getElementById('cg-win3').style.display='';
-  cgSetStatus('','ok');
+  // Break the synchronous chain so the player stats render paints before
+  // the heavy comp-scoring work begins — prevents a multi-second UI freeze.
+  setTimeout(function(){
+    try{
+      cgBuildCompStats();
+      cgRunComps();
+    }catch(e){console.error('cgBuildCompStats/Run:',e);}
+    setTimeout(function(){
+      try{cgRenderPeers();}catch(e){console.error('cgRenderPeers:',e);}
+      document.getElementById('cg-win-peers').style.display='';
+      document.getElementById('cg-win3').style.display='';
+      cgSetStatus('','ok');
+    },0);
+  },0);
 }
 
 // ── Build target player stats ─────────────────────────────────────────────
@@ -6897,7 +7001,7 @@ function cgBuildTargetStats(){
     // Try live cache first (raw rows → cgComputePlayerAgg)
     var lk  = side+'_'+t.key;
     var lk2 = 'live_'+side+'_'+t.key;
-    var raw = (FG.live.cache && (FG.live.cache[lk]||FG.live.cache[lk2]));
+    var raw = (FG.live.cache && (FG.live.cache[lk2]||FG.live.cache[lk]));
     if(raw && raw.headers && raw.rows && raw.rows.length){
       var agg = cgComputePlayerAgg(raw, t.key, side, resolvedPid||fgId, nm, py, true);
       if(agg){ CG.targetStats[t.key]=agg; return; }
@@ -7119,7 +7223,34 @@ function cgComputePlayerAgg(raw,typeKey,side,fgId,nm,py,isLive){
       if(cgIsCount(fullCol)){
         var sum=0,has=false;
         validRows.forEach(function(r){var v=parseFloat(r[si]);if(!isNaN(v)){sum+=v;has=true;}});
-        wStats[col]=has?sum:null; // partial seasons OK
+        if(!has){wStats[col]=null;return;}
+        // QS, Events and other discrete counts must be integers
+        var cgIntCols={QS:1,Events:1,G:1,GS:1,SV:1,HLD:1,BS:1,W:1,L:1,CG:1,ShO:1,SB:1,CS:1};
+        wStats[col]=cgIntCols[col]?Math.round(sum):sum;
+      }else if(col==='ERA'||col==='xERA'){
+        // ERA = (ΣER / ΣIP) * 9 — never averaged or summed across seasons
+        var cgErIdx=headers.indexOf(prefix+'ER');
+        var cgIpIdx2=headers.indexOf(prefix+'IP');
+        if(cgErIdx<0)cgErIdx=headers.indexOf('Standard_ER');
+        if(cgIpIdx2<0)cgIpIdx2=headers.indexOf('Standard_IP');
+        if(cgErIdx>=0&&cgIpIdx2>=0){
+          var totER2=0,totIP2=0;
+          validRows.forEach(function(r){
+            var erv=parseFloat(r[cgErIdx]);var ipv=parseFloat(r[cgIpIdx2]);
+            if(!isNaN(erv)&&!isNaN(ipv)&&ipv>0){totER2+=erv;totIP2+=ipv;}
+          });
+          wStats[col]=totIP2>0?Math.round((totER2/totIP2)*9*100)/100:null;
+        }else{
+          // Fallback: IP-weighted average
+          var sw4=0,sv4=0;
+          validRows.forEach(function(r){
+            var rawW=cgIpIdx>=0?r[cgIpIdx]:null;
+            var w4=(rawW===''||rawW===null||rawW===undefined)?0:parseFloat(rawW);
+            var rawV=r[si];var v4=(rawV===''||rawV===null||rawV===undefined)?NaN:parseFloat(rawV);
+            if(!isNaN(w4)&&!isNaN(v4)){sw4+=w4;sv4+=v4*w4;}
+          });
+          wStats[col]=sw4>0?Math.round((sv4/sw4)*100)/100:null;
+        }
       }else{
         // Pick correct weight column per stat for pitchers
         var effW=side==='h'?wgtIdx:pitcherWgtCol(col,cgIpIdx,cgTbfIdx);
@@ -7315,7 +7446,45 @@ function cgRenderPeers(){
 
   var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
 
-  // For each type, gather all leaderboard players who have data in `py`
+  // ── Pre-build contract lookup from DB.merged (once, outside per-peer loop) ──
+  // Key: normName → [{py, code, fy}] sorted by py desc
+  var contractLookup={};
+  var isHitSide=side==='h';
+  DB.merged.forEach(function(p){
+    if(!p.sheetTab)return;
+    if(p.sheetTab.toLowerCase().indexOf(isHitSide?'hitter':'pitcher')<0)return;
+    var nm2=normName(p.name);
+    if(!contractLookup[nm2])contractLookup[nm2]=[];
+    contractLookup[nm2].push({py:parseInt(p.py)||0,code:(p.code||'').trim(),fy:p.fy||''});
+    // Also store under the "First Last" normalized form
+    var nmConv=normName(fgToLastFirst(p.name));
+    if(nmConv&&nmConv!==nm2){
+      if(!contractLookup[nmConv])contractLookup[nmConv]=[];
+      contractLookup[nmConv].push({py:parseInt(p.py)||0,code:(p.code||'').trim(),fy:p.fy||''});
+    }
+  });
+
+  function getPeerContractCode(peerName,peerPy){
+    var nmDirect=normName(peerName);
+    var nmConverted=normName(fgToLastFirst(peerName));
+    var pyNum=parseInt(peerPy)||0;
+    var contracts=contractLookup[nmDirect]||contractLookup[nmConverted]||[];
+    if(!contracts.length)return'no contracts';
+    // Try exact PY match first
+    var exact=null;
+    contracts.forEach(function(c){if(c.py===pyNum)exact=c;});
+    if(exact)return(exact.code||'no contracts')+' (FY '+(exact.fy||'?')+')';
+    // Find most recent contract with PY <= peerPy
+    var best=null;
+    contracts.forEach(function(c){
+      if(c.py<=pyNum&&(!best||c.py>best.py))best=c;
+    });
+    if(best)return(best.code||'no contracts')+' (FY '+(best.fy||'?')+')';
+    return'no contracts';
+  }
+
+  // ── For each type, gather all leaderboard players who have data in `py` ──
+  // Use a year-indexed map to avoid scanning all rows for each type.
   // Build: peerIndex[fgId] = {name, team, typeStats:{typeKey:{col:val}}}
   var peerIndex={};
 
@@ -7335,7 +7504,6 @@ function cgRenderPeers(){
 
     var prefix=typeKey+'_';
     var activeCols=cgGetActiveCols(typeKey,side);
-    // Build stat index arrays
     var statIdxs=[],statCols=[];
     headers.forEach(function(h,i){
       if({playerid:1,season:1,PlayerName:1,Team:1,xMLBAMID:1}[h])return;
@@ -7348,7 +7516,7 @@ function cgRenderPeers(){
     });
     if(!statIdxs.length)return;
 
-    // Collect rows for the target PY only
+    // Single pass — only process rows matching target PY
     rows.forEach(function(r){
       var yr=parseInt(r[seasIdx])||0;
       if(yr!==py)return;
@@ -7380,7 +7548,7 @@ function cgRenderPeers(){
   }
 
   // Build population stats (mean+sd) per type/col for z-score normalisation
-  var popStats={};  // typeKey -> col -> {mean, sd}
+  var popStats={};
   types.forEach(function(t){
     var typeKey=t.key;
     popStats[typeKey]={};
@@ -7440,18 +7608,52 @@ function cgRenderPeers(){
 
   if(metaEl)metaEl.textContent=py+' season · '+total+' leaderboard players compared · showing top 5';
 
+  // Build ldbIndex lookup by fgId for debut year
+  var ldbByFgId={};
+  if(CG.ldbIndex)CG.ldbIndex.forEach(function(e){if(e.fgId)ldbByFgId[e.fgId]=e;});
+
   peersEl.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0">'
     +top5.map(function(p,i){
       var rank=i+1;
       var barW=Math.max(0,Math.min(100,p.pct));
       var barC=p.pct>=80?'var(--green)':p.pct>=65?'var(--accent)':'var(--blue)';
       var textC=p.pct>=80?'var(--green)':p.pct>=65?'var(--accent)':'var(--blue)';
-      return'<div style="background:var(--s1);border:1px solid var(--border);border-radius:7px;padding:12px 16px;min-width:160px;flex:1;max-width:220px">'
+
+      // Age: from Standard type stats
+      var ageVal=null;
+      var peerTs=peerIndex[p.fgId]&&peerIndex[p.fgId].typeStats;
+      if(peerTs){
+        var stdTs=peerTs['Standard'];
+        if(stdTs&&stdTs['Age']!==undefined&&!isNaN(stdTs['Age']))ageVal=Math.round(stdTs['Age']);
+      }
+
+      // Seasons since debut
+      var ldbEntry=ldbByFgId[p.fgId];
+      var seasonLabel='—';
+      if(ldbEntry&&ldbEntry.seasons){
+        var allYrs=Object.keys(ldbEntry.seasons).map(Number).filter(function(y){return!isNaN(y);});
+        if(allYrs.length){
+          var debut=Math.min.apply(null,allYrs);
+          var nth=py-debut+1;
+          seasonLabel=nth<=0?'—':nth===1?'1st season':nth===2?'2nd season':nth===3?'3rd season':nth+'th season';
+        }
+      }
+
+      // Contract code (uses pre-built lookup — no DB scan)
+      var contractCode=getPeerContractCode(p.name,py);
+      var codeColor=contractCode==='no contracts'?'var(--dim)':'var(--accent)';
+
+      return'<div style="background:var(--s1);border:1px solid var(--border);border-radius:7px;padding:12px 16px;min-width:160px;flex:1;max-width:240px">'
         +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">'
           +'<span style="background:'+barC+';color:#000;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0">'+rank+'</span>'
           +'<span style="font-size:13px;font-weight:800;color:var(--text)">'+p.name+'</span>'
         +'</div>'
-        +'<div style="font-size:9px;color:var(--dim);margin-bottom:7px;letter-spacing:.5px">'+(p.team||'—')+'</div>'
+        +'<div style="font-size:9px;color:var(--dim);margin-bottom:5px;letter-spacing:.5px">'+(p.team||'—')+'</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'
+          +(ageVal!==null?'<span style="background:rgba(255,255,255,0.06);border-radius:3px;padding:2px 6px;font-size:9px;color:var(--mid)">Age '+ageVal+'</span>':'')
+          +(seasonLabel!=='—'?'<span style="background:rgba(255,255,255,0.06);border-radius:3px;padding:2px 6px;font-size:9px;color:var(--mid)">'+seasonLabel+'</span>':'')
+        +'</div>'
+        +'<div style="font-size:9px;margin-bottom:7px">Code: <span style="color:'+codeColor+';font-weight:700">'+contractCode+'</span></div>'
         +'<div style="font-size:18px;font-weight:900;color:'+textC+'">'+p.pct+'%</div>'
         +'<div style="height:3px;background:var(--s3);border-radius:2px;margin-top:4px;overflow:hidden">'
           +'<div style="height:100%;width:'+barW+'%;background:'+barC+';border-radius:2px"></div>'
@@ -7535,13 +7737,17 @@ function cgRunComps(){
   cgBuildPopStats(side, activeTypes, activeTFs);
 
   var targetNm=normName(CG.player.name);
+  // DB.merged names are "Last, First"; CG.player.name is "First Last" from FanGraphs
+  // Convert to match: fgToLastFirst("Bo Bichette") → "Bichette, Bo" → normName → "bichetebo"
+  var targetNmConv=normName(fgToLastFirst(CG.player.name));
   var targetPY=CG.py;
 
   // Score each comp player
   var scored=[];
   CG.compStats.forEach(function(cp){
-    // Skip the target player themselves
-    if(normName(cp.name)===targetNm&&cp.py===targetPY)return;
+    // Skip the target player themselves (handle both name formats)
+    var cpNm=normName(cp.name);
+    if((cpNm===targetNm||cpNm===targetNmConv)&&cp.py===targetPY)return;
 
     var totalScore=0,totalWeight=0,statCount=0;
     var typeBreakdown={};
@@ -7667,8 +7873,47 @@ function cgClearCodeFilter(){
   cgRenderCompsBody();
 }
 
+// ── Pos multi-select state (mirrors code filter) ──────────────────────────
+var cgPosFilterOpen=false;
+
+function cgTogglePosFilter(pos){
+  if(!cgCompFilter.positions)cgCompFilter.positions=[];
+  var idx=cgCompFilter.positions.indexOf(pos);
+  if(idx>=0)cgCompFilter.positions.splice(idx,1);
+  else cgCompFilter.positions.push(pos);
+  var btn=document.getElementById('cg-pos-btn');
+  if(btn)btn.textContent=cgCompFilter.positions&&cgCompFilter.positions.length
+    ?cgCompFilter.positions.join(', ')
+    :'Any';
+  var list=document.getElementById('cg-pos-list');
+  if(list){
+    list.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+      cb.checked=(cgCompFilter.positions||[]).indexOf(cb.value)>=0;
+    });
+  }
+  cgRenderCompsBody();
+}
+
+function cgOpenPosDropdown(){
+  var list=document.getElementById('cg-pos-list');
+  if(!list)return;
+  cgPosFilterOpen=!cgPosFilterOpen;
+  list.style.display=cgPosFilterOpen?'block':'none';
+  var btn=document.getElementById('cg-pos-btn');
+  if(btn)btn.classList.toggle('active',cgPosFilterOpen);
+}
+
+function cgClearPosFilter(){
+  cgCompFilter.positions=[];
+  var btn=document.getElementById('cg-pos-btn');
+  if(btn)btn.textContent='Any';
+  cgPosFilterOpen=false;
+  var list=document.getElementById('cg-pos-list');
+  if(list){list.style.display='none';list.querySelectorAll('input').forEach(function(cb){cb.checked=false;});}
+  cgRenderCompsBody();
+}
+
 function cgBuildPosDropdown(){
-  // Build position list from current scored cache
   var positions=[];
   var seen={};
   cgScoredCache.forEach(function(s){
@@ -7676,8 +7921,26 @@ function cgBuildPosDropdown(){
     if(pos&&!seen[pos]){seen[pos]=true;positions.push(pos);}
   });
   positions.sort();
-  var selected=cgCompFilter.pPos||'';
-  return '<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'    +'<select id="cg-pos-sel" onchange="cgApplyCompFilter(\'pPos\',this.value)" '    +'style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 4px;width:58px;cursor:pointer;outline:none">'    +'<option value="">All</option>'    +positions.map(function(pos){      return '<option value="'+pos+'"'+(selected===pos?' selected':'')+'>'+pos+'</option>';    }).join('')    +'</select></td>';}
+  var selected=cgCompFilter.positions||[];
+  var btnLabel=selected.length?selected.join(', '):'Any';
+
+  return '<td style="padding:3px 5px;border-bottom:1px solid var(--border);background:var(--s2)">'
+    +'<div style="position:relative;display:inline-block">'
+    +'<button id="cg-pos-btn" onclick="cgOpenPosDropdown()" style="background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:10px;padding:2px 6px;cursor:pointer;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:70px;text-align:left">'+btnLabel+'</button>'
+    +'<div id="cg-pos-list" style="display:none;position:absolute;top:100%;left:0;z-index:9999;background:var(--s2);border:1px solid rgba(255,255,255,0.15);border-radius:5px;box-shadow:0 6px 20px rgba(0,0,0,0.7);padding:4px 0;max-height:200px;overflow-y:auto;min-width:90px">'
+    +(positions.length?
+        '<div onclick="cgClearPosFilter()" style="padding:5px 10px;font-size:10px;color:var(--accent);cursor:pointer;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.07)">Clear</div>'
+        +positions.map(function(pos){
+          var chk=selected.indexOf(pos)>=0;
+          var safePos=pos.replace(/'/g,"\\'");
+          return'<label style="display:flex;align-items:center;gap:6px;padding:4px 10px;cursor:pointer;font-size:11px;color:var(--text)">'
+            +'<input type="checkbox" value="'+pos+'"'+(chk?' checked':'')+' onchange="cgTogglePosFilter(\''+safePos+'\')" style="accent-color:var(--accent)"> '+pos
+            +'</label>';
+        }).join('')
+      :'<div style="padding:5px 10px;font-size:10px;color:var(--dim)">No positions</div>')
+    +'</div>'
+    +'</div></td>';
+}
 
 
 // Build the code dropdown (called once when header is built)
@@ -8009,8 +8272,10 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
   var filtered=allScored.filter(function(s){
     var cp=s.cp;
     if(!txtFilter(cp.name,  cgCompFilter.name))  return false;
-    if(!txtFilter(cp.pPos,  cgCompFilter.pPos))  return false;
     if(!txtFilter(cp.sigTm, cgCompFilter.sigTm)) return false;
+    // POS multi-select (like codes)
+    var selPos=cgCompFilter.positions;
+    if(selPos&&selPos.length&&selPos.indexOf((cp.pPos||'').trim())<0)return false;
     if(!inRange(cp.py,      'pyMin','pyMax'))     return false;
     if(!inRange(s.pctMatch, 'pctMin','pctMax'))   return false;
     if(!inRange(s.statCount,'statMin','statMax')) return false;
@@ -8042,7 +8307,7 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
   var show=sorted.slice(0,25);
 
   if(statusEl){
-    var nFilt=Object.keys(cgCompFilter).filter(function(k){var v=cgCompFilter[k];return k==='codes'?v&&v.length>0:v!==''&&v!==undefined;}).length;
+    var nFilt=Object.keys(cgCompFilter).filter(function(k){var v=cgCompFilter[k];return(k==='codes'||k==='positions')?v&&v.length>0:v!==''&&v!==undefined;}).length;
     statusEl.style.display='';
     statusEl.innerHTML='<strong>'+show.length+'</strong>'+(filtered.length>25?' of '+filtered.length:'')
       +' / '+allScored.length+' contract players'
@@ -8053,7 +8318,7 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
   }
 
   if(!show.length){
-    bodyEl.innerHTML='<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--dim)">No comps match current filters — <a href="#" onclick="cgClearCompFilters();return false" style="color:var(--accent)">clear filters</a></td></tr>';
+    bodyEl.innerHTML='<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--dim)">No comps match current filters — <a href="#" onclick="cgClearCompFilters();return false" style="color:var(--accent)">clear filters</a></td></tr>';
     return;
   }
 
@@ -8061,26 +8326,55 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
   var types2=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
   var typeMap={};types2.forEach(function(t){typeMap[t.key]=t.label;});
 
-  var rows=show.map(function(s,i){
+  // ── Detect own contract row (target player + selected PY in DB.merged) ──
+  // Own contract is excluded from cgScoredCache (correctly skipped during scoring),
+  // so we find it directly from CG.compStats and build a synthetic scored entry.
+  var targetNm2Conv=CG.player?normName(fgToLastFirst(CG.player.name)):'';
+  var targetPY2=CG.py;
+  var ownContractRow=null;
+  if(targetNm2Conv&&targetPY2){
+    CG.compStats.some(function(cp){
+      if(parseInt(cp.py)!==targetPY2)return false;
+      var cpNm=normName(cp.name);
+      if(cpNm===targetNm2Conv){
+        // Build a synthetic scored entry with no match % (it's the player themselves)
+        ownContractRow={cp:cp,pctMatch:null,statCount:0,typeBreakdown:{}};
+        return true;
+      }
+    });
+  }
+
+  function buildCompRow(s,rank,isOwn){
     var cp=s.cp;
     var globalIdx=cgScoredCache.indexOf(s);
-    var rank=i+1;
-    var rankBg=rank===1?'var(--accent)':rank===2?'#c0c0c0':rank===3?'#cd7f32':'var(--s3)';
-    var rankFg=rank<=3?'#000':'var(--dim)';
     var pct=s.pctMatch;
-    var barW=Math.max(0,Math.min(100,pct));
-    var barC=pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--blue)':'var(--dim)';
-    var textC=pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--text)':'var(--dim)';
+    var barW=pct!==null?Math.max(0,Math.min(100,pct)):0;
+
+    var rankCell;
+    if(isOwn){
+      rankCell='<td style="padding:6px 10px;text-align:center;vertical-align:middle">'
+        +'<span class="cg-comp-rank" style="background:rgba(79,195,247,0.25);color:var(--blue);border:1px solid rgba(79,195,247,0.5);font-size:8px;letter-spacing:.5px">OWN</span>'
+        +'</td>';
+    }else{
+      var rankBg=rank===1?'var(--accent)':rank===2?'#c0c0c0':rank===3?'#cd7f32':'var(--s3)';
+      var rankFg=rank<=3?'#000':'var(--dim)';
+      rankCell='<td style="padding:6px 10px;text-align:center;vertical-align:middle">'
+        +'<span class="cg-comp-rank" style="background:'+rankBg+';color:'+rankFg+'">'+rank+'</span>'
+        +'</td>';
+    }
+
+    var barC=isOwn?'var(--blue)':(pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--blue)':'var(--dim)');
+    var textC=isOwn?'var(--blue)':(pct>=80?'var(--green)':pct>=60?'var(--accent)':pct>=40?'var(--text)':'var(--dim)');
 
     var breakdown='';
-    if(s.typeBreakdown){
+    if(s.typeBreakdown&&!isOwn){
       var bParts=[];
       Object.keys(s.typeBreakdown).forEach(function(tk){
         var bd=s.typeBreakdown[tk]; if(!bd.weight)return;
         var tp=Math.round((bd.score/bd.weight)*100);
-        var bc=tp>=80?'rgba(102,187,106,0.15)':tp>=60?'rgba(232,197,71,0.15)':'rgba(255,255,255,0.06)';
-        var fc=tp>=80?'var(--green)':tp>=60?'var(--accent)':'var(--dim)';
-        bParts.push('<span style="background:'+bc+';color:'+fc+';border-radius:3px;font-size:8px;padding:1px 4px">'+(typeMap[tk]||tk)+': '+tp+'%</span>');
+        var bc2=tp>=80?'rgba(102,187,106,0.15)':tp>=60?'rgba(232,197,71,0.15)':'rgba(255,255,255,0.06)';
+        var fc2=tp>=80?'var(--green)':tp>=60?'var(--accent)':'var(--dim)';
+        bParts.push('<span style="background:'+bc2+';color:'+fc2+';border-radius:3px;font-size:8px;padding:1px 4px">'+(typeMap[tk]||tk)+': '+tp+'%</span>');
       });
       if(bParts.length)breakdown='<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">'+bParts.join('')+'</div>';
     }
@@ -8090,15 +8384,18 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
         (v===''||v===null||v===undefined?'—':v)+'</td>';
     }
 
-    var matchCell='<td style="padding:6px 10px;vertical-align:middle;min-width:80px;cursor:pointer" onclick="cgShowH2H('+globalIdx+')" title="Click to see head-to-head stats">'
-      +'<div style="font-size:14px;font-weight:900;color:'+textC+';text-decoration:underline;text-decoration-style:dotted">'+pct+'%</div>'
-      +'<div class="cg-comp-bar"><div class="cg-comp-bar-fill" style="width:'+barW+'%;background:'+barC+'"></div></div>'
+    var matchCell='<td style="padding:6px 10px;vertical-align:middle;min-width:80px;'+(isOwn?'':'cursor:pointer')+'" '+(isOwn?'':' onclick="cgShowH2H('+globalIdx+')" title="Click to see head-to-head stats"')+'>'
+      +(isOwn?'<div style="font-size:10px;color:var(--blue);font-style:italic">own contract</div>'
+             :'<div style="font-size:14px;font-weight:900;color:'+textC+';text-decoration:underline;text-decoration-style:dotted">'+pct+'%</div>'
+              +'<div class="cg-comp-bar"><div class="cg-comp-bar-fill" style="width:'+barW+'%;background:'+barC+'"></div></div>')
       +'</td>';
 
-    return'<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'
-      +'<td style="padding:6px 10px;text-align:center;vertical-align:middle">'
-        +'<span class="cg-comp-rank" style="background:'+rankBg+';color:'+rankFg+'">'+rank+'</span>'
-      +'</td>'
+    var rowStyle=isOwn
+      ?'border-bottom:2px solid rgba(79,195,247,0.4);background:rgba(79,195,247,0.07);'
+      :'border-bottom:1px solid rgba(255,255,255,0.04)';
+
+    return'<tr style="'+rowStyle+'">'
+      +rankCell
       +td(cp.name+breakdown,'left','font-weight:700')
       +td(cp.py||'—','center')
       +td(cp.pPos?pTag(cp.pPos):'—','center')
@@ -8114,15 +8411,31 @@ function _cgRenderCompsBodyOnly(activeTypes,activeTFs,useCorr){
       +td(cp.code||'—','center')
       +td(cp.mlsSig!==null&&cp.mlsSig!==undefined?cp.mlsSig.toFixed(3):'—')
       +'</tr>';
+  }
+
+  var ownRowHtml='';
+  // Filter show to exclude own contract (it will be pinned separately)
+  var showFiltered=show.filter(function(s){return s!==ownContractRow;});
+  if(ownContractRow){
+    ownRowHtml='<tr style="background:rgba(79,195,247,0.04)">'
+      +'<td colspan="14" style="padding:4px 10px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);font-weight:800;border-bottom:1px solid rgba(79,195,247,0.25)">Own Contract</td>'
+      +'</tr>'
+      +buildCompRow(ownContractRow,0,true)
+      +'<tr><td colspan="14" style="padding:3px 10px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);background:rgba(255,255,255,0.02);border-bottom:2px solid rgba(255,255,255,0.08)">Ranked Comparable Contracts</td></tr>';
+  }
+
+  var rankedRows=showFiltered.slice(0,25).map(function(s,i){
+    return buildCompRow(s,i+1,false);
   }).join('');
 
-  bodyEl.innerHTML=rows;
+  bodyEl.innerHTML=ownRowHtml+rankedRows;
 }
 
 
 function cgClearCompFilters(){
   cgCompFilter={};
   cgCodeFilterOpen=false;
+  cgPosFilterOpen=false;
   var side=CG.side;
   var types=side==='h'?FG_HITTER_TYPES:FG_PITCHER_TYPES;
   var activeTFs=CG_TF_KEYS.filter(function(tf){return CG.tfs[tf];});
@@ -8148,14 +8461,23 @@ function cgShowMatchExplainer(){
       +'<div><strong style="color:var(--blue)">55%</strong> — Shares some traits but differs substantially in others. A data point, not a direct comp.</div>'
     +'</div>'
     +'<p style="font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:14px">Tip: enable <em>Correlation Weighting</em> to give more influence to stats that historically predict contract value — this sharpens the signal, especially for players in transition years.</p>'
-    +'<div style="text-align:right"><button onclick="document.getElementById(\'cg-explainer-modal\').remove()" style="background:var(--accent);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:1px;padding:8px 20px">Got it</button></div>';
+    +'<div style="text-align:right"><button onclick="cgCloseMatchExplainer()" style="background:var(--accent);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:12px;font-weight:800;letter-spacing:1px;padding:8px 20px">Got it</button></div>';
   document.body.appendChild(box);
+  // Use a single named handler stored on the function so it can always be removed
+  if(cgShowMatchExplainer._outsideH)document.removeEventListener('click',cgShowMatchExplainer._outsideH);
+  cgShowMatchExplainer._outsideH=null;
   setTimeout(function(){
-    document.addEventListener('click',function h(e){
+    cgShowMatchExplainer._outsideH=function(e){
       var m=document.getElementById('cg-explainer-modal');
-      if(m&&!m.contains(e.target)){m.remove();document.removeEventListener('click',h);}
-    });
+      if(m&&!m.contains(e.target)){m.remove();document.removeEventListener('click',cgShowMatchExplainer._outsideH);cgShowMatchExplainer._outsideH=null;}
+    };
+    document.addEventListener('click',cgShowMatchExplainer._outsideH);
   },100);
+}
+function cgCloseMatchExplainer(){
+  var m=document.getElementById('cg-explainer-modal');
+  if(m)m.remove();
+  if(cgShowMatchExplainer._outsideH){document.removeEventListener('click',cgShowMatchExplainer._outsideH);cgShowMatchExplainer._outsideH=null;}
 }
 
 
@@ -8214,6 +8536,8 @@ function cgFmtStat(col,v,typeKey,side){
     return pv.toFixed(1)+'%';
   }
   if(rateCols[col])return n.toFixed(3).replace(/^0/,'');
+  // Always-integer stats
+  if(col==='QS'||col==='Events'||col==='CG'||col==='ShO')return String(Math.round(n));
   if(n%1===0)return String(Math.round(n));
   if(Math.abs(n)<1)return n.toFixed(3).replace(/^0\./,'.');
   return n.toFixed(2);
@@ -8232,6 +8556,14 @@ document.addEventListener('click',function(e){
     codeList.style.display='none';
     cgCodeFilterOpen=false;
     if(codeBtn)codeBtn.classList.remove('active');
+  }
+  // Pos filter dropdown
+  var posList=document.getElementById('cg-pos-list');
+  var posBtn=document.getElementById('cg-pos-btn');
+  if(posList&&posList.style.display!=='none'&&!posList.contains(e.target)&&e.target!==posBtn){
+    posList.style.display='none';
+    cgPosFilterOpen=false;
+    if(posBtn)posBtn.classList.remove('active');
   }
 });
 function cgRepositionDropdown(){
@@ -8482,12 +8814,6 @@ function h2hLoadPlayerStats(playerObj, cb){
   var py    = playerObj.py;
   var types = side==='h' ? FG_HITTER_TYPES : FG_PITCHER_TYPES;
 
-  var missing = types.filter(function(t){
-    var ck = side+'_'+t.key;
-    return !(FG.contracts.cache && FG.contracts.cache[ck] &&
-             FG.contracts.cache[ck].rows && FG.contracts.cache[ck].rows.length);
-  });
-
   // Match player name against all variants (handles "First Last" vs "Last, First")
   function nameVariants(rawName){
     var n = String(rawName||'');
@@ -8500,18 +8826,33 @@ function h2hLoadPlayerStats(playerObj, cb){
     return v;
   }
 
+  // Try live cache first — works for ALL leaderboard players, not just contract holders.
+  // This is the same path Comp Gen uses, so non-contract players like Laureano show stats.
+  function extractFromLiveCache(){
+    types.forEach(function(t){
+      if(playerObj.stats[t.key]) return;
+      var lk  = side+'_'+t.key;
+      var lk2 = 'live_'+side+'_'+t.key;
+      // Prefer lk2 (live_ prefixed = all players) over lk (may be contract-only)
+      var raw = FG.live.cache && (FG.live.cache[lk2] || FG.live.cache[lk]);
+      if(!raw || !raw.headers || !raw.rows || !raw.rows.length) return;
+      var agg = cgComputePlayerAgg(raw, t.key, side, fgId, nm, py, false);
+      if(agg) playerObj.stats[t.key] = agg;
+    });
+  }
+
+  // Fall back to contracts cache for any types still missing
   function extractFromContractsCache(){
     types.forEach(function(t){
+      if(playerObj.stats[t.key]) return; // already populated from live cache
       var ck  = side+'_'+t.key;
       var cc  = FG.contracts.cache && FG.contracts.cache[ck];
       if(!cc || !cc.rows || !cc.rows.length) return;
 
       var statCols = cc.stat_cols || [];
       var windows  = cc.windows  || CG_WINDOWS;
-      var nC = 7;
-      var nS = statCols.length;
+      var nC = 7, nS = statCols.length;
       var pyStr = String(py);
-
       var row = null;
       cc.rows.some(function(r){
         var rPY = String(r[5]||'').replace(/\.0+$/,'').trim();
@@ -8539,7 +8880,18 @@ function h2hLoadPlayerStats(playerObj, cb){
     cb();
   }
 
+  // Determine which types need fetching (neither live nor contracts cache has data)
+  var missing = types.filter(function(t){
+    var lk2 = 'live_'+side+'_'+t.key;
+    // Only lk2 (live_ prefixed, all-player data) counts as sufficient.
+    // lk (non-prefixed) may be contract-only and would miss non-contract players.
+    var hasLive = FG.live.cache &&
+      FG.live.cache[lk2] && FG.live.cache[lk2].rows && FG.live.cache[lk2].rows.length;
+    return !hasLive;
+  });
+
   if(!missing.length){
+    extractFromLiveCache();
     extractFromContractsCache();
     return;
   }
@@ -8547,6 +8899,7 @@ function h2hLoadPlayerStats(playerObj, cb){
   var qi = 0;
   function loadNext(){
     if(qi >= missing.length){
+      extractFromLiveCache();
       extractFromContractsCache();
       return;
     }
@@ -8559,19 +8912,15 @@ function h2hLoadPlayerStats(playerObj, cb){
     fgLoad('fg_contracts', function(ctData){
       if(ctData && ctData.headers && ctData.rows && ctData.rows.length){
         try{
-          var agg = fgsComputeAgg(side, t.key, ctData);
-          if(!FG.contracts.cache) FG.contracts.cache = {};
-          FG.contracts.cache[ck] = {
-            headers:agg.headers||[], rows:agg.rows||[],
-            windows:agg.windows||CG_WINDOWS, stat_cols:agg.stat_cols||[],
-            isPartial:false, pulledAt:agg.pulled_at||''
-          };
           if(!FG.live.cache) FG.live.cache = {};
-          FG.live.cache[side+'_'+t.key] = {headers:ctData.headers,rows:ctData.rows,_years:[]};
+          var liveKey = 'live_'+side+'_'+t.key;
+          // Store in live_ prefixed key so extractFromLiveCache can find all players
+          if(!FG.live.cache[liveKey] || !FG.live.cache[liveKey].rows || !FG.live.cache[liveKey].rows.length)
+            FG.live.cache[liveKey] = {headers:ctData.headers, rows:ctData.rows, _years:[]};
         }catch(e){}
       }
       setTimeout(loadNext, 500);
-    }, function(){ setTimeout(loadNext, 500); }, {side:side, typeKey:t.key});
+    }, function(){ setTimeout(loadNext, 500); }, {side:side, typeKey:t.key, leaderboard:'1'});
   }
   setTimeout(loadNext, 0);
 }
